@@ -9,7 +9,8 @@
 <style>
 :root{--bg:#fbf3e4;--ink:#4a3424;--orange:#f08a24;--orange-d:#c9661a;--pink:#ef6f9a;--panel:#fffaf0;--line:#e7d3b0}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","BIZ UDPGothic","Meiryo",sans-serif;overflow:hidden;touch-action:manipulation}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","BIZ UDPGothic","Meiryo",sans-serif;overflow:hidden;touch-action:manipulation;overscroll-behavior:none}
+body.playing{position:fixed;inset:0;width:100%}
 body{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .screen{display:none;flex:1;flex-direction:column;min-height:0}
 .screen.on{display:flex}
@@ -79,7 +80,8 @@ body{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inse
 .btn.w{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
 /* game */
 
-#game{position:relative}
+#game{position:relative;touch-action:none;overscroll-behavior:none}
+#stage,#ctrl{touch-action:none}
 #stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
 canvas{display:block;touch-action:none}
 #pauseBtn{position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:20;width:40px;height:40px;border-radius:12px;border:2px solid var(--line);background:#fffaf0;font-size:18px;color:var(--ink);font-weight:bold}
@@ -478,7 +480,7 @@ function aiChoose(g, pair, next, nc, level, ctx, rnd) {
 
 <script id="ui">
 'use strict';
-var VERSION = 'v3';
+var VERSION = 'v4';
 document.getElementById('verLbl').textContent = VERSION;
 
 /* ---------- 画像 ---------- */
@@ -1073,7 +1075,7 @@ function renderVs() {
 }
 
 /* ---------- 画面 ---------- */
-function show(id) { ['title', 'game', 'net'].forEach(function (s) { document.getElementById(s).classList.toggle('on', s === id); }); bgmLevel(id === 'game' ? 'game' : 'menu'); }
+function show(id) { ['title', 'game', 'net'].forEach(function (s) { document.getElementById(s).classList.toggle('on', s === id); }); bgmLevel(id === 'game' ? 'game' : 'menu'); document.body.classList.toggle('playing', id === 'game'); }
 var ov = document.getElementById('ov'), ovBox = document.getElementById('ovBox');
 function openOv(html, binds) {
   ovBox.innerHTML = html; ov.classList.add('on');
@@ -1193,20 +1195,32 @@ document.addEventListener('visibilitychange', function () {
 /* さいしょに さわったときに BGM を はじめる（iPhone は さわるまで おとが でない） */
 document.addEventListener('pointerdown', function () { if (soundOn) { audio(); bgmStart(); } }, true);
 document.addEventListener('keydown', function () { if (soundOn) { audio(); bgmStart(); } }, true);
-// キャンバスのスワイプ操作（ひとりモードの盤面で）
+// 盤面のスワイプ操作（ゲーム画面のどこから はじめても OK）
 (function () {
-  var sx = 0, sy = 0, lx = 0, active = false, moved = false;
-  cv.addEventListener('pointerdown', function (e) { audio(); active = true; moved = false; sx = lx = e.clientX; sy = e.clientY; });
-  cv.addEventListener('pointermove', function (e) {
-    if (!active) return;
+  var sx = 0, sy = 0, lx = 0, active = false, moved = false, pid = null;
+  var stage = document.getElementById('stage');
+  stage.addEventListener('pointerdown', function (e) {
+    if (e.target && e.target.closest && e.target.closest('button')) return;
+    audio(); active = true; moved = false; pid = e.pointerId; sx = lx = e.clientX; sy = e.clientY;
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!active || e.pointerId !== pid) return;
     var step = 26 * scale;
     while (e.clientX - lx > step) { doKey('r'); lx += step; moved = true; }
     while (lx - e.clientX > step) { doKey('l'); lx -= step; moved = true; }
     var p = human(); if (p && e.clientY - sy > 40 * scale) { p.soft = true; moved = true; }
   });
-  function end() { if (!active) return; active = false; var p = G && G.players[0]; if (p) p.soft = false; if (!moved) doKey('rr'); }
-  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end); cv.addEventListener('pointerleave', function () { if (active) { active = false; var p = G && G.players[0]; if (p) p.soft = false; } });
+  function end(e) {
+    if (!active || (e && e.pointerId !== pid)) return;
+    active = false; pid = null;
+    var p = G && G.players[0]; if (p) p.soft = false;
+    if (!moved && e && e.type === 'pointerup') doKey('rr');
+  }
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
 })();
+/* ゲーム中は がめんが うごかないように する（iPhone の ひっぱりスクロール・ひっぱって更新を とめる） */
+document.getElementById('game').addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
 
 /* ---------- ループ ---------- */
 var last = 0;
@@ -1332,7 +1346,11 @@ const PEER = (function () {
   }
   function bindDC(ch) {
     dc = ch;
-    ch.onopen = () => { if (ch === dc && cb.open) cb.open(); };
+    /* うけとった側の チャンネルは さいしょから open で、open イベントが こないことがある（Safari など） */
+    let fired = false;
+    const fire = () => { if (fired || ch !== dc) return; fired = true; if (cb.open) cb.open(); };
+    ch.onopen = fire;
+    if (ch.readyState === 'open') setTimeout(fire, 0);
     ch.onmessage = e => { if (ch === dc && cb.msg) cb.msg(e.data); };
     ch.onclose = () => { if (ch === dc && cb.close) cb.close('dc'); };
   }
