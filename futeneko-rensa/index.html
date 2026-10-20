@@ -480,7 +480,7 @@ function aiChoose(g, pair, next, nc, level, ctx, rnd) {
 
 <script id="ui">
 'use strict';
-var VERSION = 'v4';
+var VERSION = 'v5';
 document.getElementById('verLbl').textContent = VERSION;
 
 /* ---------- 画像 ---------- */
@@ -1121,7 +1121,8 @@ function howTo() {
     '<p>🐾 きえたあと 上のキャラが おちて、また そろうと <b>れんさ</b>！ れんさが ながいほど 大きな てんすう。</p>' +
     '<p>🐾 たいせんでは れんさすると あいてに <b>けだま（おじゃま）</b>が ふるよ。けだまは となりで キャラが きえると いっしょに きえる。</p>' +
     '<p>🐾 まんなかの <b style="color:#e05050">×</b> の ところまで つみあがると まけ。</p>' +
-    '<p>◀ ▶ いどう　▼ はやく おとす<br>↺ ↻ くるっと まわす（かべぎわで 2かい おすと くるりん）</p>' +
+    '<p>◀ ▶ いどう　▼ おしているあいだ はやく おちる<br>↺ ↻ くるっと まわす（かべぎわで 2かい おすと くるりん）</p>' +
+    '<p>🐾 ばんめんを さわっても あそべるよ：タップで まわす、よこに すべらせて いどう、<b>おしつづけると はやく おちる</b>。</p>' +
     '<p style="font-size:13px;opacity:.75">キーボード：← → ↓ ／ Z・X（または ↑）でまわす ／ Esc でひとやすみ</p>' +
     '<button class="btn" id="oOk">わかった！</button>', { oOk: closeOv });
 }
@@ -1195,26 +1196,36 @@ document.addEventListener('visibilitychange', function () {
 /* さいしょに さわったときに BGM を はじめる（iPhone は さわるまで おとが でない） */
 document.addEventListener('pointerdown', function () { if (soundOn) { audio(); bgmStart(); } }, true);
 document.addEventListener('keydown', function () { if (soundOn) { audio(); bgmStart(); } }, true);
-// 盤面のスワイプ操作（ゲーム画面のどこから はじめても OK）
+// 盤面のタッチ操作（ゲーム画面のどこから はじめても OK）
+//  ・タップ … みぎまわし　・よこに すべらせる … いどう
+//  ・おしつづける／したに すべらせる … おしているあいだ はやく おちる
 (function () {
-  var sx = 0, sy = 0, lx = 0, active = false, moved = false, pid = null;
+  var sx = 0, sy = 0, lx = 0, active = false, moved = false, held = false, pid = null, timer = 0;
+  var HOLD_MS = 170;
   var stage = document.getElementById('stage');
+  function setSoft(v) { var p = G && G.players[0]; if (p && !p.remote) p.soft = v; }
   stage.addEventListener('pointerdown', function (e) {
     if (e.target && e.target.closest && e.target.closest('button')) return;
-    audio(); active = true; moved = false; pid = e.pointerId; sx = lx = e.clientX; sy = e.clientY;
+    audio(); active = true; moved = false; held = false; pid = e.pointerId; sx = lx = e.clientX; sy = e.clientY;
+    clearTimeout(timer);
+    timer = setTimeout(function () { if (active && !moved && human()) { held = true; setSoft(true); } }, HOLD_MS);
   });
   window.addEventListener('pointermove', function (e) {
     if (!active || e.pointerId !== pid) return;
+    if (!held && (Math.abs(e.clientX - sx) > 8 * scale || Math.abs(e.clientY - sy) > 8 * scale)) { moved = true; clearTimeout(timer); }
     var step = 26 * scale;
     while (e.clientX - lx > step) { doKey('r'); lx += step; moved = true; }
     while (lx - e.clientX > step) { doKey('l'); lx -= step; moved = true; }
-    var p = human(); if (p && e.clientY - sy > 40 * scale) { p.soft = true; moved = true; }
+    if (human() && e.clientY - sy > 40 * scale) { setSoft(true); moved = true; held = true; }
+    else if (Math.abs(e.clientY - sy) > 14 * scale && !held) moved = true;
   });
   function end(e) {
     if (!active || (e && e.pointerId !== pid)) return;
-    active = false; pid = null;
-    var p = G && G.players[0]; if (p) p.soft = false;
-    if (!moved && e && e.type === 'pointerup') doKey('rr');
+    clearTimeout(timer);
+    var tap = !moved && !held && e && e.type === 'pointerup';
+    active = false; pid = null; held = false;
+    setSoft(false);
+    if (tap) doKey('rr');
   }
   window.addEventListener('pointerup', end);
   window.addEventListener('pointercancel', end);
