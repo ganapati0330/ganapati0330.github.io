@@ -58,6 +58,10 @@ body{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inse
 .hs{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px auto 0;width:max-content;max-width:100%;padding:5px 18px;border-radius:99px;background:#f6e8cf;color:#6b4a2c;font-size:14px;font-weight:bold;letter-spacing:1px}
 .hs svg{width:20px;height:15px;fill:#5a3a22}
 .trow{gap:12px}
+.seg{display:flex;align-items:center;gap:6px;background:#fef8eb;border:3px solid #f5d9a8;border-radius:18px;padding:6px 8px;margin:6px 0}
+.seg .segl{font-weight:900;color:#5a3a22;font-size:14px;padding:0 4px;white-space:nowrap}
+.seg button{flex:1;appearance:none;font:inherit;font-weight:bold;font-size:14px;color:#6b4a2c;background:#f6e8cf;border:2px solid transparent;border-radius:12px;padding:8px 2px;white-space:nowrap;cursor:pointer}
+.seg button.on{background:#5bb36a;color:#fff;border-color:#3e8a4c;box-shadow:0 2px 0 #3e8a4c}
 .tw{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;appearance:none;font:inherit;font-weight:900;font-size:clamp(15px,4.6vw,20px);color:#5a3a22;background:#fffaf0;border:3px solid #f5d9a8;border-radius:20px;padding:13px 6px;box-shadow:0 4px 0 #ecc78f;cursor:pointer;white-space:nowrap}
 .tw:active{transform:translateY(3px);box-shadow:0 1px 0 #ecc78f}
 .tw svg{width:1.4em;height:1.2em;fill:none;stroke:#5a3a22;stroke-width:2.6;stroke-linejoin:round;flex:0 0 auto}
@@ -154,6 +158,7 @@ textarea{width:100%;margin-top:8px;font-size:16px;border:2px solid var(--line);b
     <button class="tb tb-b big" id="netBtn"><svg class="wifi" viewBox="0 0 48 40" aria-hidden="true"><path d="M4 14a28 28 0 0 1 40 0" /><path d="M11 21a18 18 0 0 1 26 0"/><path d="M18 28a8 8 0 0 1 12 0"/><circle cx="24" cy="34" r="3.6" stroke="none"/></svg><span>つうしん たいせん<small>おなじ Wi-Fi の スマホ・パソコンと</small></span>
      <svg class="dev" viewBox="0 0 64 36" aria-hidden="true"><rect x="2" y="2" width="16" height="30" rx="3"/><path d="M8 28h4"/><rect x="28" y="6" width="28" height="20" rx="2"/><path d="M22 31h40"/></svg></button>
    </section>
+   <div id="softTitle"></div>
    <div class="row trow">
     <button class="tw" id="howBtn"><svg viewBox="0 0 32 26" aria-hidden="true"><path d="M16 5C12 2 6 2 2 3v19c4-1 10-1 14 2 4-3 10-3 14-2V3c-4-1-10-1-14 2zM16 5v19"/></svg>あそびかた</button>
     <button class="tw" id="sndBtn"><svg viewBox="0 0 24 28" aria-hidden="true"><path class="fill" d="M9 4l13-3v18.5a4 4 0 1 1-3-3.9V6.3L12 8v14.5a4 4 0 1 1-3-3.9z"/></svg><span id="sndLbl">おと：ON</span><svg class="spk" viewBox="0 0 30 24" aria-hidden="true"><path class="fill" d="M2 8h6l8-6v20l-8-6H2z"/><path class="w" d="M20 7a7 7 0 0 1 0 10M24 3a12 12 0 0 1 0 18"/></svg></button>
@@ -480,7 +485,7 @@ function aiChoose(g, pair, next, nc, level, ctx, rnd) {
 
 <script id="ui">
 'use strict';
-var VERSION = 'v5';
+var VERSION = 'v6';
 document.getElementById('verLbl').textContent = VERSION;
 
 /* ---------- 画像 ---------- */
@@ -818,9 +823,34 @@ function stepPlayer(p, dt) {
     default: break;
   }
 }
+/* はやおとしの はやさ（1マス あたりの ミリ秒）。CPU は いつも はやい */
+var SOFT_MS = [120, 70, 32];
+var SOFT_NAME = ['ゆっくり', 'ふつう', 'はやい'];
+var softLv = load('futeneko-rensa-soft', 1);
+if (!(softLv >= 0 && softLv <= 2)) softLv = 1;
+function fallInterval(p) {
+  if (!p.soft) return p.speed;
+  return Math.min(p.speed, p.cpu ? 32 : SOFT_MS[softLv]);
+}
+function softSegHTML() {
+  return '<div class="seg"><span class="segl">はやおとし</span>' + SOFT_NAME.map(function (n, i) {
+    return '<button data-soft="' + i + '" class="' + (i === softLv ? 'on' : '') + '">' + n + '</button>';
+  }).join('') + '</div>';
+}
+function setSoftLv(i) {
+  softLv = i; save('futeneko-rensa-soft', i);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-soft]'), function (b) { b.classList.toggle('on', +b.getAttribute('data-soft') === i); });
+}
+document.addEventListener('click', function (e) {
+  var b = e.target && e.target.closest && e.target.closest('[data-soft]');
+  if (!b) return;
+  audio(); SFX.btn(); setSoftLv(+b.getAttribute('data-soft'));
+});
 function stepFall(p, dt) {
   if (p.cpu) cpuStep(p, dt);
-  var interval = p.soft ? 32 : p.speed;
+  var interval = fallInterval(p);
+  /* ふつうの らっかで たまった じかんを はやおとしで いっきに つかわない（いっしゅんで そこまで ワープしないように） */
+  if (p.fallT > interval) p.fallT = interval;
   p.fallT += dt * 1000;
   while (p.fallT >= interval) {
     var n = { x: p.pair.x, y: p.pair.y + 1, r: p.pair.r, pc: p.pair.pc, cc: p.pair.cc };
@@ -830,7 +860,7 @@ function stepFall(p, dt) {
   var below = { x: p.pair.x, y: p.pair.y + 1, r: p.pair.r, pc: p.pair.pc, cc: p.pair.cc };
   if (!pairFits(p.g, below)) {
     p.lockT += dt * 1000;
-    if (p.lockT >= (p.soft ? 70 : 420)) lockPair(p);
+    if (p.lockT >= (p.soft ? 110 : 420)) lockPair(p);
   }
 }
 function cpuStep(p, dt) {
@@ -935,7 +965,7 @@ function drawBoard(p) {
     ctx.save(); ctx.beginPath(); ctx.rect(bx, by - s * 0.6, W, H + s * 0.6); ctx.clip();
     var pr = p.pair, o = childOffset(pr.r);
     var below = pairFits(p.g, { x: pr.x, y: pr.y + 1, r: pr.r });
-    var off = below ? Math.min(1, p.fallT / (p.soft ? 32 : p.speed)) : 0;
+    var off = below ? Math.min(1, p.fallT / fallInterval(p)) : 0;
     // ゴースト（おちる場所）
     var gp = { x: pr.x, y: pr.y, r: pr.r };
     while (pairFits(p.g, { x: gp.x, y: gp.y + 1, r: gp.r })) gp.y++;
@@ -1110,7 +1140,7 @@ function pause() {
   if (!G || G.over || paused) return;
   if (G.mode === 'net') { if (!ov.classList.contains('on')) netPause(); return; }
   paused = true;
-  openOv('<h3>ひとやすみ</h3>' + img('fute_s') +
+  openOv('<h3>ひとやすみ</h3>' + img('fute_s') + softSegHTML() +
     '<button class="btn g" id="oRes">つづける</button><button class="btn w" id="oQuit">やめてタイトルへ</button>',
     { oRes: function () { closeOv(); paused = false; }, oQuit: toTitle });
 }
@@ -1133,6 +1163,7 @@ function refreshTitle() {
 }
 (function initTitle() {
   document.getElementById('hero').src = HERO;
+  document.getElementById('softTitle').innerHTML = softSegHTML();
   document.getElementById('oChap').src = IMG.p_chap; document.getElementById('oKuro').src = IMG.p_kuro; document.getElementById('oFute').src = IMG.p_fute;
   Array.prototype.forEach.call(document.querySelectorAll('[data-solo]'), function (b) { b.addEventListener('click', function () { audio(); SFX.btn(); startSolo(+b.getAttribute('data-solo')); }); });
   Array.prototype.forEach.call(document.querySelectorAll('[data-vs]'), function (b) { b.addEventListener('click', function () { audio(); SFX.btn(); startVs(+b.getAttribute('data-vs')); }); });
@@ -1814,7 +1845,7 @@ function netQuit() {
   setTimeout(netLeaveToTitle, 120);
 }
 function netPause() {
-  openOv('<h3>つうしんたいせん</h3><p style="text-align:center">ゲームは とまらないよ。<br>やめると あいての かちに なります。</p>'
+  openOv('<h3>つうしんたいせん</h3><p style="text-align:center">ゲームは とまらないよ。<br>やめると あいての かちに なります。</p>' + softSegHTML()
     + '<button class="btn g" id="oRes">つづける</button><button class="btn w" id="oQuit">やめる</button>',
     { oRes: closeOv, oQuit: netQuit });
 }
