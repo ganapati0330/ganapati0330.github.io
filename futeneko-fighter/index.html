@@ -33,12 +33,11 @@ body.touch.playing #ctrl{display:block}
 .btns{display:grid;grid-template-columns:repeat(2,var(--btn,66px));grid-template-rows:repeat(2,var(--btn,66px));gap:8px;pointer-events:none}
 .cluster.p2 .btns{direction:rtl}
 .cluster.act{right:env(safe-area-inset-right);padding-right:calc(18px + env(safe-area-inset-right))}
-.cluster.act .btns{gap:14px;grid-template-columns:repeat(2,var(--btn,66px));grid-template-rows:calc(var(--btn,66px)*.62) var(--btn,66px)}
-.cluster.act .bt.p{grid-column:1;grid-row:2;transform:translateY(-22%)}
-.cluster.act .bt.p.on{transform:translateY(-22%) scale(.92)}
-.cluster.act .bt.k{grid-column:2;grid-row:2;transform:translateY(8%)}
-.cluster.act .bt.k.on{transform:translateY(8%) scale(.92)}
-.cluster.act .bt.s{height:100%;width:calc(var(--btn,66px)*1.7)}
+.cluster.act .btns{gap:12px 14px}
+.cluster.act .bt.p,.cluster.act .bt.t{transform:translateY(-22%)}
+.cluster.act .bt.p.on,.cluster.act .bt.t.on{transform:translateY(-22%) scale(.92)}
+.cluster.act .bt.k,.cluster.act .bt.s{transform:translateY(8%)}
+.cluster.act .bt.k.on,.cluster.act .bt.s.on{transform:translateY(8%) scale(.92)}
 .bt{pointer-events:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:calc(var(--btn,66px)*.22);white-space:nowrap;color:#fff;
   border:3px solid rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.6);touch-action:none;opacity:.86}
 body.horz .bt{opacity:.6}
@@ -46,7 +45,8 @@ body.horz .dpad{opacity:.75}
 .bt.on{transform:scale(.92);opacity:1;filter:brightness(1.25)}
 .bt.p{background:var(--band);grid-column:1;grid-row:2}
 .bt.k{background:var(--stamp);grid-column:2;grid-row:2}
-.bt.s{background:#7a6a3a;grid-column:1/3;grid-row:1;border-radius:18px;width:calc(var(--btn,66px)*1.6);height:calc(var(--btn,66px)*.75);align-self:end;justify-self:center}
+.bt.s{background:#7a6a3a;grid-column:2;grid-row:1;font-size:calc(var(--btn,66px)*.19)}
+.bt.t{background:#2e9b57;grid-column:1;grid-row:1}
 .bt.s.ready{background:var(--gold);color:var(--ink);text-shadow:none;animation:glow .8s infinite alternate}
 @keyframes glow{to{box-shadow:0 0 18px 4px var(--gold)}}
 body.vert #ctrl{top:auto}
@@ -148,12 +148,12 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
   <div id="ctrl">
     <div class="cluster p1" data-pl="0">
       <div class="dpad" data-pl="0"><i class="u"></i><i class="d"></i><i class="l"></i><i class="r"></i><div class="knob"></div></div>
-      <div class="btns"><div class="bt s" data-pl="0" data-b="s">ひっさつ</div><div class="bt p" data-pl="0" data-b="p">パンチ</div><div class="bt k" data-pl="0" data-b="k">キック</div></div>
+      <div class="btns"><div class="bt t" data-pl="0" data-b="t">なげ</div><div class="bt s" data-pl="0" data-b="s">ひっさつ</div><div class="bt p" data-pl="0" data-b="p">パンチ</div><div class="bt k" data-pl="0" data-b="k">キック</div></div>
     </div>
     <div class="cluster act" data-pl="0"></div>
     <div class="cluster p2" data-pl="1">
       <div class="dpad" data-pl="1"><i class="u"></i><i class="d"></i><i class="l"></i><i class="r"></i><div class="knob"></div></div>
-      <div class="btns"><div class="bt s" data-pl="1" data-b="s">ひっさつ</div><div class="bt p" data-pl="1" data-b="p">パンチ</div><div class="bt k" data-pl="1" data-b="k">キック</div></div>
+      <div class="btns"><div class="bt t" data-pl="1" data-b="t">なげ</div><div class="bt s" data-pl="1" data-b="s">ひっさつ</div><div class="bt p" data-pl="1" data-b="p">パンチ</div><div class="bt k" data-pl="1" data-b="k">キック</div></div>
     </div>
   </div>
 
@@ -174,7 +174,7 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
       </div>
       <div id="rotHint">スマホを よこむきに して あそんでね</div>
     </div>
-    <div class="ver">v4　© 泉正道 / フテ猫実行委員会</div>
+    <div class="ver">v5　© 泉正道 / フテ猫実行委員会</div>
   </section>
 
   <!-- help -->
@@ -186,11 +186,13 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
       <h3>わざ</h3>
       <div>パンチ は はやい。キック は とどく。ジャンプ中にも パンチ・キックが だせるよ。</div>
       <div>ゲージは じかんでも こうげきでも たまる。いっぱいになったら「ひっさつ」！ キャラごとに ちがう ド派手な わざが でるよ。ビームや とつげき、じしん まで いろいろ。</div>
+      <h3>なげ</h3>
+      <div>あいてに ちかづいて「なげ」で つかんで なげとばす！ ガードしている あいてにも きくよ。とおいと からぶりして スキだらけ。</div>
       <h3>ガード</h3>
       <div>あいてと はんたいの ほうこうを おしていると ガード。しゃがみガードは ジャンプこうげきを ふせげないので 気をつけて。</div>
       <h3>キーボード</h3>
-      <div>ひとりで：<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd>（または <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>）　パンチ <kbd>Z</kbd>/<kbd>J</kbd>　キック <kbd>X</kbd>/<kbd>K</kbd>　ひっさつ <kbd>C</kbd>/<kbd>L</kbd></div>
-      <div>ふたりで：1P は <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> と <kbd>F</kbd><kbd>G</kbd><kbd>H</kbd>、2P は 矢印キー と <kbd>,</kbd><kbd>.</kbd><kbd>/</kbd>（テンキー <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> も可）</div>
+      <div>ひとりで：<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd>（または <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>）　パンチ <kbd>Z</kbd>/<kbd>J</kbd>　キック <kbd>X</kbd>/<kbd>K</kbd>　ひっさつ <kbd>C</kbd>/<kbd>L</kbd>　なげ <kbd>V</kbd>/<kbd>U</kbd></div>
+      <div>ふたりで：1P は <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> と <kbd>F</kbd><kbd>G</kbd><kbd>H</kbd><kbd>T</kbd>、2P は 矢印キー と <kbd>,</kbd><kbd>.</kbd><kbd>/</kbd><kbd>M</kbd>（テンキー <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> も可）（じゅんに パンチ・キック・ひっさつ・なげ）</div>
       <div>スマホ：左の 十字キーで うごく、右の ボタンで パンチ・キック・ひっさつ（ふたりで あそぶ ときは それぞれの 手もと）</div>
       <div>ポーズ <kbd>P</kbd> または <kbd>Esc</kbd></div>
       <div class="row"><button class="tk" data-back="title">もどる</button></div>
@@ -326,14 +328,15 @@ var Logic = (function () {
     return -1;
   }
 
-  var EMPTY = { left: false, right: false, up: false, down: false, p: false, k: false, s: false };
+  var EMPTY = { left: false, right: false, up: false, down: false, p: false, k: false, s: false, t: false };
+  var THROW = { range: 34, hold: 16, end: 34, miss: 22, dmg: 13 };
 
   function newFighter(id, side) {
     return {
       id: id, side: side, x: side === 0 ? 280 : 680, y: 0, vx: 0, vy: 0, face: side === 0 ? 1 : -1,
       hp: 100, maxHp: 100, gauge: 0, st: 'idle', t: 0, atk: null, hitDone: false, stun: 0, inv: 0,
       airAtk: null, airT: 0, airHit: false, back: false, crouch: false, wins: 0,
-      prev: { left: false, right: false, up: false, down: false, p: false, k: false, s: false },
+      prev: { left: false, right: false, up: false, down: false, p: false, k: false, s: false, t: false }, thr: null, spin: 0, thrownBy: -1,
       lastHurt: 0, combo: 0
     };
   }
@@ -398,6 +401,7 @@ var Logic = (function () {
     if (pr('s') && f.gauge >= 100 && !ownProj) { startAttack(m, f, 'special', ev); return; }
     if (pr('p')) { startAttack(m, f, 'punch', ev); return; }
     if (pr('k')) { startAttack(m, f, 'kick', ev); return; }
+    if (pr('t')) { tryThrow(m, f, ev); return; }
     if (inp.up) {
       setState(f, 'jump'); f.vy = 15.2 * c.jump; f.y = 0.01;
       f.vx = fwd ? 4.4 * c.spd * f.face : (bwd ? -4.0 * c.spd * f.face : 0);
@@ -411,9 +415,32 @@ var Logic = (function () {
     else { if (f.st !== 'idle') setState(f, 'idle'); f.vx = 0; }
   }
 
+  // throw: grabs a nearby grounded opponent — beats guarding, but whiffs (and is punishable) from too far away
+  function canGrab(m, f, o) {
+    var g = geom(f.id), go = geom(o.id), dx = (o.x - f.x) * f.face;
+    if (m.phase !== 'fight' || o.y !== 0 || o.inv > 0) return false;
+    if (['idle', 'walk', 'crouch', 'land', 'atk'].indexOf(o.st) < 0) return false;
+    if (o.st === 'atk' && o.atk === 'special') return false;
+    return dx > -6 && dx < (g.bodyW + go.bodyW) / 2 + THROW.range;
+  }
+  function tryThrow(m, f, ev) {
+    var o = m.f[1 - f.side];
+    if (Math.abs(o.x - f.x) > 2) f.face = o.x > f.x ? 1 : -1;
+    setState(f, 'throw'); f.vx = 0; f.atk = null;
+    if (canGrab(m, f, o)) {
+      f.thr = 'grab';
+      setState(o, 'thrown'); o.vx = 0; o.atk = null; o.airAtk = null; o.thrownBy = f.side; o.crouch = false;
+      m.hitstop = 6;
+      ev.push({ type: 'grab', side: f.side, x: (f.x + o.x) / 2, y: geom(o.id).h * 0.6 });
+    } else {
+      f.thr = 'miss';
+      ev.push({ type: 'whoosh', side: f.side, kind: 'throw' });
+    }
+  }
+
   function hurtbox(f) {
     var g = geom(f.id);
-    if (f.st === 'down' || f.st === 'getup' || f.inv > 0) return null;
+    if (f.st === 'down' || f.st === 'getup' || f.st === 'thrown' || f.inv > 0) return null;
     var hh = (f.st === 'crouch' || (f.st === 'block' && f.crouch)) ? g.ch : (f.st === 'jump' ? g.h * 0.8 : g.h);
     return { x0: f.x - g.bodyW / 2, x1: f.x + g.bodyW / 2, y0: f.y, y1: f.y + hh };
   }
@@ -430,7 +457,7 @@ var Logic = (function () {
   function applyHit(m, a, d, info, ev) {
     // info: dmg, stun, push, overhead, knock, dir, hx, hy, proj
     var c = CHARS[a.id];
-    if (canBlock(m, d, info.overhead)) {
+    if (!info.thr && canBlock(m, d, info.overhead)) {
       var chip = Math.max(1, Math.round(info.dmg * 0.15));
       d.hp = Math.max(1, d.hp - chip);
       if (m.mode === 'training' && d.side === 1) d.hp = Math.max(d.hp, 1);
@@ -453,7 +480,7 @@ var Logic = (function () {
       setState(d, 'hit'); d.stun = info.stun; d.vx = info.dir * info.push * 0.8; d.atk = null;
     }
     m.hitstop = big ? 10 : 6;
-    ev.push({ type: 'hit', x: info.hx, y: info.hy, side: d.side, big: big, dmg: dmg, combo: a.combo, sp: !!info.sp, id: a.id });
+    ev.push({ type: 'hit', x: info.hx, y: info.hy, side: d.side, big: big, dmg: dmg, combo: a.combo, sp: !!info.sp, thr: !!info.thr, id: a.id });
     if (d.hp <= 0 && m.mode !== 'training') {
       m.phase = 'ko'; m.t = 0; m.roundWinner = a.side; m.slow = 70;
       ev.push({ type: 'ko', side: d.side, sp: !!info.sp });
@@ -522,6 +549,27 @@ var Logic = (function () {
     } else if (f.st === 'hit' || f.st === 'block') {
       f.stun--; f.vx *= 0.82;
       if (f.stun <= 0) setState(f, f.st === 'block' && f.crouch ? 'crouch' : 'idle');
+    } else if (f.st === 'throw') {
+      f.vx = 0;
+      if (f.thr === 'grab') {
+        var go = geom(o.id);
+        if (o.st === 'thrown' && f.t < THROW.hold) {
+          o.x = f.x + f.face * ((g.bodyW + go.bodyW) / 2 - 4); o.y = 0; o.face = -f.face; o.vx = 0;
+          o.x = Math.max(LEFT, Math.min(RIGHT, o.x));
+        }
+        if (f.t === THROW.hold && o.st === 'thrown') {
+          o.spin = f.face;
+          applyHit(m, f, o, { dmg: THROW.dmg, stun: 0, push: 0, overhead: false, knock: true, thr: true, dir: f.face,
+                              hx: o.x, hy: go.h * 0.6 }, ev);
+          o.vy = 10.5; o.vx = f.face * 6.5; o.y = Math.max(o.y, 0.01);
+          ev.push({ type: 'toss', side: f.side });
+        }
+        if (f.t >= THROW.end) { setState(f, 'idle'); f.thr = null; }
+      } else if (f.t >= THROW.miss) { setState(f, 'idle'); f.thr = null; }
+    } else if (f.st === 'thrown') {
+      f.vx = 0;
+      var by = m.f[f.thrownBy];
+      if (!by || by.st !== 'throw') { setState(f, 'idle'); f.thrownBy = -1; } // released early (e.g. thrower got hit)
     } else if (f.st === 'land') {
       f.vx = 0;
       if (f.t >= 6) setState(f, 'idle');
@@ -554,7 +602,7 @@ var Logic = (function () {
       f.vy -= GRAV; f.y += f.vy;
       if (f.y <= 0) {
         f.y = 0; f.vy = 0;
-        if (f.st === 'fall') { setState(f, 'down'); f.vx *= 0.4; ev.push({ type: 'thud', side: f.side }); }
+        if (f.st === 'fall') { setState(f, 'down'); f.vx *= 0.4; f.spin = 0; ev.push({ type: 'thud', side: f.side, big: f.thrownBy >= 0, x: f.x }); f.thrownBy = -1; }
         else if (f.st === 'jump') { setState(f, 'land'); f.airAtk = null; ev.push({ type: 'land', side: f.side }); }
       }
     }
@@ -564,7 +612,7 @@ var Logic = (function () {
 
   function pushApart(m) {
     var a = m.f[0], b = m.f[1];
-    if (a.st === 'down' || b.st === 'down') return;
+    if (a.st === 'down' || b.st === 'down' || a.st === 'thrown' || b.st === 'thrown') return;
     var ga = geom(a.id), gb = geom(b.id);
     var minD = (ga.bodyW + gb.bodyW) / 2 * 0.9;
     var dy = Math.abs(a.y - b.y);
@@ -700,7 +748,7 @@ var Logic = (function () {
     updateProj(m, ev);
     for (i = 0; i < 2; i++) {
       var src = m.phase === 'fight' ? ins[i] : EMPTY;
-      m.f[i].prev = { left: !!src.left, right: !!src.right, up: !!src.up, down: !!src.down, p: !!src.p, k: !!src.k, s: !!src.s };
+      m.f[i].prev = { left: !!src.left, right: !!src.right, up: !!src.up, down: !!src.down, p: !!src.p, k: !!src.k, s: !!src.s, t: !!src.t };
     }
     return ev;
   }
@@ -720,6 +768,10 @@ var Logic = (function () {
       case 'atk': { var s = seqAt(atkSeq(f), Math.max(0, f.t - 1)); return s ? s[0] : 12; }
       case 'block': return f.crouch ? 20 : 19;
       case 'hit': return 21;
+      case 'thrown': return 21;
+      case 'throw':
+        if (f.thr === 'grab') return f.t < 5 ? 7 : f.t < THROW.hold ? 8 : f.t < THROW.hold + 10 ? 10 : 12;
+        return f.t < 8 ? 8 : 11;
       case 'fall': return 21;
       case 'down': return 22;
       case 'getup': return 23;
@@ -732,16 +784,16 @@ var Logic = (function () {
   /* ---------- CPU ---------- */
   var LV = {
     0: { think: 40, guard: 0.0, aggr: 0.0, jump: 0.0, spec: 0.0, react: 999 }, // training dummy
-    1: { think: 26, guard: 0.18, aggr: 0.35, jump: 0.05, spec: 0.25, react: 18 },
-    2: { think: 15, guard: 0.45, aggr: 0.55, jump: 0.10, spec: 0.55, react: 10 },
-    3: { think: 8,  guard: 0.75, aggr: 0.75, jump: 0.14, spec: 0.85, react: 5 }
+    1: { think: 26, guard: 0.18, aggr: 0.35, jump: 0.05, spec: 0.25, react: 18, thr: 0.05 },
+    2: { think: 15, guard: 0.45, aggr: 0.55, jump: 0.10, spec: 0.55, react: 10, thr: 0.12 },
+    3: { think: 8,  guard: 0.75, aggr: 0.75, jump: 0.14, spec: 0.85, react: 5, thr: 0.2 }
   };
   function cpuInput(m, side, level, rnd) {
     rnd = rnd || Math.random;
     var L = LV[level] || LV[2];
     var me = m.f[side], op = m.f[1 - side];
     var ai = m.ai[side] || (m.ai[side] = { hold: {}, until: 0, next: 0, pulse: null });
-    var inp = { left: false, right: false, up: false, down: false, p: false, k: false, s: false };
+    var inp = { left: false, right: false, up: false, down: false, p: false, k: false, s: false, t: false };
     if (m.phase !== 'fight' || level === 0) return inp;
     var toward = op.x > me.x ? 'right' : 'left', away = toward === 'right' ? 'left' : 'right';
     var dist = Math.abs(op.x - me.x);
@@ -764,6 +816,7 @@ var Logic = (function () {
     var spt = CHARS[me.id].sp.type;
     var spOk = spt === 'rush' ? (dist > 110 && dist < 360) : spt === 'quake' ? (dist > 140 && op.y === 0) : dist > 180;
     if (me.gauge >= 100 && !ownProj && spOk && rnd() < L.spec) { ai.pulse = 's'; return inp; }
+    if (canGrab(m, me, op) && op.st !== 'atk' && rnd() < (L.thr || 0) * (op.back ? 1.6 : 1)) { ai.pulse = 't'; return inp; }
     if (dist < g.reachK * 0.95) {
       if (rnd() < L.aggr) { ai.pulse = dist < g.reachP * 0.95 && rnd() < 0.55 ? 'p' : 'k'; return inp; }
       if (rnd() < 0.4) { ai.hold[away] = true; ai.until = m.tick + 16; }
@@ -792,7 +845,7 @@ var Logic = (function () {
   return {
     W: W, H: H, FLOOR: FLOOR, LEFT: LEFT, RIGHT: RIGHT, CHARS: CHARS, ORDER: ORDER, ATK: ATK, LV: LV,
     setGeom: setGeom, deriveGeom: deriveGeom, geom: geom, newMatch: newMatch, step: step, frameOf: frameOf,
-    cpuInput: cpuTick, hurtbox: hurtbox, seqLen: seqLen, EMPTY: EMPTY, atkSeq: atkSeq, beamBox: beamBox, FREEZE: FREEZE
+    cpuInput: cpuTick, hurtbox: hurtbox, seqLen: seqLen, EMPTY: EMPTY, atkSeq: atkSeq, beamBox: beamBox, FREEZE: FREEZE, THROW: THROW, canGrab: canGrab
   };
 })();
 
@@ -800,7 +853,7 @@ var Logic = (function () {
 <script>
 (function () {
 'use strict';
-var VERSION = '4';
+var VERSION = '5';
 var L = Logic, W = L.W, H = L.H, FLOOR = L.FLOOR;
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
@@ -898,11 +951,11 @@ var keys = {};
 var touchIn = [{}, {}];
 var KEYMAP1P = {
   ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', KeyA: 'left', KeyD: 'right', KeyW: 'up', KeyS: 'down',
-  KeyZ: 'p', KeyJ: 'p', KeyX: 'k', KeyK: 'k', KeyC: 's', KeyL: 's', KeyF: 'p', KeyG: 'k', KeyH: 's', Space: 'up'
+  KeyZ: 'p', KeyJ: 'p', KeyX: 'k', KeyK: 'k', KeyC: 's', KeyL: 's', KeyV: 't', KeyU: 't', KeyF: 'p', KeyG: 'k', KeyH: 's', KeyT: 't', Space: 'up'
 };
 var KEYMAP2P = [
-  { KeyA: 'left', KeyD: 'right', KeyW: 'up', KeyS: 'down', KeyF: 'p', KeyG: 'k', KeyH: 's' },
-  { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Comma: 'p', Period: 'k', Slash: 's', Numpad1: 'p', Numpad2: 'k', Numpad3: 's' }
+  { KeyA: 'left', KeyD: 'right', KeyW: 'up', KeyS: 'down', KeyF: 'p', KeyG: 'k', KeyH: 's', KeyT: 't' },
+  { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Comma: 'p', Period: 'k', Slash: 's', KeyM: 't', Numpad1: 'p', Numpad2: 'k', Numpad3: 's', Numpad4: 't' }
 ];
 window.addEventListener('keydown', function (e) {
   if (state.screen === 'fight' && (e.code === 'KeyP' || e.code === 'Escape')) { togglePause(); e.preventDefault(); return; }
@@ -913,7 +966,7 @@ window.addEventListener('keyup', function (e) { keys[e.code] = false; });
 window.addEventListener('blur', function () { keys = {}; touchIn = [{}, {}]; refreshTouchVisual(); });
 
 function readInput(pl) {
-  var o = { left: false, right: false, up: false, down: false, p: false, k: false, s: false };
+  var o = { left: false, right: false, up: false, down: false, p: false, k: false, s: false, t: false };
   var map = state.mode === '2p' ? KEYMAP2P[pl] : (pl === 0 ? KEYMAP1P : null);
   if (map) for (var c in map) if (keys[c]) o[map[c]] = true;
   var t = touchIn[pl];
@@ -1072,6 +1125,7 @@ var SFX = {
   beam: function () { if (!AC) return; var t = AC.currentTime; for (var i = 0; i < 6; i++) tone(140 + (i % 2) * 40, 0.14, 'sawtooth', 0.12, 0, t + i * 0.12); noise(0.7, 0.15, 5000, true); },
   quake: function () { noise(0.9, 0.5, 260); tone(55, 0.8, 'sine', 0.5, 30); },
   multi: function () { if (!AC) return; var t = AC.currentTime; for (var i = 0; i < 3; i++) { tone(880, 0.12, 'square', 0.1, 1760, t + i * 0.09); } },
+  grab: function () { tone(300, 0.08, 'square', 0.12, 200); noise(0.08, 0.2, 1200); },
   rushGo: function () { noise(0.6, 0.35, 1800, true); tone(220, 0.5, 'sawtooth', 0.1, 90); },
   select: function () { tone(660, 0.07, 'square', 0.1); tone(990, 0.09, 'square', 0.1, 0, AC ? AC.currentTime + 0.06 : 0); }
 };
@@ -1525,6 +1579,9 @@ function handleEvents(evs) {
           burst(e.x, e.y, col, 30, 9); burst(e.x, e.y, '#ffffff', 12, 5);
           state.fx.push({ k: 'ring', x: e.x, y: e.y, t: 0, life: 20, col: col, w: 10, sp: 7 });
           state.fx.push({ k: 'word', x: e.x, y: e.y - 50, t: 0, life: 46, size: 46, text: SP_WORDS[(m.tick >> 1) % 4], col: '#fff3b0' });
+        } else if (e.thr) {
+          sfx('hit', true); state.shake = 8;
+          state.fx.push({ k: 'word', x: e.x, y: e.y - 50, t: 0, life: 36, size: 40, text: 'なげた！', col: '#9be7b0' });
         } else {
           sfx('hit', e.big); state.shake = e.big ? 10 : 5;
           spark(e.x, e.y, e.big ? '#f2b830' : '#fff3b0', e.big ? 16 : 9);
@@ -1541,6 +1598,15 @@ function handleEvents(evs) {
       case 'shoot': sfx(e.kind === 'beam' ? 'beam' : e.kind === 'quake' ? 'quake' : e.kind === 'multi' ? 'multi' : 'shoot'); break;
       case 'stomp': state.shake = 22; sfx('thud'); dust(e.x, FLOOR, 18, 1); dust(e.x, FLOOR, 18, -1); break;
       case 'rush': sfx('rushGo'); break;
+      case 'grab':
+        sfx('grab'); spark(e.x, FLOOR - e.y, '#ffffff', 8);
+        state.fx.push({ k: 'word', x: e.x, y: FLOOR - e.y - 60, t: 0, life: 30, size: 34, text: 'つかんだ！', col: '#9be7b0' });
+        break;
+      case 'toss': sfx('rushGo'); break;
+      case 'thud':
+        sfx('thud');
+        if (e.big) { state.shake = 16; dust(e.x, FLOOR, 10, 1); dust(e.x, FLOOR, 10, -1); state.fx.push({ k: 'word', x: e.x, y: FLOOR - 90, t: 0, life: 40, size: 44, text: 'ドッシーン！', col: '#fff3b0' }); }
+        break;
       default: if (SFX[e.type]) sfx(e.type);
     }
   });
@@ -1618,6 +1684,10 @@ function tick() {
   else if (m.proj.length || m.f.some(function (f) { return f.st === 'atk' && f.atk === 'special'; })) dark = 0.28;
   state.dark += (dark - state.dark) * 0.2;
   if (state.flash > 0) state.flash--;
+  for (var pi = 0; pi < 2; pi++) {
+    var sb = document.querySelector('.bt.s[data-pl="' + pi + '"]'), rd = m.f[pi].gauge >= 100;
+    if (sb && sb.classList.contains('ready') !== rd) sb.classList.toggle('ready', rd);
+  }
   if (state.speedLines > 0) state.speedLines--;
   if (state.banner) { state.banner.t++; if (state.banner.t > state.banner.dur) state.banner = null; }
   if (state.shake > 0) state.shake--;
@@ -1639,12 +1709,13 @@ function loop(ts) {
 }
 
 /* ================= rendering ================= */
-function drawSprite(id, fn, x, y, face, alpha, glow) {
+function drawSprite(id, fn, x, y, face, alpha, glow, spin) {
   var sp = SPR[id], fr = sp.frames[fn - 1], s = sp.scale;
   ctx.save();
   if (alpha != null) ctx.globalAlpha = alpha;
   if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 26; }
   ctx.translate(x, FLOOR - y);
+  if (spin) { var hh = L.geom(id).h * 0.5; ctx.translate(0, -hh); ctx.rotate(spin); ctx.translate(0, hh); }
   ctx.scale(face * s, s);
   ctx.drawImage(fr.img, fr.dx, fr.dy, fr.w, fr.h);
   ctx.restore();
@@ -1658,7 +1729,8 @@ function drawFighter(f, m) {
   var glow = null;
   if (m.freeze > 0 && m.freezeSide === f.side) glow = L.CHARS[f.id].color;
   else if (f.st === 'atk' && f.atk === 'special') glow = L.CHARS[f.id].color;
-  drawSprite(f.id, L.frameOf(m, f), f.x, f.y, f.face, null, glow);
+  var spin = (f.spin && f.st === 'fall') ? f.spin * f.t * 0.22 : 0;
+  drawSprite(f.id, L.frameOf(m, f), f.x, f.y, f.face, null, glow, spin);
 }
 function heartPath(r) {
   ctx.beginPath(); ctx.moveTo(0, r * 0.75);
@@ -1892,7 +1964,7 @@ function render() {
   });
   // draw attacker on top
   var order = [m.f[0], m.f[1]];
-  if (m.f[0].st === 'atk' || m.f[0].airAtk) order = [m.f[1], m.f[0]];
+  if (m.f[0].st === 'atk' || m.f[0].airAtk || m.f[0].st === 'throw') order = [m.f[1], m.f[0]];
   order.forEach(function (f) { drawFighter(f, m); });
   m.proj.forEach(function (p) { drawProj(m, p); });
   // fx
