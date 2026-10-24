@@ -12,7 +12,7 @@
   --font:"Hiragino Maru Gothic ProN","Hiragino Sans","BIZ UDPGothic","Yu Gothic","Meiryo",system-ui,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-html,body{margin:0;height:100%;background:var(--ink);overflow:hidden;font-family:var(--font);color:var(--ink);touch-action:none;overscroll-behavior:none}
+html,body{margin:0;position:fixed;left:0;top:0;width:100%;height:100%;background:var(--ink);overflow:hidden;font-family:var(--font);color:var(--ink);touch-action:none;overscroll-behavior:none}
 #wrap{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0;overflow:hidden}
 #cv{position:absolute;left:0;top:0;display:block;background:#000;image-rendering:auto}
 /* ---------- touch controls ---------- */
@@ -32,6 +32,13 @@ body.touch.playing #ctrl{display:block}
 .dpad .knob{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(236,230,214,.75);transition:transform .05s}
 .btns{display:grid;grid-template-columns:repeat(2,var(--btn,66px));grid-template-rows:repeat(2,var(--btn,66px));gap:8px;pointer-events:none}
 .cluster.p2 .btns{direction:rtl}
+.cluster.act{right:env(safe-area-inset-right);padding-right:calc(18px + env(safe-area-inset-right))}
+.cluster.act .btns{gap:14px;grid-template-columns:repeat(2,var(--btn,66px));grid-template-rows:calc(var(--btn,66px)*.62) var(--btn,66px)}
+.cluster.act .bt.p{grid-column:1;grid-row:2;transform:translateY(-22%)}
+.cluster.act .bt.p.on{transform:translateY(-22%) scale(.92)}
+.cluster.act .bt.k{grid-column:2;grid-row:2;transform:translateY(8%)}
+.cluster.act .bt.k.on{transform:translateY(8%) scale(.92)}
+.cluster.act .bt.s{height:100%;width:calc(var(--btn,66px)*1.7)}
 .bt{pointer-events:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:calc(var(--btn,66px)*.22);white-space:nowrap;color:#fff;
   border:3px solid rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.6);touch-action:none;opacity:.86}
 body.horz .bt{opacity:.6}
@@ -130,6 +137,7 @@ body.vert.touch #rotHint{display:block}
       <div class="dpad" data-pl="0"><i class="u"></i><i class="d"></i><i class="l"></i><i class="r"></i><div class="knob"></div></div>
       <div class="btns"><div class="bt s" data-pl="0" data-b="s">ひっさつ</div><div class="bt p" data-pl="0" data-b="p">パンチ</div><div class="bt k" data-pl="0" data-b="k">キック</div></div>
     </div>
+    <div class="cluster act" data-pl="0"></div>
     <div class="cluster p2" data-pl="1">
       <div class="dpad" data-pl="1"><i class="u"></i><i class="d"></i><i class="l"></i><i class="r"></i><div class="knob"></div></div>
       <div class="btns"><div class="bt s" data-pl="1" data-b="s">ひっさつ</div><div class="bt p" data-pl="1" data-b="p">パンチ</div><div class="bt k" data-pl="1" data-b="k">キック</div></div>
@@ -153,7 +161,7 @@ body.vert.touch #rotHint{display:block}
       </div>
       <div id="rotHint">スマホを よこに すると 大きな画面で あそべるよ</div>
     </div>
-    <div class="ver">v2　© 泉正道 / フテ猫実行委員会</div>
+    <div class="ver">v3　© 泉正道 / フテ猫実行委員会</div>
   </section>
 
   <!-- help -->
@@ -170,6 +178,7 @@ body.vert.touch #rotHint{display:block}
       <h3>キーボード</h3>
       <div>ひとりで：<kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd>（または <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>）　パンチ <kbd>Z</kbd>/<kbd>J</kbd>　キック <kbd>X</kbd>/<kbd>K</kbd>　ひっさつ <kbd>C</kbd>/<kbd>L</kbd></div>
       <div>ふたりで：1P は <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> と <kbd>F</kbd><kbd>G</kbd><kbd>H</kbd>、2P は 矢印キー と <kbd>,</kbd><kbd>.</kbd><kbd>/</kbd>（テンキー <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> も可）</div>
+      <div>スマホ：左の 十字キーで うごく、右の ボタンで パンチ・キック・ひっさつ（ふたりで あそぶ ときは それぞれの 手もと）</div>
       <div>ポーズ <kbd>P</kbd> または <kbd>Esc</kbd></div>
       <div class="row"><button class="tk" data-back="title">もどる</button></div>
     </div>
@@ -778,7 +787,7 @@ var Logic = (function () {
 <script>
 (function () {
 'use strict';
-var VERSION = '2';
+var VERSION = '3';
 var L = Logic, W = L.W, H = L.H, FLOOR = L.FLOOR;
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
@@ -857,8 +866,13 @@ function layout() {
     unit = Math.max(104, Math.min(vh * 0.36, 160));
     if (state.mode === '2p') unit = Math.min(unit, vw * 0.13);
   }
+  var two = state.mode === '2p';
+  var p1btns = document.querySelector('.btns [data-pl="0"]').parentNode;
+  var home = document.querySelector(two ? '.cluster.p1' : '.cluster.act');
+  if (p1btns.parentNode !== home) home.appendChild(p1btns);
+  document.querySelector('.cluster.act').classList.toggle('hide', two);
   ctrl.style.setProperty('--pad', unit + 'px');
-  ctrl.style.setProperty('--btn', Math.round(unit * 0.44) + 'px');
+  ctrl.style.setProperty('--btn', Math.round(unit * (two ? 0.44 : 0.6)) + 'px');
 }
 
 /* ================= input ================= */
@@ -951,6 +965,17 @@ window.addEventListener('pointerup', endPtr);
 window.addEventListener('pointercancel', endPtr);
 ctrlEl.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+function inGame() { return state.screen === 'fight' || state.screen === 'vs'; }
+function blockTouch(e) {
+  if (!inGame()) return;
+  var t = e.target;
+  if (t && t.closest && t.closest('#pauseBtn,.sc.on')) return; // let pause menu buttons click normally
+  if (e.cancelable) e.preventDefault();
+}
+document.addEventListener('touchstart', blockTouch, { passive: false });
+document.addEventListener('touchmove', function (e) { if (inGame() && e.cancelable) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', function (e) { if (inGame()) e.preventDefault(); });
+window.addEventListener('scroll', function () { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); });
 
 /* ================= audio (Web Audio only) ================= */
 var AC = null, master = null, bgmGain = null, muted = false;
