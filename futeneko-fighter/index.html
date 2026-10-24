@@ -62,15 +62,15 @@ body.playing #pauseBtn{display:block}
 .sc.dim{background:rgba(30,27,24,.78);background-image:none;color:var(--paper)}
 .inner{max-width:880px;margin:0 auto;text-align:center}
 .mast{margin:4px auto 0;display:inline-block;position:relative}
-.mast h1{margin:0;font-size:clamp(40px,9vw,92px);font-weight:900;letter-spacing:.02em;line-height:1;color:var(--ink);
+.mast h1{margin:0;font-size:clamp(40px,calc(var(--vw,1vw)*9),92px);font-weight:900;letter-spacing:.02em;line-height:1;color:var(--ink);
   text-shadow:3px 3px 0 var(--gold)}
-.mast .bandline{margin-top:8px;background:var(--band);color:#fff;font-weight:800;font-size:clamp(13px,2.4vw,19px);padding:5px 18px;
+.mast .bandline{margin-top:8px;background:var(--band);color:#fff;font-weight:800;font-size:clamp(13px,calc(var(--vw,1vw)*2.4),19px);padding:5px 18px;
   transform:skewX(-8deg);box-shadow:4px 4px 0 var(--ink)}
-.lineup{display:flex;justify-content:center;align-items:flex-end;gap:clamp(4px,2vw,22px);margin:16px auto 6px;height:clamp(110px,24vh,190px)}
+.lineup{display:flex;justify-content:center;align-items:flex-end;gap:clamp(4px,calc(var(--vw,1vw)*2),22px);margin:16px auto 6px;height:clamp(110px,calc(var(--vh,1vh)*24),190px)}
 .lineup img{height:100%;width:auto;max-width:14%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 6px 0 rgba(30,27,24,.18))}
 .lineup img:nth-child(2n){transform:scaleX(-1)}
 .menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:620px;margin:14px auto 0}
-.tk{font-family:var(--font);font-size:clamp(17px,2.6vw,21px);font-weight:900;color:var(--ink);background:#fffaf0;border:3px solid var(--ink);
+.tk{font-family:var(--font);font-size:clamp(17px,calc(var(--vw,1vw)*2.6),21px);font-weight:900;color:var(--ink);background:#fffaf0;border:3px solid var(--ink);
   border-radius:4px 14px 4px 14px;padding:14px 10px 12px;box-shadow:4px 4px 0 var(--ink);cursor:pointer;line-height:1.25}
 .tk small{display:block;font-size:12px;font-weight:700;opacity:.7;margin-top:3px}
 .tk:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
@@ -79,15 +79,15 @@ body.playing #pauseBtn{display:block}
 .tk.ghost{background:transparent;box-shadow:none;border-width:2px;font-size:15px;padding:9px 14px}
 .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
 .ver{position:absolute;right:12px;bottom:8px;font-size:11px;opacity:.55}
-.h2{font-size:clamp(20px,3.6vw,30px);font-weight:900;margin:2px 0 10px}
+.h2{font-size:clamp(20px,calc(var(--vw,1vw)*3.6),30px);font-weight:900;margin:2px 0 10px}
 .h2 .who{display:inline-block;color:#fff;background:var(--band);padding:2px 10px;margin-right:8px;transform:skewX(-8deg)}
 .h2 .who.p2{background:var(--stamp)}
 .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .card{font-family:var(--font);background:#fffaf0;border:3px solid var(--ink);border-radius:6px;padding:8px 6px 10px;cursor:pointer;position:relative;text-align:center;color:var(--ink);box-shadow:4px 4px 0 var(--ink)}
 .card:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
-.card .pic{height:clamp(90px,20vh,150px);display:flex;align-items:flex-end;justify-content:center}
+.card .pic{height:clamp(90px,calc(var(--vh,1vh)*20),150px);display:flex;align-items:flex-end;justify-content:center}
 .card .pic img{max-height:100%;max-width:100%}
-.card .nm{font-weight:900;font-size:clamp(12px,1.9vw,16px);margin-top:4px;border-top:3px solid var(--c,#999);padding-top:5px}
+.card .nm{font-weight:900;font-size:clamp(12px,calc(var(--vw,1vw)*1.9),16px);margin-top:4px;border-top:3px solid var(--c,#999);padding-top:5px}
 .card .st{font-size:11px;line-height:1.5;margin-top:3px;text-align:left;display:inline-block}
 .card .st b{display:inline-block;width:4.2em;font-weight:700}
 .card .sp{font-size:11px;margin-top:3px;font-weight:800;color:var(--band)}
@@ -97,21 +97,21 @@ body.playing #pauseBtn{display:block}
 .lvls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:620px;margin:10px auto}
 /* VS */
 #scVS{background:var(--ink);color:var(--paper)}
-.vs{display:flex;align-items:center;justify-content:center;gap:4vw;height:100%}
+.vs{display:flex;align-items:center;justify-content:center;gap:calc(var(--vw,1vw)*4);height:100%}
 .vs .side{text-align:center}
-.vs img{height:min(46vh,280px)}
-.vs .nm{font-size:clamp(18px,3vw,28px);font-weight:900;margin-top:6px}
-.vs .x{font-size:clamp(60px,12vw,120px);font-weight:900;color:var(--gold);transform:skewX(-10deg);text-shadow:5px 5px 0 var(--stamp)}
+.vs img{height:min(calc(var(--vh,1vh)*46),280px)}
+.vs .nm{font-size:clamp(18px,calc(var(--vw,1vw)*3),28px);font-weight:900;margin-top:6px}
+.vs .x{font-size:clamp(60px,calc(var(--vw,1vw)*12),120px);font-weight:900;color:var(--gold);transform:skewX(-10deg);text-shadow:5px 5px 0 var(--stamp)}
 .vs .turn{position:absolute;left:0;right:0;top:7%;text-align:center;font-size:18px;font-weight:900;color:var(--gold);display:none}
 body.rot .vs .turn{display:block}
 .vs .stg{position:absolute;left:0;right:0;bottom:6%;text-align:center;font-size:15px;opacity:.8}
 .vs .left img{animation:inL .5s ease-out}
 .vs .right img{animation:inR .5s ease-out;transform:scaleX(-1)}
-@keyframes inL{from{transform:translateX(-60vw)}}
-@keyframes inR{from{transform:translateX(60vw) scaleX(-1)}}
+@keyframes inL{from{transform:translateX(calc(var(--vw,1vw)*-60))}}
+@keyframes inR{from{transform:translateX(calc(var(--vw,1vw)*60)) scaleX(-1)}}
 /* result */
-.res img{height:min(40vh,240px)}
-.quote{display:inline-block;background:#fffaf0;border:3px solid var(--ink);border-radius:18px;padding:12px 18px;font-weight:800;font-size:clamp(15px,2.4vw,20px);margin-top:8px;position:relative;max-width:560px}
+.res img{height:min(calc(var(--vh,1vh)*40),240px)}
+.quote{display:inline-block;background:#fffaf0;border:3px solid var(--ink);border-radius:18px;padding:12px 18px;font-weight:800;font-size:clamp(15px,calc(var(--vw,1vw)*2.4),20px);margin-top:8px;position:relative;max-width:560px}
 .quote:before{content:"";position:absolute;left:50%;top:-14px;margin-left:-10px;border:10px solid transparent;border-bottom:14px solid var(--ink);border-top:0}
 .prog{display:flex;justify-content:center;gap:8px;margin:8px 0}
 .prog span{width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;background:#fffaf0;overflow:hidden}
@@ -122,10 +122,23 @@ body.rot .vs .turn{display:block}
 .help h3{margin:14px 0 4px;font-size:17px;background:var(--band);color:#fff;display:inline-block;padding:1px 10px}
 .help kbd{display:inline-block;border:2px solid var(--ink);border-radius:5px;padding:0 6px;background:#fffaf0;font-family:var(--font);font-weight:800;font-size:13px;line-height:1.5}
 #rotHint{display:none;font-size:13px;margin-top:6px;opacity:.75}
-body.vert.touch #rotHint{display:block}
+body.rot #rotHint{display:block}
+body.rot .sc{touch-action:none}
 @media (prefers-reduced-motion:reduce){.vs .left img,.vs .right img,.bt.s.ready{animation:none}}
-@media (max-height:430px){.lineup{height:90px;margin:6px auto}.menu{gap:8px;margin-top:8px}.tk{padding:9px 8px 8px}.card .pic{height:72px}.res img{height:30vh}}
-@media (max-width:560px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+body.short .lineup{height:90px;margin:6px auto}body.short .menu{gap:8px;margin-top:8px}body.short .tk{padding:9px 8px 8px}body.short .card .pic{height:72px}body.short .res img{height:calc(var(--vh,1vh)*30)}
+body.short .mast h1{font-size:46px}body.short .h2{margin-bottom:6px}
+body.tiny .sc{padding-top:8px;padding-bottom:6px}
+body.tiny .mast h1{font-size:34px;text-shadow:2px 2px 0 var(--gold)}
+body.tiny .mast .bandline{font-size:12px;padding:3px 14px;margin-top:5px}
+body.tiny .lineup{height:62px;margin:6px auto 2px}
+body.tiny .menu{gap:7px;margin-top:6px}
+body.tiny .tk{font-size:15px;padding:6px 8px 5px;box-shadow:3px 3px 0 var(--ink)}
+body.tiny .tk small{font-size:10.5px;margin-top:1px}
+body.tiny .tk.ghost{padding:5px 12px;font-size:13px}
+body.tiny .row{margin-top:8px}
+body.tiny #rotHint{display:none}
+body.tiny .card .pic{height:58px}
+body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
 </style>
 </head>
 <body>
@@ -159,9 +172,9 @@ body.vert.touch #rotHint{display:block}
         <button class="tk ghost" id="helpBtn">あそびかた</button>
         <button class="tk ghost" id="soundBtn">おと：オン</button>
       </div>
-      <div id="rotHint">スマホを よこに すると 大きな画面で あそべるよ</div>
+      <div id="rotHint">スマホを よこむきに して あそんでね</div>
     </div>
-    <div class="ver">v3　© 泉正道 / フテ猫実行委員会</div>
+    <div class="ver">v4　© 泉正道 / フテ猫実行委員会</div>
   </section>
 
   <!-- help -->
@@ -214,7 +227,7 @@ body.vert.touch #rotHint{display:block}
 
   <!-- pause -->
   <section class="sc dim" id="scPause">
-    <div class="inner" style="padding-top:12vh">
+    <div class="inner" style="padding-top:calc(var(--vh,1vh)*12)">
       <div class="h2" style="color:var(--paper)">ひとやすみ</div>
       <div class="menu" style="grid-template-columns:1fr;max-width:320px">
         <button class="tk main" id="resumeBtn">つづける</button>
@@ -787,7 +800,7 @@ var Logic = (function () {
 <script>
 (function () {
 'use strict';
-var VERSION = '3';
+var VERSION = '4';
 var L = Logic, W = L.W, H = L.H, FLOOR = L.FLOOR;
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
@@ -824,7 +837,7 @@ cv.width = W * dpr; cv.height = H * dpr;
 function layout() {
   var VW = window.innerWidth, VH = window.innerHeight;
   // phones held upright: show the fight sideways so it always plays in landscape
-  var rot = isTouch && VH > VW * 1.05 && (state.screen === 'fight' || state.screen === 'vs');
+  var rot = isTouch && VH > VW * 1.05 && Math.min(VW, VH) < 600; // phones always play in landscape
   var wrap = document.getElementById('wrap');
   body.classList.toggle('rot', rot);
   view.rot = rot;
@@ -836,6 +849,11 @@ function layout() {
     wrap.style.width = ''; wrap.style.height = ''; wrap.style.transform = '';
   }
   var vert = vh > vw * 1.05;
+  body.classList.toggle('short', vh < 500);
+  body.classList.toggle('tiny', vh < 400);
+  body.classList.toggle('narrow', vw < 560);
+  document.documentElement.style.setProperty('--vh', (vh / 100) + 'px');
+  document.documentElement.style.setProperty('--vw', (vw / 100) + 'px');
   view.vert = vert;
   body.classList.toggle('vert', vert);
   body.classList.toggle('horz', !vert);
@@ -973,7 +991,19 @@ function blockTouch(e) {
   if (e.cancelable) e.preventDefault();
 }
 document.addEventListener('touchstart', blockTouch, { passive: false });
-document.addEventListener('touchmove', function (e) { if (inGame() && e.cancelable) e.preventDefault(); }, { passive: false });
+var drag = null;
+document.addEventListener('touchstart', function (e) {
+  if (!view.rot || inGame() || !e.touches.length) return;
+  var sc = document.querySelector('.sc.on');
+  if (sc) drag = { x: e.touches[0].clientX, el: sc, top: sc.scrollTop };
+}, { passive: true });
+document.addEventListener('touchmove', function (e) {
+  if ((inGame() || view.rot) && e.cancelable) e.preventDefault();
+  // screen-right is "up" in the rotated page, so a rightward swipe scrolls down
+  if (drag && view.rot && e.touches.length) drag.el.scrollTop = drag.top + (e.touches[0].clientX - drag.x);
+}, { passive: false });
+document.addEventListener('touchend', function () { drag = null; });
+document.addEventListener('touchcancel', function () { drag = null; });
 document.addEventListener('dblclick', function (e) { if (inGame()) e.preventDefault(); });
 window.addEventListener('scroll', function () { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); });
 
@@ -1453,7 +1483,7 @@ function bindR(id, fn) { var e = document.getElementById(id); if (e) e.addEventL
 function showEnding() {
   CLEAR[state.p1] = true;
   try { localStorage.setItem('ffClear', JSON.stringify(CLEAR)); } catch (e) { /* ignore */ }
-  var all = L.ORDER.map(function (id) { return '<img alt="" style="height:min(26vh,150px)" src="' + frameSrc(id, 24) + '">'; }).join('');
+  var all = L.ORDER.map(function (id) { return '<img alt="" style="height:min(calc(var(--vh,1vh)*26),150px)" src="' + frameSrc(id, 24) + '">'; }).join('');
   document.getElementById('resBox').innerHTML =
     '<div class="h2">アーケード クリア！</div><div class="lineup" style="height:auto">' + all + '</div>' +
     '<div class="quote">' + L.CHARS[state.p1].name + '「みんな つよかった！ またあそぼうね！」</div>' +
