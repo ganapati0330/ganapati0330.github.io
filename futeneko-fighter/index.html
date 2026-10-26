@@ -174,7 +174,7 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
       </div>
       <div id="rotHint">スマホを よこむきに して あそんでね</div>
     </div>
-    <div class="ver">v6　© 泉正道 / フテ猫実行委員会</div>
+    <div class="ver">v7　© 泉正道 / フテ猫実行委員会</div>
   </section>
 
   <!-- help -->
@@ -853,7 +853,7 @@ var Logic = (function () {
 <script>
 (function () {
 'use strict';
-var VERSION = '6';
+var VERSION = '7';
 var L = Logic, W = L.W, H = L.H, FLOOR = L.FLOOR;
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
@@ -1071,6 +1071,7 @@ function audioUnlock() {
     master = AC.createGain(); master.gain.value = muted ? 0 : 0.8; master.connect(AC.destination);
     bgmGain = AC.createGain(); bgmGain.gain.value = 0.22; bgmGain.connect(master);
     musicGain = AC.createGain(); musicGain.gain.value = 0.42; musicGain.connect(master);
+    if (MUS.want) { var w = MUS.want; setTimeout(function () { musicPlay(w); }, 0); }
   }
   if (AC.state === 'suspended' && !(state.paused && MUS.cur)) AC.resume();
 }
@@ -1150,7 +1151,12 @@ function bgmStop() { BGM.on = false; }
 /* recorded battle music (separate mp3 files next to index.html, decoded with Web Audio).
    Each track fades out at its very end, so we loop slightly before that with a short crossfade.
    When the files are unavailable (e.g. the standalone html opened from disk) the chiptune plays instead. */
-var TRACKS = { battle1: { url: 'bgm/battle1.mp3', loop: 82.0 }, battle2: { url: 'bgm/battle2.mp3', loop: 85.4 }, final: { url: 'bgm/final.mp3', loop: 150.3 } };
+var TRACKS = {
+  menu: { url: 'bgm/menu.mp3', loop: 67.85, xf: 0.15, fallback: 'title' },   // リングの合図 (ends abruptly → short overlap)
+  battle1: { url: 'bgm/battle1.mp3', loop: 82.0, fallback: 'battle' },
+  battle2: { url: 'bgm/battle2.mp3', loop: 85.4, fallback: 'battle' },
+  final: { url: 'bgm/final.mp3', loop: 150.3, fallback: 'battle' }
+};
 var XF = 0.3;
 var MUS = { want: null, name: null, cur: null, timer: 0, buf: {}, loading: {}, failed: {} };
 function loadTrack(name) {
@@ -1158,40 +1164,41 @@ function loadTrack(name) {
   if (location.protocol === 'file:') { MUS.failed[name] = true; return; } // opened from disk: no bgm folder to fetch from
   MUS.loading[name] = true;
   var done = function (b) { MUS.loading[name] = false; MUS.buf[name] = b; if (MUS.want === name) musicPlay(name); };
-  var fail = function () { MUS.loading[name] = false; MUS.failed[name] = true; if (MUS.want === name) { MUS.want = null; bgmPlay('battle'); } };
+  var fail = function () { MUS.loading[name] = false; MUS.failed[name] = true; if (MUS.want === name) { MUS.want = null; bgmPlay(TRACKS[name].fallback); } };
   try {
     fetch(TRACKS[name].url).then(function (r) { if (!r.ok) throw new Error('bgm ' + r.status); return r.arrayBuffer(); })
       .then(function (ab) { AC.decodeAudioData(ab, done, fail); }).catch(fail);
   } catch (e) { fail(); }
 }
-function musicSeg(buf, at, fadeIn) {
+function musicSeg(buf, at, fadeIn, xf) {
   var src = AC.createBufferSource(), g = AC.createGain();
   src.buffer = buf; src.connect(g); g.connect(musicGain);
-  if (fadeIn) { g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(1, at + XF); } else g.gain.setValueAtTime(1, at);
+  if (fadeIn) { g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(1, at + xf); } else g.gain.setValueAtTime(1, at);
   src.start(at);
   return { src: src, g: g, start: at };
 }
 function musicSchedule() {
   var c = MUS.cur, name = MUS.name, tr = TRACKS[name];
-  var at = c.start + tr.loop - XF;
+  var xf = tr.xf || XF;
+  var at = c.start + tr.loop - xf;
   clearTimeout(MUS.timer);
   MUS.timer = setTimeout(function () {
     if (MUS.cur !== c || !AC) return;
-    var nx = musicSeg(MUS.buf[name], Math.max(at, AC.currentTime + 0.02), true);
-    c.g.gain.setValueAtTime(1, nx.start); c.g.gain.linearRampToValueAtTime(0, nx.start + XF);
-    try { c.src.stop(nx.start + XF + 0.05); } catch (e) { /* already stopped */ }
+    var nx = musicSeg(MUS.buf[name], Math.max(at, AC.currentTime + 0.02), true, xf);
+    c.g.gain.setValueAtTime(1, nx.start); c.g.gain.linearRampToValueAtTime(0, nx.start + xf);
+    try { c.src.stop(nx.start + xf + 0.05); } catch (e) { /* already stopped */ }
     MUS.cur = nx; musicSchedule();
   }, Math.max(0, (at - AC.currentTime - 1.5) * 1000));
 }
 function musicPlay(name) {
   MUS.want = name;
   if (!AC) return;
-  if (MUS.failed[name]) { MUS.want = null; bgmPlay('battle'); return; }
+  if (MUS.failed[name]) { MUS.want = null; bgmPlay(TRACKS[name].fallback); return; }
   if (!MUS.buf[name]) { BGM.on = false; loadTrack(name); return; }
   if (MUS.name === name && MUS.cur) return;
   musicStop(); MUS.want = name;
   BGM.on = false;
-  MUS.name = name; MUS.cur = musicSeg(MUS.buf[name], AC.currentTime + 0.05, false);
+  MUS.name = name; MUS.cur = musicSeg(MUS.buf[name], AC.currentTime + 0.05, false, 0);
   musicSchedule();
 }
 function musicStop() {
@@ -1450,11 +1457,11 @@ document.querySelectorAll('[data-go]').forEach(function (b) {
 });
 document.getElementById('helpBtn').addEventListener('click', function () { sfx('select'); show('scHelp'); });
 document.querySelectorAll('[data-back="title"]').forEach(function (b) { b.addEventListener('click', goTitle); });
-document.getElementById('soundBtn').addEventListener('click', function () { audioUnlock(); setMuted(!muted); if (!muted) bgmPlay('title'); });
+document.getElementById('soundBtn').addEventListener('click', function () { audioUnlock(); setMuted(!muted); if (!muted) musicPlay('menu'); });
 setMuted(muted);
 
 function goTitle() {
-  setScreen('title'); show('scTitle'); state.m = null; state.paused = false; bgmPlay('title');
+  setScreen('title'); show('scTitle'); state.m = null; state.paused = false; musicPlay('menu');
 }
 
 function stars(v) { var n = Math.round((v - 0.8) / 0.4 * 4) + 1; n = Math.max(1, Math.min(5, n)); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
@@ -1480,7 +1487,7 @@ function openSelect(forPl) {
     b.addEventListener('click', function () { sfx('select'); pick(id); });
     box.appendChild(b);
   });
-  bgmPlay('title');
+  musicPlay('menu');
 }
 document.getElementById('selBack').addEventListener('click', function () {
   if (state.selFor === 1) openSelect(0); else goTitle();
@@ -1570,6 +1577,7 @@ function showResult() {
   var box = document.getElementById('resBox');
   var html = '', wid, lid;
   bgmStop(); musicStop();
+  setTimeout(function () { if (state.screen === 'result') musicPlay('menu'); }, 2600); // after the victory jingle
   if (w < 0) {
     html = '<div class="h2">ひきわけ！</div><div class="quote">いい しょうぶ だったね。もういちど やってみよう！</div>';
   } else {
@@ -2105,7 +2113,7 @@ window.addEventListener('resize', layout);
 window.addEventListener('orientationchange', function () { setTimeout(layout, 200); });
 layout();
 requestAnimationFrame(loop);
-bgmPlay('title');
+musicPlay('menu');
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(function () { /* offline cache optional */ });
