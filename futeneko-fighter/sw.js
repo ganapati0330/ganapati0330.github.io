@@ -1,5 +1,5 @@
 // フテ猫ファイター service worker
-const CACHE = 'futeneko-fighter-v7';
+const CACHE = 'futeneko-fighter-v8';
 const FILES = ['./', './index.html']; // bgm/*.mp3 are cached on first play
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
