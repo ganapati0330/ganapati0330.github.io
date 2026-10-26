@@ -174,7 +174,7 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
       </div>
       <div id="rotHint">スマホを よこむきに して あそんでね</div>
     </div>
-    <div class="ver">v5　© 泉正道 / フテ猫実行委員会</div>
+    <div class="ver">v6　© 泉正道 / フテ猫実行委員会</div>
   </section>
 
   <!-- help -->
@@ -853,7 +853,7 @@ var Logic = (function () {
 <script>
 (function () {
 'use strict';
-var VERSION = '5';
+var VERSION = '6';
 var L = Logic, W = L.W, H = L.H, FLOOR = L.FLOOR;
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
@@ -1061,7 +1061,7 @@ document.addEventListener('dblclick', function (e) { if (inGame()) e.preventDefa
 window.addEventListener('scroll', function () { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); });
 
 /* ================= audio (Web Audio only) ================= */
-var AC = null, master = null, bgmGain = null, muted = false;
+var AC = null, master = null, bgmGain = null, musicGain = null, muted = false;
 try { muted = localStorage.getItem('ffMute') === '1'; } catch (e) { muted = false; }
 function audioUnlock() {
   if (!AC) {
@@ -1070,8 +1070,9 @@ function audioUnlock() {
     AC = new C();
     master = AC.createGain(); master.gain.value = muted ? 0 : 0.8; master.connect(AC.destination);
     bgmGain = AC.createGain(); bgmGain.gain.value = 0.22; bgmGain.connect(master);
+    musicGain = AC.createGain(); musicGain.gain.value = 0.42; musicGain.connect(master);
   }
-  if (AC.state === 'suspended') AC.resume();
+  if (AC.state === 'suspended' && !(state.paused && MUS.cur)) AC.resume();
 }
 document.addEventListener('pointerdown', audioUnlock, { passive: true });
 document.addEventListener('keydown', audioUnlock);
@@ -1140,10 +1141,75 @@ var SONGS = {
 };
 function midi(n) { return 440 * Math.pow(2, (n - 69) / 12); }
 function bgmPlay(name) {
+  musicStop();
   BGM.song = SONGS[name]; BGM.step = 0; BGM.on = true;
   if (AC) BGM.next = AC.currentTime + 0.05;
 }
 function bgmStop() { BGM.on = false; }
+
+/* recorded battle music (separate mp3 files next to index.html, decoded with Web Audio).
+   Each track fades out at its very end, so we loop slightly before that with a short crossfade.
+   When the files are unavailable (e.g. the standalone html opened from disk) the chiptune plays instead. */
+var TRACKS = { battle1: { url: 'bgm/battle1.mp3', loop: 82.0 }, battle2: { url: 'bgm/battle2.mp3', loop: 85.4 }, final: { url: 'bgm/final.mp3', loop: 150.3 } };
+var XF = 0.3;
+var MUS = { want: null, name: null, cur: null, timer: 0, buf: {}, loading: {}, failed: {} };
+function loadTrack(name) {
+  if (!AC || MUS.buf[name] || MUS.loading[name] || MUS.failed[name]) return;
+  if (location.protocol === 'file:') { MUS.failed[name] = true; return; } // opened from disk: no bgm folder to fetch from
+  MUS.loading[name] = true;
+  var done = function (b) { MUS.loading[name] = false; MUS.buf[name] = b; if (MUS.want === name) musicPlay(name); };
+  var fail = function () { MUS.loading[name] = false; MUS.failed[name] = true; if (MUS.want === name) { MUS.want = null; bgmPlay('battle'); } };
+  try {
+    fetch(TRACKS[name].url).then(function (r) { if (!r.ok) throw new Error('bgm ' + r.status); return r.arrayBuffer(); })
+      .then(function (ab) { AC.decodeAudioData(ab, done, fail); }).catch(fail);
+  } catch (e) { fail(); }
+}
+function musicSeg(buf, at, fadeIn) {
+  var src = AC.createBufferSource(), g = AC.createGain();
+  src.buffer = buf; src.connect(g); g.connect(musicGain);
+  if (fadeIn) { g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(1, at + XF); } else g.gain.setValueAtTime(1, at);
+  src.start(at);
+  return { src: src, g: g, start: at };
+}
+function musicSchedule() {
+  var c = MUS.cur, name = MUS.name, tr = TRACKS[name];
+  var at = c.start + tr.loop - XF;
+  clearTimeout(MUS.timer);
+  MUS.timer = setTimeout(function () {
+    if (MUS.cur !== c || !AC) return;
+    var nx = musicSeg(MUS.buf[name], Math.max(at, AC.currentTime + 0.02), true);
+    c.g.gain.setValueAtTime(1, nx.start); c.g.gain.linearRampToValueAtTime(0, nx.start + XF);
+    try { c.src.stop(nx.start + XF + 0.05); } catch (e) { /* already stopped */ }
+    MUS.cur = nx; musicSchedule();
+  }, Math.max(0, (at - AC.currentTime - 1.5) * 1000));
+}
+function musicPlay(name) {
+  MUS.want = name;
+  if (!AC) return;
+  if (MUS.failed[name]) { MUS.want = null; bgmPlay('battle'); return; }
+  if (!MUS.buf[name]) { BGM.on = false; loadTrack(name); return; }
+  if (MUS.name === name && MUS.cur) return;
+  musicStop(); MUS.want = name;
+  BGM.on = false;
+  MUS.name = name; MUS.cur = musicSeg(MUS.buf[name], AC.currentTime + 0.05, false);
+  musicSchedule();
+}
+function musicStop() {
+  MUS.want = null;
+  clearTimeout(MUS.timer);
+  var c = MUS.cur;
+  if (c && AC) {
+    var t = AC.currentTime;
+    try { c.g.gain.cancelScheduledValues(t); c.g.gain.setValueAtTime(c.g.gain.value, t); c.g.gain.linearRampToValueAtTime(0, t + 0.4); c.src.stop(t + 0.45); } catch (e) { /* ignore */ }
+  }
+  MUS.cur = null; MUS.name = null;
+}
+function battleTrack() {
+  if (state.mode === 'arcade' && state.arcade && state.arcade.i === state.arcade.opp.length - 1) return 'final';
+  if (state.mode === 'arcade' && state.arcade) return state.arcade.i % 2 ? 'battle2' : 'battle1';
+  state.trackFlip = !state.trackFlip;
+  return state.trackFlip ? 'battle1' : 'battle2';
+}
 function bgmPump() {
   if (!AC || !BGM.on || muted || !BGM.song) return;
   var spb = 60 / BGM.song.bpm / 2;
@@ -1472,9 +1538,12 @@ function startMatch() {
   document.querySelector('.cluster.p2').classList.toggle('hide', state.mode !== '2p');
   layout();
   sfx('fight');
+  bgmStop(); musicStop();
+  state.track = battleTrack();
+  loadTrack(state.track);
   setTimeout(function () {
     if (state.screen !== 'vs') return;
-    show('none'); setScreen('fight'); bgmPlay('battle');
+    show('none'); setScreen('fight'); musicPlay(state.track);
   }, 1700);
 }
 
@@ -1483,15 +1552,15 @@ document.getElementById('pauseBtn').addEventListener('click', function () { togg
 function togglePause() {
   if (state.screen !== 'fight') return;
   state.paused = !state.paused;
-  if (state.paused) { show('scPause'); body.classList.remove('playing'); bgmStop(); }
-  else { show('none'); body.classList.add('playing'); bgmPlay('battle'); }
+  if (state.paused) { show('scPause'); body.classList.remove('playing'); if (AC && MUS.cur) AC.suspend(); else bgmStop(); }
+  else { show('none'); body.classList.add('playing'); if (AC) AC.resume(); if (!MUS.cur) musicPlay(state.track); }
 }
 document.getElementById('resumeBtn').addEventListener('click', function () { togglePause(); });
-document.getElementById('retryBtn').addEventListener('click', function () { state.paused = false; startMatch(); });
-document.getElementById('quitBtn').addEventListener('click', goTitle);
+document.getElementById('retryBtn').addEventListener('click', function () { state.paused = false; if (AC) AC.resume(); startMatch(); });
+document.getElementById('quitBtn').addEventListener('click', function () { if (AC) AC.resume(); goTitle(); });
 document.addEventListener('visibilitychange', function () {
   if (document.hidden && state.screen === 'fight' && !state.paused) togglePause();
-  if (document.hidden && AC) AC.suspend(); else if (AC && !document.hidden) AC.resume();
+  if (document.hidden && AC) AC.suspend(); else if (AC && !document.hidden && !(state.paused && MUS.cur)) AC.resume();
 });
 
 /* --- result --- */
@@ -1500,7 +1569,7 @@ function showResult() {
   var w = m.winner;
   var box = document.getElementById('resBox');
   var html = '', wid, lid;
-  bgmStop();
+  bgmStop(); musicStop();
   if (w < 0) {
     html = '<div class="h2">ひきわけ！</div><div class="quote">いい しょうぶ だったね。もういちど やってみよう！</div>';
   } else {
@@ -2042,7 +2111,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js').catch(function () { /* offline cache optional */ });
 }
 // test hook
-window.__FF = { state: state, Logic: L, version: VERSION, startMatch: startMatch, pick: pick, isLoaded: function () { return loading === 0; }, readInput: readInput };
+window.__FF = { MUS: MUS, TRACKS: TRACKS, BGM: BGM, AC: function () { return AC; }, state: state, Logic: L, version: VERSION, startMatch: startMatch, pick: pick, isLoaded: function () { return loading === 0; }, readInput: readInput };
 })();
 </script>
 </body>
