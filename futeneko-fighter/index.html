@@ -209,7 +209,7 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
       </div>
       <div id="rotHint">スマホを よこむきに して あそんでね</div>
     </div>
-    <div class="ver">v8　© 泉正道 / フテ猫実行委員会</div>
+    <div class="ver">v9　© 泉正道 / フテ猫実行委員会</div>
   </section>
 
   <!-- help -->
@@ -914,7 +914,7 @@ var Logic = (function () {
 <script>
 (function () {
 'use strict';
-var VERSION = '8';
+var VERSION = '9';
 var L = Logic, W = L.W, H = L.H, FLOOR = L.FLOOR;
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
@@ -1301,6 +1301,20 @@ function setMuted(v) {
 /* ================= stages ================= */
 var stageCache = {};
 function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+/* painted stage backgrounds (stages/*.webp next to index.html). Until one has loaded — or when it
+   cannot be loaded — the hand-drawn canvas stage below is shown instead. */
+var STAGE_IMG = {};
+function loadStageImg(id) {
+  if (STAGE_IMG[id]) return;
+  var im = new Image();
+  im.onload = function () { im.ok = true; };
+  im.src = 'stages/' + id + '.webp';
+  STAGE_IMG[id] = im;
+}
+function stageImage(id) {
+  var im = STAGE_IMG[id];
+  return im && im.ok ? im : makeStage(id === 'snow' ? 'goma' : id);
+}
 function makeStage(id) {
   if (stageCache[id]) return stageCache[id];
   var c = document.createElement('canvas'); c.width = W; c.height = H;
@@ -1588,10 +1602,11 @@ function arcadeLevel() {
 
 function startMatch() {
   var lvl = state.mode === 'arcade' ? arcadeLevel() : state.level;
-  state.m = L.newMatch({ p1: state.p1, p2: state.p2, mode: state.mode === 'training' ? 'training' : state.mode, cpuLevel: lvl, stage: state.p2 });
+  state.m = L.newMatch({ p1: state.p1, p2: state.p2, mode: state.mode === 'training' ? 'training' : state.mode, cpuLevel: lvl, stage: state.mode === 'training' ? 'snow' : state.p2 });
   state.fx = []; state.banner = null; state.shake = 0; state.endTimer = 0; state.paused = false;
   state.cutin = null; state.dark = 0; state.flash = 0; state.speedLines = 0; state.trail = [[], []];
-  makeStage(state.p2);
+  loadStageImg(state.m.stage);
+  makeStage(state.m.stage === 'snow' ? 'goma' : state.m.stage);
   // VS screen
   var c1 = L.CHARS[state.p1], c2 = L.CHARS[state.p2];
   var lvName = ['', 'よわい', 'ふつう', 'つよい'][lvl] || '';
@@ -2098,7 +2113,13 @@ function render() {
   var sx = 0, sy = 0;
   if (state.shake > 0) { sx = (Math.random() - 0.5) * state.shake; sy = (Math.random() - 0.5) * state.shake; }
   ctx.save(); ctx.translate(sx, sy);
-  ctx.drawImage(makeStage(m.stage), -10, -10, W + 20, H + 20);
+  var bg = stageImage(m.stage);
+  ctx.drawImage(bg, -10, -10, W + 20, H + 20);
+  if (bg.ok) {   // keep the HUD readable on bright pictures
+    var tg = ctx.createLinearGradient(0, -10, 0, 120);
+    tg.addColorStop(0, 'rgba(10,8,20,.45)'); tg.addColorStop(1, 'rgba(10,8,20,0)');
+    ctx.fillStyle = tg; ctx.fillRect(-10, -10, W + 20, 130);
+  }
   if (state.dark > 0.01) {
     ctx.fillStyle = 'rgba(10,6,20,' + state.dark.toFixed(3) + ')'; ctx.fillRect(-20, -20, W + 40, H + 40);
   }
@@ -2188,7 +2209,8 @@ function render() {
     ctx.fillText('あいてを まっています…', 480, 133); ctx.textBaseline = 'alphabetic';
   }
   if (state.mode === 'training' && m.phase === 'fight') {
-    ctx.font = '700 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(236,230,214,.9)';
+    ctx.fillStyle = 'rgba(30,27,24,.6)'; ctx.fillRect(170, 86, 620, 22);
+    ctx.font = '700 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(236,230,214,.95)';
     ctx.fillText('れんしゅう中：あいては うごかないよ。ひっさつゲージは じどうで たまる', 480, 100);
   }
 }
