@@ -158,6 +158,23 @@ body.narrow .netcols{grid-template-columns:1fr}
 #scanMsg{color:#fff;font-weight:800;text-align:center;padding:0 12px}
 #toast{position:absolute;left:50%;bottom:12%;transform:translate(-50%,20px);background:var(--ink);color:#fff;font-weight:800;padding:10px 18px;border-radius:999px;z-index:70;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90%;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+/* painted title screen */
+.art{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(calc(var(--vw,1vw)*100),calc(var(--vh,1vh)*177.68));height:min(calc(var(--vh,1vh)*100),calc(var(--vw,1vw)*56.28))}
+body.artok .art{display:block}
+body.artok #scTitle{padding:0;background:#160f0c;overflow:hidden}
+body.artok #scTitle > .inner{display:none}
+body.artok #scTitle > .ver{display:none}
+body.artok #scTitle::before{content:"";position:absolute;inset:-30px;background:url(title.webp) center/cover;filter:blur(18px) brightness(.55)}
+.art img{display:block;width:100%;height:100%;-webkit-user-drag:none}
+.hot{position:absolute;background:transparent;border:0;border-radius:22px;padding:0;cursor:pointer;transition:transform .08s}
+.hot:hover{background:rgba(255,255,255,.08)}
+.hot:active{background:rgba(255,255,255,.24);transform:scale(.97)}
+.hot:focus-visible{outline:4px solid #fff;outline-offset:2px}
+.soundst{position:absolute;display:flex;align-items:center;justify-content:center;background:#323232;color:#fff;font-weight:900;border-radius:4px;pointer-events:none;
+  font-size:calc(min(calc(var(--vw,1vw)*100),calc(var(--vh,1vh)*177.68))*.0185)}
+.soundst.off{color:#ff8a7a}
+.artver{position:absolute;left:1%;bottom:.8%;color:#fff;font-size:10px;opacity:.75;text-shadow:0 1px 2px #000}
 @media (prefers-reduced-motion:reduce){.vs .left img,.vs .right img,.bt.s.ready{animation:none}}
 body.short .lineup{height:90px;margin:6px auto}body.short .menu{gap:8px;margin-top:8px}body.short .tk{padding:9px 8px 8px}body.short .card .pic{height:72px}body.short .res img{height:calc(var(--vh,1vh)*30)}
 body.short .mast h1{font-size:46px}body.short .h2{margin-bottom:6px}
@@ -193,6 +210,18 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
 
   <!-- title -->
   <section class="sc on" id="scTitle">
+    <div class="art" id="titleArt">
+      <img src="title.webp" alt="フテ猫ファイター" id="titleImg" draggable="false">
+      <button class="hot " data-go="arcade" aria-label="ひとりで あそぶ" style="left:33.493%;top:35.707%;width:35.167%;height:12.646%"></button>
+      <button class="hot " data-go="cpu" aria-label="CPUと たいせん" style="left:33.074%;top:49.097%;width:36.423%;height:12.327%"></button>
+      <button class="hot " data-go="2p" aria-label="ふたりで たいせん" style="left:31.400%;top:61.849%;width:41.447%;height:12.540%"></button>
+      <button class="hot " data-go="training" aria-label="れんしゅう" style="left:9.450%;top:75.239%;width:26.675%;height:12.327%"></button>
+      <button class="hot js-online" id="btnOnline" aria-label="つうしん たいせん" style="left:36.722%;top:75.452%;width:26.316%;height:12.115%"></button>
+      <button class="hot js-help" id="helpBtn" aria-label="あそびかた" style="left:63.756%;top:75.452%;width:25.000%;height:12.327%"></button>
+      <button class="hot js-sound" id="soundBtn" aria-label="おと" style="left:79.904%;top:88.842%;width:18.660%;height:8.289%"></button>
+      <span class="soundst" aria-hidden="true" style="left:89.713%;top:90.967%;width:4.306%;height:4.038%">オン</span>
+      <div class="artver">v10　© 泉正道 / フテ猫実行委員会</div>
+    </div>
     <div class="inner">
       <div class="mast"><h1>フテ猫ファイター</h1><div class="bandline">そのまえに、いっしょうぶ！</div></div>
       <div class="lineup" id="lineup"></div>
@@ -201,15 +230,15 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
         <button class="tk" data-go="cpu">CPUと たいせん<small>あいてを えらべる</small></button>
         <button class="tk" data-go="2p">ふたりで たいせん<small>おなじ画面で 2人あそび</small></button>
         <button class="tk" data-go="training">れんしゅう<small>わざを ためしてみよう</small></button>
-        <button class="tk net" id="btnOnline">つうしん たいせん<small>はなれた 友だちと スマホ2台で</small></button>
+        <button class="tk net js-online">つうしん たいせん<small>はなれた 友だちと スマホ2台で</small></button>
       </div>
       <div class="row">
-        <button class="tk ghost" id="helpBtn">あそびかた</button>
-        <button class="tk ghost" id="soundBtn">おと：オン</button>
+        <button class="tk ghost js-help">あそびかた</button>
+        <button class="tk ghost js-sound">おと：オン</button>
       </div>
       <div id="rotHint">スマホを よこむきに して あそんでね</div>
     </div>
-    <div class="ver">v9　© 泉正道 / フテ猫実行委員会</div>
+    <div class="ver">v10　© 泉正道 / フテ猫実行委員会</div>
   </section>
 
   <!-- help -->
@@ -914,7 +943,7 @@ var Logic = (function () {
 <script>
 (function () {
 'use strict';
-var VERSION = '9';
+var VERSION = '10';
 var L = Logic, W = L.W, H = L.H, FLOOR = L.FLOOR;
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
@@ -1295,7 +1324,10 @@ function setMuted(v) {
   muted = v;
   try { localStorage.setItem('ffMute', v ? '1' : '0'); } catch (e) { /* ignore */ }
   if (master) master.gain.value = v ? 0 : 0.8;
-  document.getElementById('soundBtn').textContent = v ? 'おと：オフ' : 'おと：オン';
+  var sbs = document.querySelectorAll('.tk.js-sound');
+  for (var si = 0; si < sbs.length; si++) sbs[si].textContent = v ? 'おと：オフ' : 'おと：オン';
+  var st = document.querySelector('#titleArt .soundst');
+  if (st) { st.textContent = v ? 'オフ' : 'オン'; st.classList.toggle('off', v); }
 }
 
 /* ================= stages ================= */
@@ -1530,11 +1562,18 @@ function setScreen(s) {
 document.querySelectorAll('[data-go]').forEach(function (b) {
   b.addEventListener('click', function () { sfx('select'); state.mode = b.dataset.go; state.p1 = null; state.p2 = null; openSelect(0); });
 });
-document.getElementById('btnOnline').addEventListener('click', function () { sfx('select'); state.mode = 'online'; openNet(); });
-document.getElementById('helpBtn').addEventListener('click', function () { sfx('select'); show('scHelp'); });
+onAll('.js-online', function () { sfx('select'); state.mode = 'online'; openNet(); });
+onAll('.js-help', function () { sfx('select'); show('scHelp'); });
 document.querySelectorAll('[data-back="title"]').forEach(function (b) { b.addEventListener('click', goTitle); });
-document.getElementById('soundBtn').addEventListener('click', function () { audioUnlock(); setMuted(!muted); if (!muted) musicPlay('menu'); });
+onAll('.js-sound', function () { audioUnlock(); setMuted(!muted); if (!muted) musicPlay('menu'); });
+function onAll(sel, fn) { var els = document.querySelectorAll(sel); for (var i = 0; i < els.length; i++) els[i].addEventListener('click', fn); }
 setMuted(muted);
+// painted title: show it once the picture has loaded, otherwise keep the built-in title
+(function () {
+  var im = document.getElementById('titleImg');
+  var ok = function () { body.classList.add('artok'); };
+  if (im.complete && im.naturalWidth) ok(); else im.addEventListener('load', ok);
+})();
 
 function goTitle() {
   setScreen('title'); show('scTitle'); state.m = null; state.paused = false; musicPlay('menu');
