@@ -8,9 +8,9 @@
 <title>フテ猫ランナー</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#2b3a55;font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Rounded Mplus 1c","Meiryo",sans-serif;touch-action:none;overscroll-behavior:none}
-#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block}
-.scr{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:safe center;gap:10px;overflow-y:auto;padding:20px;padding-top:max(20px,env(safe-area-inset-top));z-index:2000;text-align:center;color:#3a2a10}
+html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;-webkit-touch-callout:none;-webkit-text-size-adjust:100%;background:#2b3a55;font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Rounded Mplus 1c","Meiryo",sans-serif;touch-action:none;overscroll-behavior:none}
+#cv{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-action:none}
+.scr{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:safe center;gap:10px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:20px;padding-top:max(20px,env(safe-area-inset-top));z-index:2000;text-align:center;color:#3a2a10}
 .scr.on{display:flex}
 #title{background:#8fd3ff center/cover no-repeat}
 .logo{font-size:clamp(24px,min(7.5vw,5vh),44px);font-weight:900;color:#fff;-webkit-text-stroke:2px #a84d00;paint-order:stroke fill;text-shadow:0 4px 0 #a84d00;line-height:1.15}
@@ -19,7 +19,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#2b3a55;font-family:
 .card{background:rgba(255,255,255,.92);border-radius:18px;padding:12px 14px;box-shadow:0 4px 0 rgba(0,0,0,.15);width:min(92vw,420px)}
 .lbl{font-size:14px;font-weight:700;margin-bottom:8px;color:#6a4a1a}
 .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.btn{border:none;border-radius:14px;padding:12px 16px;font-size:17px;font-weight:800;font-family:inherit;color:#fff;background:#ff8a1f;box-shadow:0 4px 0 #b65a00;cursor:pointer;min-width:84px}
+.btn{touch-action:manipulation;border:none;border-radius:14px;padding:12px 16px;font-size:17px;font-weight:800;font-family:inherit;color:#fff;background:#ff8a1f;box-shadow:0 4px 0 #b65a00;cursor:pointer;min-width:84px}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b65a00}
 .btn.sel{background:#2e9cf0;box-shadow:0 4px 0 #1660a0}
 .btn.big{font-size:22px;padding:14px 34px}
@@ -114,7 +114,7 @@ const BOSS_LEN=33.040000;
 </script>
 <script>
 'use strict';
-const VERSION='v10';
+const VERSION='v11';
 const MAX_STAGE=10;
 const ROAD=5;          // 道の半分の幅（ワールド単位）
 const ZC=10;           // カメラ距離
@@ -156,6 +156,19 @@ function layoutBg(){
   S0=D.k*(YB-HY)/ROAD;
 }
 window.addEventListener('resize',resize);
+// ---------- 画面ズレ防止（フリック・バウンド・ズーム） ----------
+document.addEventListener('touchmove',e=>{
+  const sc=e.target&&e.target.closest?e.target.closest('.scr.on'):null;
+  if(sc&&sc.scrollHeight>sc.clientHeight+2)return; // 縦に長いメニューだけはスクロール可
+  if(e.cancelable)e.preventDefault();
+},{passive:false});
+['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+function fixScroll(){if(window.scrollX||window.scrollY)window.scrollTo(0,0);if(document.body.scrollTop)document.body.scrollTop=0;if(document.documentElement.scrollTop)document.documentElement.scrollTop=0;}
+window.addEventListener('scroll',fixScroll,{passive:true});
+window.addEventListener('orientationchange',()=>{setTimeout(()=>{fixScroll();resize();},300);});
+if(window.visualViewport){window.visualViewport.addEventListener('resize',()=>{fixScroll();resize();});window.visualViewport.addEventListener('scroll',fixScroll);}
 
 // ---------- 画像 ----------
 function loadImg(src){const i=new Image();i.src=src;return i;}
