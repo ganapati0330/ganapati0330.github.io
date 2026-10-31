@@ -181,6 +181,28 @@ button{font-family:inherit;cursor:pointer}
 .bname{color:#fff;font-weight:800;font-size:15px;text-shadow:0 2px 3px rgba(0,0,0,.5)}
 .bname b{font-size:1.5em;color:#ffd54a}
 .card.sel{box-shadow:0 0 0 4px #ff3b6b,0 6px 10px rgba(0,0,0,.5)!important}
+/* ---- v4 ---- */
+.scat{position:relative}
+.sc{position:absolute;transition:transform .25s}
+.sc .card{box-shadow:1px 3px 6px rgba(0,0,0,.45)}
+.sc.up .card{box-shadow:0 0 0 3px #ffd54a,0 6px 12px rgba(0,0,0,.5)}
+.babaFx{position:fixed;inset:0;z-index:2600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(circle,rgba(90,30,140,.75) 0%,rgba(20,0,40,.88) 70%);animation:bfxBg .5s;overflow:hidden}
+.babaFx.out{opacity:0;transition:opacity .25s}
+@keyframes bfxBg{from{opacity:0}to{opacity:1}}
+.bfx-card{animation:bfxIn .7s cubic-bezier(.2,1.6,.4,1) both,bfxWob 1.2s .7s ease-in-out infinite}
+.bfx-card .card{box-shadow:0 0 0 6px #ffd54a,0 0 40px 10px rgba(255,213,74,.8)}
+@keyframes bfxIn{from{transform:scale(0) rotate(-540deg)}to{transform:scale(1) rotate(0)}}
+@keyframes bfxWob{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.bfx-t{font-size:clamp(26px,8vw,44px);font-weight:900;color:#ffd54a;text-shadow:3px 3px 0 #7a1fa0,0 0 14px rgba(0,0,0,.6);animation:bfxBounce .6s .3s both}
+@keyframes bfxBounce{0%{transform:translateY(40px);opacity:0}60%{transform:translateY(-10px);opacity:1}100%{transform:translateY(0)}}
+.bfx-s{color:#fff;font-weight:800;font-size:16px;opacity:.9}
+.bfx-ring{position:absolute;left:50%;top:45%;width:20px;height:20px;margin:-10px;border-radius:50%;border:6px solid #ffd54a;animation:bfxRing .9s ease-out both}
+@keyframes bfxRing{from{transform:scale(1);opacity:1}to{transform:scale(40);opacity:0}}
+.bfx-z{position:absolute;right:16%;top:18%;font-size:44px;font-weight:900;color:#bfe3ff;animation:bfxZ 1.6s ease-in-out infinite}
+.bfx-z span{font-size:.7em;margin-left:4px}
+@keyframes bfxZ{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(-14px);opacity:1}}
+.quake{animation:quake .5s}
+@keyframes quake{0%,100%{transform:translate(0,0)}15%{transform:translate(-8px,4px)}30%{transform:translate(7px,-5px)}45%{transform:translate(-6px,-3px)}60%{transform:translate(5px,4px)}75%{transform:translate(-3px,2px)}}
 @media (min-aspect-ratio:4/3) and (max-height:560px){
   #sPlay.on{display:grid;grid-template-columns:1fr 136px;grid-template-rows:auto 1fr auto auto}
   .bar{grid-column:1/3;padding-top:3px;padding-bottom:3px}
@@ -479,7 +501,7 @@ var CONC = {
     mkDeck(0).forEach(function (c) { if (c.r <= k) cards.push({ c: c, taken: -1 }); });
     if (nCards === 52) cards = mkDeck(0).map(function (c) { return { c: c, taken: -1 }; });
     shuffle(cards);
-    var st = { g: 'conc', n: n, cards: cards, pairs: [], turn: 0, flipped: [], done: false };
+    var st = { g: 'conc', n: n, cards: cards, pairs: [], turn: 0, flipped: [], done: false, seed: 1 + rnd(2000000000) };
     for (var i = 0; i < n; i++) st.pairs.push(0);
     return st;
   },
@@ -581,7 +603,7 @@ var AI = {
 if (typeof module !== 'undefined' && module.exports) module.exports = { BABA: BABA, SEVENS: SEVENS, PO: PO, CONC: CONC, AI: AI, RNG: RNG, mkDeck: mkDeck };
 </script>
 <script>'use strict';
-var VERSION = 'v3';
+var VERSION = 'v4';
 var SPR = JSON.parse(document.getElementById('spr').textContent);
 var CHARS = {
   fute: { name: 'フテ猫', lv: 2, tag: 'つよい' },
@@ -645,9 +667,11 @@ var SFX = {
   bad: function () { tone(200, 0.3, 'sawtooth', 0.08); tone(150, 0.35, 'sawtooth', 0.08, 0.15); },
   win: function () { [523, 659, 784, 1046].forEach(function (f, i) { tone(f, 0.22, 'triangle', 0.15, i * 0.12); }); },
   pg1: function () { tone(784, 0.1, 'square', 0.1); tone(1175, 0.2, 'square', 0.1, 0.1); },
-  tap: function () { tone(520, 0.05, 'sine', 0.1); }
+  tap: function () { tone(520, 0.05, 'sine', 0.1); },
+  baba: function () { [523, 494, 466, 392].forEach(function (f, i) { tone(f, i === 3 ? 0.6 : 0.2, 'sawtooth', 0.07, i * 0.22); }); noise(0.25, 0.15); }
 };
 var SFX_RAW = {};
+SFX_RAW.baba = SFX.baba;
 ['card', 'flip', 'ok', 'bad', 'win', 'pg1'].forEach(function (k) { var f = SFX[k]; SFX_RAW[k] = f; SFX[k] = function () { f(); netFx({ k: 'sfx', s: k }); }; });
 document.addEventListener('pointerdown', function () { ac(); }, { once: true });
 
@@ -911,8 +935,8 @@ function render() {
 }
 window.addEventListener('resize', function () { if ($('sPlay').classList.contains('on')) render(); });
 function fieldSize() { var f = $('field'); return { w: f.clientWidth - 8, h: f.clientHeight - 8 }; }
-function centerMsg(t, ms) {
-  netFx({ k: 'cm', t: t, ms: ms });
+function centerMsg(t, ms, local) {
+  if (!local) netFx({ k: 'cm', t: t, ms: ms });
   var d = document.createElement('div'); d.className = 'center-msg'; d.textContent = t;
   $('field').appendChild(d);
   setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, ms || 1100);
@@ -1050,7 +1074,7 @@ var MB = {
       if (!P[me].cpu) {
         /* ひいたカードは ひいた人の画面だけに 見せる */
         MB.reveal = { seat: me, from: t, cards: [r.card], note: card.r === 0 ? 'ババを ひいちゃった…！' : RANKS[card.r] + ' を ひいたよ' };
-        if (card.r === 0) fxPrivate(me, { k: 'sfx', s: 'bad' });
+        if (card.r === 0) { fxPrivate(me, { k: 'baba' }); if (!P[t].cpu) fxPrivate(t, { k: 'babaGone' }); }
       } else pose(me, 'idle');
     }
     if (P[me].cpu) shuffle(st.hands[me]);
@@ -1295,20 +1319,43 @@ var MC = {
     var r = CONC.ranking(G.st).filter(function (x) { return x.p === i; })[0];
     return { t: rankStr(r.rank) };
   },
-  field: function (el) {
-    var st = G.st, sz = fieldSize(), n = st.cards.length, best = null;
-    for (var cols = 4; cols <= 13; cols++) {
-      var rows = Math.ceil(n / cols), cw = Math.min((sz.w - (cols - 1) * 4) / cols, ((sz.h - (rows - 1) * 4) / rows) / 1.42);
-      if (!best || cw > best.cw) best = { cols: cols, cw: cw };
+  /* カードを場に ばらまく（seedで きまるので 何度かいても 同じ配置） */
+  layout: function (W, H, n, seed) {
+    var key = W + 'x' + H + 'x' + n + 'x' + seed;
+    if (MC.lay && MC.lay.key === key) return MC.lay;
+    var t = seed >>> 0;
+    function rr() { t = (t + 0x6D2B79F5) >>> 0; var x = t; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }
+    var r = Math.sqrt(0.5 * W * H / (n * Math.PI));
+    var cw = Math.max(22, Math.min(92, r / 0.66));
+    r = cw * 0.66;
+    var pts = [], i, j, it;
+    for (i = 0; i < n; i++) pts.push({ x: r + rr() * Math.max(1, W - 2 * r), y: r + rr() * Math.max(1, H - 2 * r), a: (rr() * 2 - 1) * 30 });
+    var minD = 2 * r * 0.9;
+    for (it = 0; it < 260; it++) {
+      var moved = false;
+      for (i = 0; i < n; i++) for (j = i + 1; j < n; j++) {
+        var dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y, d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        if (d < minD) { var p = (minD - d) / 2 / d; pts[i].x -= dx * p; pts[i].y -= dy * p; pts[j].x += dx * p; pts[j].y += dy * p; moved = true; }
+      }
+      pts.forEach(function (q) { q.x = Math.max(r * 0.75, Math.min(W - r * 0.75, q.x)); q.y = Math.max(r * 0.9, Math.min(H - r * 0.9, q.y)); });
+      if (!moved) break;
     }
-    var cwv = Math.max(20, Math.min(90, Math.floor(best.cw)));
+    MC.lay = { key: key, pts: pts, cw: Math.floor(cw) };
+    return MC.lay;
+  },
+  field: function (el) {
+    var st = G.st, sz = fieldSize(), n = st.cards.length;
+    var L = MC.layout(Math.max(100, sz.w), Math.max(100, sz.h), n, st.seed || 1), cwv = L.cw;
     var canTap = MC.canTap();
-    var h = '<div class="cgrid" style="grid-template-columns:repeat(' + best.cols + ',' + cwv + 'px)">';
+    var h = '<div class="scat" style="width:' + sz.w + 'px;height:' + sz.h + 'px">';
     st.cards.forEach(function (x, k) {
       var open = st.flipped.indexOf(k) >= 0 || MC.open.indexOf(k) >= 0;
-      if (x.taken >= 0 && MC.open.indexOf(k) < 0) h += '<div class="card taken" style="--cw:' + cwv + 'px"></div>';
-      else if (open) h += cardHTML(x.c, { cw: cwv, cls: k === MC.jf ? 'flip' : '', mini: cwv < 46 });
+      if (x.taken >= 0 && MC.open.indexOf(k) < 0) return;
+      var p = L.pts[k], ch = cwv * 1.42;
+      h += '<div class="sc' + (open ? ' up' : '') + '" style="left:' + (p.x - cwv / 2).toFixed(1) + 'px;top:' + (p.y - ch / 2).toFixed(1) + 'px;transform:rotate(' + (open ? p.a * 0.3 : p.a).toFixed(1) + 'deg);z-index:' + (open ? 200 + k : k + 1) + '">';
+      if (open) h += cardHTML(x.c, { cw: cwv, cls: k === MC.jf ? 'flip' : '', mini: cwv < 46 });
       else h += cardHTML(null, { cw: cwv, back: true, cls: canTap ? 'tap' : '', attr: 'data-f="' + k + '"' });
+      h += '</div>';
     });
     el.innerHTML = h + '</div>';
     MC.jf = -1;
@@ -1367,6 +1414,22 @@ var MC = {
   result: function () { return CONC.ranking(G.st).map(function (x) { return { p: x.p, rank: x.rank, note: x.pairs + 'ペア' }; }); }
 };
 var MODS = { baba: MB, sevens: MS, pageone: MP, conc: MC };
+
+/* ---------- ババを ひいた！（ひいた人の画面だけ） ---------- */
+function babaAction() {
+  var old = document.querySelector('.babaFx'); if (old) old.parentNode.removeChild(old);
+  var d = document.createElement('div'); d.className = 'babaFx';
+  var cw = Math.round(Math.min(170, window.innerWidth * 0.4, window.innerHeight * 0.3));
+  d.innerHTML = '<div class="bfx-ring"></div><div class="bfx-card">' + cardHTML({ s: 4, r: 0, id: 'J0' }, { cw: cw }) + '</div><div class="bfx-t">ババを ひいちゃった〜！</div><div class="bfx-s">だれにも ないしょだよ… 🤫</div><div class="bfx-z">Z<span>z</span><span>z</span></div>';
+  document.body.appendChild(d);
+  $('app').classList.remove('quake'); void $('app').offsetWidth; $('app').classList.add('quake');
+  SFX_RAW.baba();
+  try { if (navigator.vibrate) navigator.vibrate([90, 60, 160]); } catch (e) { /* むし */ }
+  var close = function () { if (d.parentNode) { d.classList.add('out'); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 250); } };
+  d.addEventListener('click', close);
+  setTimeout(close, 2000);
+}
+function babaGone() { centerMsg('ババが いなくなった！ ✨', 1200, true); SFX_RAW.ok(); }
 
 /* ---------- 結果 ---------- */
 function showResult() {
@@ -1692,6 +1755,7 @@ function netFxRecv(m) {
   if (m.k === 'sfx' && SFX_RAW[m.s]) SFX_RAW[m.s]();
   else if (m.k === 'cm') centerMsg(m.t, m.ms);
   else if (m.k === 'end') { if (G.st) showResult(); }
+  else if (m.k === 'baba' || m.k === 'babaGone') privFx(m);
 }
 function netResultButtons() {
   var guest = NET.on && NET.role === 'guest' && G.net;
@@ -2003,12 +2067,17 @@ if (readShared()) setTimeout(useSharedCode, 50);
 
 /* ひいた人だけに 知らせる（ババを ひいた音など） */
 function fxPrivate(seat, o) {
-  if (seat === G.viewer) { if (o.k === 'sfx' && SFX_RAW[o.s]) SFX_RAW[o.s](); return; }
+  if (seat === G.viewer) { privFx(o); return; }
   if (!isHost() || !G.net || !P[seat]) return;
   var pid = P[seat].pid;
   flushSync();
   o.t = 'fx'; var s = JSON.stringify(o);
   NET.links.forEach(function (l) { if (l.pid === pid) l.peer.send(s); });
+}
+function privFx(o) {
+  if (o.k === 'sfx' && SFX_RAW[o.s]) SFX_RAW[o.s]();
+  else if (o.k === 'baba') babaAction();
+  else if (o.k === 'babaGone') babaGone();
 }
 
 buildTitle();
