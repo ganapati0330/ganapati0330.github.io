@@ -679,9 +679,11 @@ button{cursor:pointer}
 .phead{background:#0f172a;color:#fff;padding:12px 14px 10px}
 .phead h1{margin:0;font-size:17px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
 .phead h1 small{font-weight:400;font-size:11px;opacity:.6;margin-left:auto}
-.search{display:flex;gap:6px;margin-top:9px;position:relative}
-.search input{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 10px;font-size:15px;color:#0f172a}
-.search button{border:0;border-radius:8px;background:#f97316;color:#fff;padding:0 12px;font-weight:700}
+.search{margin-top:9px;position:relative;display:flex;flex-direction:column;gap:6px}
+.rin{display:flex;gap:6px;align-items:center}
+.rin input{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 10px;font-size:15px;color:#0f172a}
+.rin input::placeholder{color:#94a3b8;font-size:13px}
+.rin button{border:0;border-radius:8px;background:#f97316;color:#fff;padding:0 11px;height:38px;font-weight:700;flex:none}
 #results{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#fff;color:#0f172a;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-height:50vh;overflow:auto;z-index:5;display:none}
 #results.show{display:block}
 .res{padding:9px 11px;border-bottom:1px solid #e2e8f0;font-size:14px;cursor:pointer}
@@ -755,7 +757,7 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
 @media (max-width:760px){
   #map{left:0;bottom:0}
   #panel{top:auto;width:100%;height:46vh;border-radius:16px 16px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.2);transition:height .25s;padding-bottom:env(safe-area-inset-bottom)}
-  #panel.min{height:152px}
+  #panel.min{height:200px}
   #panel.max{height:88vh}
   #sheetHandle{display:block;position:absolute;top:0;left:0;right:0;height:18px;z-index:3;border:0;background:transparent}
   #sheetHandle::after{content:"";position:absolute;left:50%;top:6px;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:rgba(255,255,255,.55)}
@@ -775,8 +777,8 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
   <div class="phead">
     <h1>🚴 サイクルルートプランナー <small id="ver"></small></h1>
     <div class="search">
-      <input id="q" type="search" placeholder="地名・駅・住所で検索" autocomplete="off" enterkeyhint="search">
-      <button id="btnSearch">検索</button>
+      <div class="rin"><span class="badge b-s">S</span><input id="qS" type="search" placeholder="出発地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button id="btnSearchS">検索</button></div>
+      <div class="rin"><span class="badge b-g">G</span><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button id="btnSearchG">検索</button></div>
       <div id="results"></div>
     </div>
   </div>
@@ -784,7 +786,7 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
     <div class="card">
       <h2>📍 地点 <span class="sp"></span></h2>
       <div id="wpList"></div>
-      <p class="hint" id="wpHint">地図をタップすると出発地 → 目的地の順に追加されます。ルートの線をタップすると経由地を差し込めます。地点はドラッグで動かせます。</p>
+      <p class="hint" id="wpHint">上の欄に地名を入れて検索するか、地図をタップすると出発地 → 目的地の順に設定されます。ルートの線をタップすると経由地を差し込めます。地点はドラッグで動かせます。</p>
       <div class="btnrow">
         <button class="btn" id="btnUndo">↶ 元に戻す</button>
         <button class="btn" id="btnReverse">⇅ 逆向き</button>
@@ -872,7 +874,7 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
 <script>
 'use strict';
 (function(){
-const VERSION = 'v2';
+const VERSION = 'v3';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -917,6 +919,7 @@ const store = {
 
 /* ---------- state ---------- */
 let wps = [];             // {lat,lng,name}
+let pendingGoal = null;   // goal chosen before a start exists
 let undoStack = [];
 let route = null;         // parsed route
 let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale'}, store.get(LS_PREF, {}));
@@ -974,7 +977,7 @@ function wpKind(i){ return i === 0 ? 's' : (i === wps.length-1 ? 'g' : 'v'); }
 function wpName(w, i){ return w.name || `${i===0?'出発地':(i===wps.length-1?'目的地':'経由地')}（${w.lat.toFixed(4)}, ${w.lng.toFixed(4)}）`; }
 
 function pushUndo(){
-  undoStack.push(JSON.stringify(wps));
+  undoStack.push(JSON.stringify({wps, pg:pendingGoal}));
   if (undoStack.length > 60) undoStack.shift();
 }
 
@@ -989,7 +992,7 @@ function renderMarkers(){
       icon: L.divIcon({className:'', html:`<div class="wpicon ${k}">${wpLabel(i)}</div>`, iconSize:[sz,sz], iconAnchor:[sz/2,sz/2]})
     });
     m.on('dragstart', () => pushUndo());
-    m.on('dragend', ev => { const ll = ev.target.getLatLng(); wps[i].lat = ll.lat; wps[i].lng = ll.lng; wps[i].name = ''; onWpsChanged(); });
+    m.on('dragend', ev => { const ll = ev.target.getLatLng(); wps[i].lat = ll.lat; wps[i].lng = ll.lng; wps[i].name = ''; revSeen.delete(wps[i]); onWpsChanged(); });
     m.on('click', ev => {
       L.DomEvent.stopPropagation(ev);
       const html = `<div class="popbtns"><b>${esc(wpName(w,i))}</b>
@@ -1007,6 +1010,12 @@ function renderMarkers(){
     });
     m.addTo(markerGroup);
   });
+  if (!wps.length && pendingGoal){
+    const g = L.marker([pendingGoal.lat, pendingGoal.lng], {draggable:true, zIndexOffset:1000,
+      icon: L.divIcon({className:'', html:'<div class="wpicon g">G</div>', iconSize:[28,28], iconAnchor:[14,14]})});
+    g.on('dragend', ev => { const ll = ev.target.getLatLng(); pendingGoal.lat = ll.lat; pendingGoal.lng = ll.lng; pendingGoal.name = ''; revSeen.delete(pendingGoal); onWpsChanged(); });
+    g.addTo(markerGroup);
+  }
 }
 function bindPopup(pop, fn){
   const el = pop.getElement();
@@ -1040,6 +1049,8 @@ $('wpList').addEventListener('click', e => {
 });
 
 function onWpsChanged(opts){
+  if (pendingGoal && wps.length === 1){ wps.push(pendingGoal); pendingGoal = null; }
+  wps.forEach(needName); needName(pendingGoal); syncInputs();
   alt = 0; $('altNo').textContent = '1';
   renderMarkers(); renderWpList(); updateHash(); updateButtons();
   scheduleRoute(opts && opts.immediate ? 0 : 250);
@@ -1048,13 +1059,13 @@ function updateButtons(){
   $('btnUndo').disabled = !undoStack.length;
   $('btnReverse').disabled = wps.length < 2;
   $('btnLoop').disabled = wps.length < 2;
-  $('btnClear').disabled = !wps.length;
+  $('btnClear').disabled = !wps.length && !pendingGoal;
   $('btnAlt').disabled = wps.length < 2;
   const has = !!route;
   $('btnSave').disabled = !has; $('btnGpx').disabled = !has; $('btnShare').disabled = wps.length < 2;
 }
 
-$('btnUndo').onclick = () => { if (!undoStack.length) return; wps = JSON.parse(undoStack.pop()); onWpsChanged({immediate:true}); };
+$('btnUndo').onclick = () => { if (!undoStack.length) return; const u = JSON.parse(undoStack.pop()); wps = u.wps; pendingGoal = u.pg; onWpsChanged({immediate:true}); };
 $('btnReverse').onclick = () => { pushUndo(); wps.reverse(); onWpsChanged({immediate:true}); };
 $('btnLoop').onclick = () => {
   if (wps.length < 2) return;
@@ -1062,7 +1073,7 @@ $('btnLoop').onclick = () => {
   if (hav(s, g) < 30){ toast('すでに出発地に戻るルートです'); return; }
   pushUndo(); wps.push({lat:s.lat, lng:s.lng, name:s.name}); onWpsChanged({immediate:true});
 };
-$('btnClear').onclick = () => { if (!wps.length) return; pushUndo(); wps = []; onWpsChanged({immediate:true}); };
+$('btnClear').onclick = () => { if (!wps.length && !pendingGoal) return; pushUndo(); wps = []; pendingGoal = null; onWpsChanged({immediate:true}); };
 
 /* ---------- routing ---------- */
 function setStatus(msg, cls){ const s = $('status'); s.className = cls || ''; s.textContent = msg || ''; }
@@ -1465,11 +1476,24 @@ cv.addEventListener('pointerleave', elevLeave);
 cv.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') setTimeout(elevLeave, 1800); });
 window.addEventListener('resize', () => { drawElev(); });
 
-/* ---------- search ---------- */
+/* ---------- start / goal inputs & search ---------- */
+const PICKED = '地図で選んだ地点';
+function inputLabel(w){ return w ? (w.name || PICKED) : ''; }
+function syncInputs(){
+  const s0 = wps[0] || null, g0 = wps.length >= 2 ? wps[wps.length-1] : pendingGoal;
+  if (document.activeElement !== $('qS')) $('qS').value = inputLabel(s0);
+  if (document.activeElement !== $('qG')) $('qG').value = inputLabel(g0);
+}
 function closeResults(){ $('results').classList.remove('show'); }
-async function doSearch(){
-  const q = $('q').value.trim();
-  if (!q) return;
+let searchResults = [], searchKey = 'S';
+async function doSearch(key){
+  searchKey = key;
+  const inp = $(key === 'S' ? 'qS' : 'qG');
+  const q = inp.value.trim();
+  if (!q || q === PICKED){
+    toast((key === 'S' ? '出発地' : '目的地') + 'の地名・駅・住所を入力してから検索してください（地図をタップして決めることもできます）', 3500);
+    inp.value = ''; inp.blur(); closeResults(); sheet('min'); return;
+  }
   const box = $('results');
   box.innerHTML = '<div class="res">検索中…</div>'; box.classList.add('show');
   const c = map.getCenter();
@@ -1486,15 +1510,74 @@ async function doSearch(){
   out.sort((a, b) => hav(a, c) - hav(b, c));
   if (!out.length){ box.innerHTML = '<div class="res">見つかりませんでした。別の言い方で試してください。</div>'; return; }
   searchResults = out.slice(0, 12);
-  box.innerHTML = searchResults.map((r, i) => `<div class="res" data-i="${i}">${esc(r.name)}<small>${esc(r.sub)}</small></div>`).join('');
+  box.innerHTML = `<div class="res" style="background:#f8fafc;font-size:12px;color:#475569;cursor:default">${key === 'S' ? '🟢 出発地' : '🔴 目的地'}を選んでください</div>`
+    + searchResults.map((r, i) => `<div class="res" data-i="${i}">${esc(r.name)}<small>${esc(r.sub)}</small></div>`).join('');
 }
-let searchResults = [];
+function setEndpoint(key, w){
+  pushUndo();
+  if (key === 'S'){ if (wps.length) wps[0] = w; else wps.push(w); }
+  else if (wps.length >= 2) wps[wps.length-1] = w;
+  else if (wps.length === 1) wps.push(w);
+  else pendingGoal = w;
+  onWpsChanged({immediate:true});
+  if (wps.length >= 2) setTimeout(fitRoute, 60);
+  else map.setView([w.lat, w.lng], Math.max(map.getZoom(), 14));
+  if (!wps.length || (key === 'G' && wps.length < 2)) toast('出発地も入力するか、地図をタップしてください', 3000);
+  else if (wps.length < 2) toast('次は目的地を入力するか、地図をタップしてください', 3000);
+}
 $('results').addEventListener('click', e => {
   const t = e.target.closest('.res[data-i]'); if (!t) return;
   const r = searchResults[+t.dataset.i];
-  closeResults(); $('q').blur();
-  showPlacePopup(r);
+  closeResults(); document.activeElement && document.activeElement.blur();
+  sheet('min');
+  setEndpoint(searchKey, {lat:r.lat, lng:r.lng, name:r.name});
 });
+['S','G'].forEach(k => {
+  const inp = $('q' + k);
+  $('btnSearch' + k).onclick = () => doSearch(k);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); doSearch(k); } });
+  inp.addEventListener('focus', () => { if (inp.value === PICKED) inp.value = ''; else inp.select(); sheet('max'); });
+  inp.addEventListener('blur', () => setTimeout(() => { if (!$('results').classList.contains('show')) syncInputs(); }, 150));
+});
+
+/* ---------- reverse geocoding (地図で選んだ地点に地名を付ける) ---------- */
+const revSeen = new WeakSet(), revQueue = [];
+let revBusy = false;
+function needName(w){
+  if (!w || w.name || revSeen.has(w)) return;
+  revSeen.add(w); revQueue.push(w); runRev();
+}
+async function runRev(){
+  if (revBusy) return;
+  revBusy = true;
+  while (revQueue.length){
+    const w = revQueue.shift();
+    if (w.name) continue;
+    const lat = w.lat, lng = w.lng;
+    const nm = await reverseName(lat, lng);
+    if (nm && !w.name && w.lat === lat && w.lng === lng){ w.name = nm; renderWpList(); syncInputs(); }
+    await new Promise(r => setTimeout(r, 1100));   // Nominatimの利用ルール（1秒1回）
+  }
+  revBusy = false;
+}
+async function reverseName(lat, lng){
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language=ja&lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`);
+    const x = await r.json(), a = x.address || {};
+    const parts = [a.city || a.town || a.village || a.county, a.suburb || a.city_district, a.quarter || a.neighbourhood || a.hamlet].filter(Boolean);
+    const uniq = parts.filter((p, i) => parts.indexOf(p) === i);
+    let nm = uniq.join(' ');
+    if (x.name && x.category !== 'highway' && uniq.indexOf(x.name) < 0) nm = x.name + (nm ? `（${nm}）` : '');
+    if (nm) return nm;
+  } catch (e) {}
+  try {
+    const r = await fetch(`https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`);
+    const x = await r.json();
+    const nm = x && x.results && x.results.lv01Nm;
+    if (nm && nm !== '－') return nm;
+  } catch (e) {}
+  return '';
+}
 function showPlacePopup(r){
   map.setView([r.lat, r.lng], Math.max(map.getZoom(), 15));
   sheet('min');
@@ -1504,11 +1587,10 @@ function showPlacePopup(r){
     <button data-a="goal">🔴 ここを目的地に</button></div>`;
   const pop = L.popup().setLatLng([r.lat, r.lng]).setContent(html).openOn(map);
   bindPopup(pop, a => {
-    pushUndo();
     const w = {lat:r.lat, lng:r.lng, name:r.name};
-    if (a === 'start') wps.unshift(w);
-    else if (a === 'goal'){ wps.push(w); }
-    else {
+    if (a === 'start' || a === 'goal'){ map.closePopup(); setEndpoint(a === 'start' ? 'S' : 'G', w); return; }
+    pushUndo();
+    {
       // insert as via at the position that adds least distance
       let best = 1, bc = Infinity;
       for (let i = 1; i < wps.length; i++){ const cst = hav(wps[i-1], w) + hav(w, wps[i]) - hav(wps[i-1], wps[i]); if (cst < bc){ bc = cst; best = i; } }
@@ -1517,9 +1599,6 @@ function showPlacePopup(r){
     map.closePopup(); onWpsChanged({immediate:true});
   });
 }
-$('btnSearch').onclick = doSearch;
-$('q').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); doSearch(); } });
-$('q').addEventListener('focus', () => sheet('max'));
 
 /* ---------- location ---------- */
 $('btnLocate').onclick = () => {
