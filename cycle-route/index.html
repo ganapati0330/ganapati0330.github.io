@@ -689,6 +689,7 @@ button{cursor:pointer}
 .res{padding:9px 11px;border-bottom:1px solid #e2e8f0;font-size:14px;cursor:pointer}
 .res:hover{background:#fff7ed}
 .res small{display:block;color:#64748b;font-size:11px;margin-top:2px}
+.rt{display:inline-block;font-size:10.5px;background:#ffedd5;color:#9a3412;border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px}
 .pbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 24px}
 .card{background:#fff;border-radius:12px;padding:11px 12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(15,23,42,.08)}
 .card h2{font-size:13px;margin:0 0 8px;color:#475569;display:flex;align-items:center;gap:6px}
@@ -744,6 +745,32 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
 .foot{font-size:10.5px;color:#94a3b8;line-height:1.6;padding:4px 2px}
 .wpicon{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
 .wpicon.s{background:#16a34a}.wpicon.v{background:#2563eb;width:24px;height:24px;font-size:11px}.wpicon.g{background:#dc2626}
+details.card>summary{list-style:none;cursor:pointer;margin:-11px -12px;padding:11px 12px;user-select:none}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary h2{margin:0}
+details.card>summary h2::before{content:"▸";display:inline-block;width:12px;color:#94a3b8;transition:transform .15s}
+details.card[open]>summary{margin-bottom:0;padding-bottom:9px}
+details.card[open]>summary h2::before{transform:rotate(90deg)}
+.mini{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:#cbd5e1;min-height:24px}
+.mini span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini b{color:#fff;font-size:14px}
+.mini button{flex:none;border:0;border-radius:6px;background:rgba(255,255,255,.14);color:#fff;font-size:12px;padding:4px 8px;display:none}
+.lbl{font-size:12px;color:#475569;font-weight:700;margin:8px 0 4px}
+.basis{margin-top:5px;font-size:11px;background:#f1f5f9;border-radius:6px;padding:5px 7px}
+.cand{border:2px solid #e2e8f0;border-radius:10px;padding:8px 10px;margin-top:7px;cursor:pointer;position:relative}
+.cand.on{border-color:#f97316;background:#fff7ed}
+.cand .ct{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
+.cand .sw{width:14px;height:6px;border-radius:3px;flex:none}
+.cand .nums{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:5px;font-size:12px}
+.cand .nums b{display:block;font-size:14px}
+.cand .nums span{color:#64748b;font-size:10.5px}
+.cand .tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px}
+.cand .tags i{font-style:normal;font-size:10.5px;background:#dcfce7;color:#166534;border-radius:999px;padding:1px 7px}
+.cand .tags i.w{background:#fee2e2;color:#991b1b}
+.warn .act{margin-left:auto;flex:none;border:1px solid #fca5a5;background:#fff;color:#b91c1c;border-radius:7px;font-size:11px;padding:4px 7px;align-self:center}
+.warn .adv{color:#b45309;display:block;font-size:11px}
+.nogo{display:flex;align-items:center;gap:6px;background:#fef2f2;border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px;color:#991b1b}
+.nogo button{margin-left:auto;border:0;background:#fff;border-radius:6px;padding:3px 8px;font-size:12px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
 .pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -766,7 +793,8 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
 @media (max-width:760px){
   #map{left:0;bottom:0}
   #panel{top:auto;width:100%;height:46vh;border-radius:16px 16px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.2);transition:height .25s;padding-bottom:env(safe-area-inset-bottom)}
-  #panel.min{height:200px}
+  #panel.min{height:236px}
+  .mini button{display:block}
   #panel.max{height:88vh}
   #sheetHandle{display:block;position:absolute;top:0;left:0;right:0;height:18px;z-index:3;border:0;background:transparent}
   #sheetHandle::after{content:"";position:absolute;left:50%;top:6px;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:rgba(255,255,255,.55)}
@@ -790,10 +818,32 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
       <div class="rin"><span class="badge b-g">G</span><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button id="btnSearchG">検索</button></div>
       <div id="results"></div>
     </div>
+    <div class="mini" id="mini"><span id="miniTxt">出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください</span><button id="btnMini">詳細 ▴</button></div>
   </div>
   <div class="pbody" id="pbody">
-    <div class="card">
-      <h2>📍 地点 <span class="sp"></span></h2>
+    <details class="card" data-k="loop" open>
+      <summary><h2>🔄 距離を指定してコースを提案</h2></summary>
+      <p class="hint">出発地（S）だけ決めて、走りたい距離を選ぶと、出発地に戻るコースをいくつか提案します。目的地は不要です。</p>
+      <div class="seg" id="loopPreset" style="margin-top:8px">
+        <button data-v="20">20km</button><button data-v="30">30km</button><button data-v="50">50km</button><button data-v="80">80km</button><button data-v="100">100km</button>
+      </div>
+      <div class="row" style="margin-top:8px"><span>距離</span><input type="range" id="loopKm" min="10" max="200" step="5" value="30"><b id="loopKmV">30</b>km前後</div>
+      <div class="lbl">形</div>
+      <div class="seg" id="loopShape"><button data-v="loop">周回（同じ道をなるべく通らない）</button><button data-v="out">往復</button></div>
+      <div class="lbl">優先すること</div>
+      <div class="seg" id="loopSort"><button data-v="dist">距離ぴったり</button><button data-v="flat">坂少なめ</button><button data-v="quiet">幹線道路少なめ</button></div>
+      <div class="btnrow"><button class="btn pri" id="btnLoopGen" style="flex:1">🔄 コースを提案する</button></div>
+      <div id="loopStatus" class="hint" style="margin-top:6px"></div>
+    </details>
+
+    <details class="card" data-k="cand" id="cardCand" open hidden>
+      <summary><h2>⚖️ ルート候補の比較 <span class="sp" id="candCount"></span></h2></summary>
+      <p class="hint" id="candHint"></p>
+      <div id="candList"></div>
+    </details>
+
+    <details class="card" data-k="wp" open>
+      <summary><h2>📍 地点</h2></summary>
       <div id="wpList"></div>
       <p class="hint" id="wpHint">上の欄に地名を入れて検索するか、地図をタップすると出発地 → 目的地の順に設定されます。ルートの線をタップすると経由地を差し込めます。地点はドラッグで動かせます。</p>
       <div class="btnrow">
@@ -802,20 +852,22 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
         <button class="btn" id="btnLoop">↻ 出発地へ戻る</button>
         <button class="btn" id="btnClear">✕ 全消去</button>
       </div>
-    </div>
+    </details>
 
-    <div class="card">
-      <h2>🛣️ ルートの好み</h2>
+    <details class="card" data-k="pref" open>
+      <summary><h2>🛣️ ルートの好み</h2></summary>
       <select class="sel" id="profile"></select>
       <p class="hint" id="profDesc"></p>
+      <p class="hint basis">ℹ️ 道路の種類（国道・県道・生活道路など）、舗装、自転車道などのOpenStreetMapの情報から推定しています。実際の交通量を測ったものではありません。</p>
       <div class="btnrow">
-        <button class="btn" id="btnAlt">🔀 別ルート候補 <span id="altNo">1</span>/4</button>
+        <button class="btn dark" id="btnCompare">⚖️ 候補を比較する</button>
       </div>
+      <div id="nogoBox"></div>
       <div id="status"></div>
-    </div>
+    </details>
 
-    <div class="card" id="cardStats">
-      <h2>📊 ルート情報</h2>
+    <details class="card" data-k="stats" id="cardStats" open>
+      <summary><h2>📊 ルート情報</h2></summary>
       <div class="stats">
         <div class="stat"><div class="k">距離</div><div class="v" id="sDist">—</div></div>
         <div class="stat"><div class="k">獲得標高</div><div class="v" id="sAsc">—</div></div>
@@ -826,16 +878,21 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
         <span>平均速度</span><input type="range" id="speed" min="12" max="40" step="1" value="24"><b id="speedV">24</b>km/h
       </div>
       <p class="hint" style="margin-top:4px">予想時間 ＝ 距離 ÷ 平均速度 ＋ 登りの時間（1時間あたり600m登る想定）</p>
-    </div>
+    </details>
 
-    <div class="card">
-      <h2>⛰️ 標高グラフ</h2>
+    <details class="card" data-k="warn">
+      <summary><h2>⚠️ 注意ポイント・通りにくい区間 <span class="sp" id="warnCount"></span></h2></summary>
+      <div id="warnList"><p class="hint">ルートを作ると、自転車通行不可・階段・押し歩き・時間制限・通行可否が未確認の区間、交通量の多い道・未舗装・急坂・トンネルを表示します。</p></div>
+    </details>
+
+    <details class="card" data-k="elev">
+      <summary><h2>⛰️ 標高グラフ</h2></summary>
       <div id="elevWrap"><canvas id="elev"></canvas><div id="elevTip"></div></div>
       <p class="hint">グラフをなぞると地図上の位置が表示されます。色は勾配です。</p>
-    </div>
+    </details>
 
-    <div class="card">
-      <h2>🎨 ルートの色分け</h2>
+    <details class="card" data-k="color">
+      <summary><h2>🎨 ルートの色分け</h2></summary>
       <div class="seg" id="colorMode">
         <button data-m="road" class="on">道路の種類</button>
         <button data-m="grade">勾配</button>
@@ -843,15 +900,10 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
       </div>
       <div style="margin-top:10px" class="mix" id="mixBar"></div>
       <div class="legend" id="legend"></div>
-    </div>
+    </details>
 
-    <div class="card">
-      <h2>⚠️ 注意ポイント <span class="sp" id="warnCount"></span></h2>
-      <div id="warnList"><p class="hint">ルートを作ると、交通量の多い道・未舗装・急坂・トンネルなどを表示します。</p></div>
-    </div>
-
-    <div class="card">
-      <h2>🏯 観光地・自転車置き場</h2>
+    <details class="card" data-k="poi">
+      <summary><h2>🏯 観光地・自転車置き場</h2></summary>
       <div class="chips">
         <label><input type="checkbox" id="poiA"> 🏯 観光地</label>
         <label><input type="checkbox" id="poiP"> <span class="pk sm">P</span> 自転車置き場</label>
@@ -864,10 +916,10 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
         <label class="row" style="font-size:12px"><input type="checkbox" id="poiRecOnly"> ⭐だけ表示</label>
       </div>
       <div id="poiList"></div>
-    </div>
+    </details>
 
-    <div class="card">
-      <h2>💾 保存・書き出し</h2>
+    <details class="card" data-k="save">
+      <summary><h2>💾 保存・書き出し</h2></summary>
       <div class="row"><input type="text" id="routeName" placeholder="ルート名（例：霞ヶ浦一周）" maxlength="40"></div>
       <div class="btnrow">
         <button class="btn pri" id="btnSave">保存</button>
@@ -876,12 +928,12 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
       </div>
       <p class="hint" style="margin-top:6px">GPXはGarmin・Wahoo・Strava・RidewithGPSなどに取り込めます。</p>
       <div id="savedList" style="margin-top:8px"></div>
-    </div>
+    </details>
 
-    <div class="card">
-      <h2>🗺️ 地図</h2>
+    <details class="card" data-k="map">
+      <summary><h2>🗺️ 地図の種類</h2></summary>
       <select class="sel" id="layerSel"></select>
-    </div>
+    </details>
 
     <div class="foot">
       ルート検索：BRouter（brouter.de）／ 地図データ：© OpenStreetMap contributors、国土地理院、CyclOSM ／ 住所検索：国土地理院・Nominatim。<br>
@@ -899,7 +951,7 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
 <script>
 'use strict';
 (function(){
-const VERSION = 'v4';
+const VERSION = 'v5';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -947,8 +999,9 @@ let wps = [];             // {lat,lng,name}
 let pendingGoal = null;   // goal chosen before a start exists
 let undoStack = [];
 let route = null;         // parsed route
-let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false}, store.get(LS_PREF, {}));
+let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist'}, store.get(LS_PREF, {}));
 let alt = 0;
+let hashAlt = 0;
 let reqSeq = 0, abortCtl = null, routeTimer = null;
 
 /* ---------- map ---------- */
@@ -1009,13 +1062,17 @@ function pushUndo(){
 /* ---------- waypoints ---------- */
 function renderMarkers(){
   markerGroup.clearLayers();
+  const isLoopRoute = wps.length >= 3 && hav(wps[0], wps[wps.length-1]) < 30;
   wps.forEach((w, i) => {
+    if (isLoopRoute && i === wps.length-1) return;          // 周回：ゴールはスタートと同じ印
     const k = wpKind(i);
     const sz = k === 'v' ? 24 : 28;
+    const lbl = isLoopRoute && i === 0 ? 'S/G' : wpLabel(i);
     const m = L.marker([w.lat, w.lng], {
       draggable:true, zIndexOffset: k==='v'?500:1000,
-      icon: L.divIcon({className:'', html:`<div class="wpicon ${k}">${wpLabel(i)}</div>`, iconSize:[sz,sz], iconAnchor:[sz/2,sz/2]})
+      icon: L.divIcon({className:'', html:`<div class="wpicon ${k}"${lbl.length > 1 && k !== 'v' ? ' style="font-size:9px"' : ''}>${lbl}</div>`, iconSize:[sz,sz], iconAnchor:[sz/2,sz/2]})
     });
+    if (isLoopRoute && i === 0) m.on('dragend', ev => { const ll = ev.target.getLatLng(); const g = wps[wps.length-1]; g.lat = ll.lat; g.lng = ll.lng; g.name = ''; revSeen.delete(g); });
     m.on('dragstart', () => pushUndo());
     m.on('dragend', ev => { const ll = ev.target.getLatLng(); wps[i].lat = ll.lat; wps[i].lng = ll.lng; wps[i].name = ''; revSeen.delete(wps[i]); onWpsChanged(); });
     m.on('click', ev => {
@@ -1076,7 +1133,7 @@ $('wpList').addEventListener('click', e => {
 function onWpsChanged(opts){
   if (pendingGoal && wps.length === 1){ wps.push(pendingGoal); pendingGoal = null; }
   wps.forEach(needName); needName(pendingGoal); syncInputs();
-  alt = 0; $('altNo').textContent = '1';
+  alt = 0; clearCands();
   renderMarkers(); renderWpList(); updateHash(); updateButtons();
   scheduleRoute(opts && opts.immediate ? 0 : 250);
 }
@@ -1085,7 +1142,7 @@ function updateButtons(){
   $('btnReverse').disabled = wps.length < 2;
   $('btnLoop').disabled = wps.length < 2;
   $('btnClear').disabled = !wps.length && !pendingGoal;
-  $('btnAlt').disabled = wps.length < 2;
+  $('btnCompare').disabled = wps.length < 2;
   $('btnPoiRoute').disabled = !route;
   const has = !!route;
   $('btnSave').disabled = !has; $('btnGpx').disabled = !has; $('btnShare').disabled = wps.length < 2;
@@ -1099,7 +1156,7 @@ $('btnLoop').onclick = () => {
   if (hav(s, g) < 30){ toast('すでに出発地に戻るルートです'); return; }
   pushUndo(); wps.push({lat:s.lat, lng:s.lng, name:s.name}); onWpsChanged({immediate:true});
 };
-$('btnClear').onclick = () => { if (!wps.length && !pendingGoal) return; pushUndo(); wps = []; pendingGoal = null; onWpsChanged({immediate:true}); };
+$('btnClear').onclick = () => { if (!wps.length && !pendingGoal) return; pushUndo(); wps = []; pendingGoal = null; nogos = []; renderNogos(); onWpsChanged({immediate:true}); };
 
 /* ---------- routing ---------- */
 function setStatus(msg, cls){ const s = $('status'); s.className = cls || ''; s.textContent = msg || ''; }
@@ -1114,9 +1171,10 @@ function translateErr(t){
   if (/alternative/i.test(t)) return 'これ以上の別ルート候補はありません。';
   return 'ルートを作れませんでした：' + t.slice(0, 120);
 }
-async function fetchRoute(profile, a, signal){
-  const ll = wps.map(w => w.lng.toFixed(6) + ',' + w.lat.toFixed(6)).join('|');
-  const url = `${BROUTER}?lonlats=${ll}&profile=${encodeURIComponent(profile)}&alternativeidx=${a}&format=geojson`;
+function fetchRoute(profile, a, signal){ return fetchRouteFor(wps, profile, a, signal); }
+async function fetchRouteFor(points, profile, a, signal){
+  const ll = points.map(w => w.lng.toFixed(6) + ',' + w.lat.toFixed(6)).join('|');
+  const url = `${BROUTER}?lonlats=${ll}&profile=${encodeURIComponent(profile)}&alternativeidx=${a}&format=geojson` + nogoParam();
   const res = await fetch(url, {signal});
   const text = await res.text();
   if (!res.ok || text.trim()[0] !== '{') { const er = new Error(text || ('HTTP ' + res.status)); er.brouter = true; throw er; }
@@ -1139,19 +1197,22 @@ async function calcRoute(){
       } else throw e;
     }
     if (seq !== reqSeq) return;
-    route = parseRoute(gj);
-    route.profile = profile;
-    drawRoute(); renderStats(); drawElev(); renderMix(); renderWarnings(); updateButtons();
-    if (poiRouteList){ poiRouteList = null; renderPoiList(); renderPois(); }
+    const r = parseRoute(gj);
+    r.profile = profile;
+    applyRoute(r);
     setStatus(alt > 0 ? `別ルート候補 ${alt+1} を表示中` : '');
   } catch (e) {
     if (e.name === 'AbortError' || seq !== reqSeq) return;
-    if (alt > 0 && e.brouter){ alt = 0; $('altNo').textContent = '1'; toast('これ以上の別ルート候補はありません'); scheduleRoute(0); return; }
+    if (alt > 0 && e.brouter){ alt = 0; scheduleRoute(0); return; }
     setStatus(e.brouter ? translateErr(e.message) : '通信できませんでした。電波状況を確認してもう一度お試しください。', 'err');
   }
 }
-$('btnAlt').onclick = () => { if (wps.length < 2) return; alt = (alt + 1) % 4; $('altNo').textContent = String(alt+1); scheduleRoute(0); };
 
+function applyRoute(r){
+  route = r;
+  drawRoute(); renderStats(); drawElev(); renderMix(); renderWarnings(); updateButtons(); renderMini();
+  if (poiRouteList){ poiRouteList = null; renderPoiList(); renderPois(); }
+}
 function parseRoute(gj){
   const f = gj.features && gj.features[0];
   if (!f || !f.geometry || !f.geometry.coordinates || f.geometry.coordinates.length < 2) throw Object.assign(new Error('empty route'), {brouter:true});
@@ -1257,7 +1318,7 @@ function gradeColor(g){ for (const x of GRADES) if (g <= x.max) return x.color; 
 function clearRoute(){
   route = null; routeGroup.clearLayers(); warnGroup.clearLayers();
   if (hoverMarker){ map.removeLayer(hoverMarker); hoverMarker = null; }
-  renderStats(); drawElev(); renderMix(); renderWarnings(); updateButtons();
+  renderStats(); drawElev(); renderMix(); renderWarnings(); updateButtons(); renderMini();
 }
 function drawRoute(){
   routeGroup.clearLayers();
@@ -1323,7 +1384,7 @@ function renderStats(){
   $('sGrade').innerHTML = route.hasEle ? Math.max(0, route.maxG).toFixed(1) + '<small>%</small>' : '—';
 }
 $('speed').value = pref.speed; $('speedV').textContent = pref.speed;
-$('speed').addEventListener('input', () => { pref.speed = +$('speed').value; $('speedV').textContent = pref.speed; savePref(); renderStats(); });
+$('speed').addEventListener('input', () => { pref.speed = +$('speed').value; $('speedV').textContent = pref.speed; savePref(); renderStats(); renderMini(); if (cands.length) renderCands(); });
 
 function renderMix(){
   const bar = $('mixBar'), lg = $('legend');
@@ -1359,28 +1420,37 @@ document.querySelectorAll('#colorMode button').forEach(b => {
 });
 
 /* ---------- warnings ---------- */
-function buildWarnings(){
+function buildWarnings(r){
+  if (r === undefined) r = route;
   const W = [];
-  if (!route) return W;
-  const pts = route.pts;
-  const add = (type, from, to) => {
-    const len = (pts[to].d - pts[from].d) * route.cumScale;
-    const last = W[W.length-1];
-    if (last && last.type === type && pts[from].d - pts[last.to].d < 150){ last.to = to; last.len = (pts[to].d - pts[last.from].d) * route.cumScale; return; }
-    W.push({type, from, to, len});
+  if (!r) return W;
+  const pts = r.pts;
+  const add = (type, from, to, info) => {
+    const len = (pts[to].d - pts[from].d) * r.cumScale;
+    for (let k = W.length - 1; k >= 0 && k >= W.length - 4; k--){
+      const last = W[k];
+      if (last.type === type && pts[from].d - pts[last.to].d < 150){ last.to = Math.max(last.to, to); last.len = (pts[last.to].d - pts[last.from].d) * r.cumScale; return; }
+    }
+    W.push({type, from, to, len, info});
   };
-  route.segs.forEach(s => {
-    const t = s.tags, h = t.highway || '';
+  const OKB = /^(yes|designated|permissive)$/;
+  r.segs.forEach(s => {
+    const t = s.tags, h = t.highway || '', bk = t.bicycle || '';
+    if (bk === 'no' || bk === 'use_sidepath' || (/^(no|private)$/.test(t.access || '') && !OKB.test(bk))) add('nobike', s.from, s.to);
+    else if (h === 'steps') add('steps', s.from, s.to);
+    else if (bk === 'dismount') add('dismount', s.from, s.to);
+    else if (/^(footway|pedestrian|corridor)$/.test(h) && !OKB.test(bk)) add('sidewalk', s.from, s.to);
+    else if (/^(path|track|bridleway)$/.test(h) && !bk) add('unknown', s.from, s.to);
+    const ck = Object.keys(t).filter(k => /:conditional$/.test(k) || k === 'opening_hours');
+    if (ck.length) add('cond', s.from, s.to, ck.map(k => `${k.replace(':conditional','')}: ${t[k]}`).join(' / '));
     if (/^(trunk|trunk_link|primary|primary_link|motorway)$/.test(h)) add('busy', s.from, s.to);
     if (isUnpaved(t) && h) add('unpaved', s.from, s.to);
-    if (h === 'steps' || t.bicycle === 'dismount' || (/^(footway|pedestrian)$/.test(h) && !/^(yes|designated)$/.test(t.bicycle||''))) add('walk', s.from, s.to);
     if (t.tunnel === 'yes' || t.tunnel === 'building_passage') add('tunnel', s.from, s.to);
   });
-  // steep sections: grade >= 8% sustained
-  if (route.hasEle){
+  if (r.hasEle){
     let st = -1;
     for (let i = 0; i < pts.length; i++){
-      const steep = route.grade[i] >= 8;
+      const steep = r.grade[i] >= 8;
       if (steep && st < 0) st = i;
       if ((!steep || i === pts.length-1) && st >= 0){
         if (pts[i].d - pts[st].d >= 150) add('steep', st, i);
@@ -1388,41 +1458,54 @@ function buildWarnings(){
       }
     }
   }
-  const MIN = {busy:300, unpaved:50, walk:10, tunnel:150, steep:150};
+  const MIN = {nobike:1, steps:1, dismount:1, sidewalk:20, cond:1, unknown:50, busy:300, unpaved:50, tunnel:150, steep:150};
   return W.filter(w => w.len >= MIN[w.type]).sort((a, b) => a.from - b.from);
 }
 const WINFO = {
-  busy:   {ic:'🚛', name:'交通量の多い道（国道・主要道）'},
-  unpaved:{ic:'🪨', name:'未舗装の可能性'},
-  walk:   {ic:'🚶', name:'押し歩き・歩道区間の可能性'},
-  tunnel: {ic:'🔦', name:'トンネル（ライト点灯）'},
-  steep:  {ic:'⛰️', name:'急な登り'}
+  nobike:  {ic:'🚫', name:'自転車通行不可の可能性', adv:'通れない可能性が高い区間です。迂回してください'},
+  steps:   {ic:'🪜', name:'階段', adv:'自転車を担いで通る必要があります'},
+  dismount:{ic:'🚶', name:'押し歩き区間', adv:'自転車を降りて押して歩く指定があります'},
+  sidewalk:{ic:'🚶', name:'歩道・歩行者用の道', adv:'「自転車通行可」の標識が無ければ押し歩き（現地で確認）'},
+  cond:    {ic:'🕒', name:'時間帯・条件付きの通行', adv:''},
+  unknown: {ic:'❔', name:'自転車の通行可否が未確認', adv:'小道・農道など。通れない場合は迂回してください'},
+  busy:    {ic:'🚛', name:'交通量の多い道（国道・主要道）', adv:'大型車に注意。車道の左端を走りましょう'},
+  unpaved: {ic:'🪨', name:'未舗装の可能性', adv:'ロードバイクには不向きです'},
+  tunnel:  {ic:'🔦', name:'トンネル', adv:'ライトを点灯。路肩が狭いことがあります'},
+  steep:   {ic:'⛰️', name:'急な登り', adv:''}
 };
 let warnings = [];
 function renderWarnings(){
   warnGroup.clearLayers();
   warnings = buildWarnings();
   const box = $('warnList');
-  $('warnCount').textContent = route ? `${warnings.length}件` : '';
-  if (!route){ box.innerHTML = '<p class="hint">ルートを作ると、交通量の多い道・未舗装・急坂・トンネルなどを表示します。</p>'; return; }
+  const sev = warnings.filter(w => SEVERE.has(w.type)).length;
+  $('warnCount').innerHTML = route ? (sev ? `<span style="color:#dc2626">要確認${sev}</span> / ${warnings.length}件` : `${warnings.length}件`) : '';
+  if (route && sev) $('warnList').closest('details').open = true;
+  if (!route){ box.innerHTML = '<p class="hint">ルートを作ると、自転車通行不可・階段・押し歩き・時間制限・通行可否が未確認の区間、交通量の多い道・未舗装・急坂・トンネルを表示します。</p>'; return; }
   if (!warnings.length){ box.innerHTML = '<p class="hint">目立った注意ポイントは見つかりませんでした 👍</p>'; return; }
-  box.innerHTML = warnings.map((w, i) => {
+  box.innerHTML = (sev ? '<p class="hint" style="margin-bottom:4px">🔴＝通れない・押し歩きの可能性がある区間です。「避ける」で、その区間を通らないルートを探し直します。</p>' : '')
+   + warnings.map((w, i) => {
     const p = route.pts[w.from];
-    let extra = '';
+    let extra = '', adv = WINFO[w.type].adv;
     if (w.type === 'steep'){
       const dd = route.pts[w.to].d - p.d; const g = dd ? (route.pts[w.to].ele - p.ele) / dd * 100 : 0;
       extra = ` 平均${g.toFixed(1)}%`;
     }
-    return `<div class="warn" data-i="${i}"><span class="ic">${WINFO[w.type].ic}</span><div>${WINFO[w.type].name}${extra}<small>${fmtKm(p.d*route.cumScale)}km地点から ${w.len>=1000?(w.len/1000).toFixed(1)+'km':Math.round(w.len)+'m'}</small></div></div>`;
+    if (w.type === 'cond') adv = '条件：' + (w.info || '不明');
+    const len = w.len >= 1000 ? (w.len/1000).toFixed(1) + 'km' : Math.round(w.len) + 'm';
+    return `<div class="warn" data-i="${i}"><span class="ic">${SEVERE.has(w.type) ? '🔴' : ''}${WINFO[w.type].ic}</span><div><span style="${SEVERE.has(w.type) ? 'font-weight:700' : ''}">${WINFO[w.type].name}${extra}</span><small>${fmtKm(p.d*route.cumScale)}km地点から ${len}</small>${adv ? `<span class="adv">${esc(adv)}</span>` : ''}</div>${w.type !== 'steep' ? `<button class="act" data-nogo="${i}">避ける</button>` : ''}</div>`;
   }).join('');
 }
 $('warnList').addEventListener('click', e => {
+  const ng = e.target.closest('[data-nogo]');
+  if (ng){ addNogo(warnings[+ng.dataset.nogo]); return; }
   const t = e.target.closest('.warn'); if (!t || !route) return;
   const w = warnings[+t.dataset.i];
   warnGroup.clearLayers();
   const seg = route.pts.slice(w.from, w.to+1).map(p => [p.lat, p.lng]);
   L.polyline(seg, {color:'#fde047', weight:14, opacity:.8, interactive:false}).addTo(warnGroup);
-  map.fitBounds(L.latLngBounds(seg), {maxZoom:16, paddingBottomRight:[20, window.innerWidth <= 760 ? $('panel').offsetHeight : 20]});
+  map.fitBounds(L.latLngBounds(seg), {maxZoom:17, paddingBottomRight:[20, window.innerWidth <= 760 ? $('panel').offsetHeight : 20]});
+  sheet('min');
 });
 
 /* ---------- elevation chart ---------- */
@@ -1526,19 +1609,49 @@ async function doSearch(key){
   const c = map.getCenter();
   const jobs = [
     fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q=' + encodeURIComponent(q)).then(r => r.json()).then(a => (a || []).slice(0, 8).map(x => ({
-      name: x.properties.title, sub:'住所・地名（国土地理院）', lat:+x.geometry.coordinates[1], lng:+x.geometry.coordinates[0]}))).catch(() => []),
-    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&countrycodes=jp&accept-language=ja&q=' + encodeURIComponent(q)
-      + `&viewbox=${(c.lng-1).toFixed(3)},${(c.lat+1).toFixed(3)},${(c.lng+1).toFixed(3)},${(c.lat-1).toFixed(3)}`).then(r => r.json()).then(a => (a || []).map(x => ({
-      name: x.name || String(x.display_name).split(',')[0], sub: String(x.display_name).split(',').slice(1, 4).join(',').trim() || 'OpenStreetMap', lat:+x.lat, lng:+x.lon}))).catch(() => [])
+      name: x.properties.title, type:'住所・町名', area:'', src:'gsi', lat:+x.geometry.coordinates[1], lng:+x.geometry.coordinates[0]}))).catch(() => []),
+    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=10&countrycodes=jp&accept-language=ja&q=' + encodeURIComponent(q)
+      + `&viewbox=${(c.lng-1).toFixed(3)},${(c.lat+1).toFixed(3)},${(c.lng+1).toFixed(3)},${(c.lat-1).toFixed(3)}`).then(r => r.json()).then(a => (a || []).map(x => {
+      const ad = x.address || {};
+      const area = [ad.province || ad.state, ad.city || ad.town || ad.village || ad.county, ad.city_district || ad.suburb || ad.quarter].filter(Boolean);
+      return {name: x.name || String(x.display_name).split(',')[0], type: nomType(x), area: area.filter((v, k) => area.indexOf(v) === k).join(''), src:'osm', lat:+x.lat, lng:+x.lon};
+    })).catch(() => [])
   ];
   const [gsi, osm] = await Promise.all(jobs);
   const out = [];
-  [...osm, ...gsi].forEach(r => { if (isFinite(r.lat) && isFinite(r.lng) && !out.some(o => hav(o, r) < 80 && o.name === r.name)) out.push(r); });
-  out.sort((a, b) => hav(a, c) - hav(b, c));
+  [...osm, ...gsi].forEach(r => { if (isFinite(r.lat) && isFinite(r.lng) && !out.some(o => hav(o, r) < 300 && o.name === r.name && (o.type === r.type || r.src === 'gsi'))) out.push(r); });
+  const norm = x => String(x).replace(/[\s　・･()（）]/g, '').toLowerCase();
+  const qq = norm(q);
+  const score = r => {
+    const n = norm(r.name); let sc = 0;
+    if (n === qq || n + '駅' === qq || n === qq + '駅') sc += 1000;
+    else if (n.startsWith(qq) || qq.startsWith(n)) sc += 400;
+    else if (n.includes(qq)) sc += 200;
+    if (/駅$/.test(qq) && r.type === '駅') sc += 150;
+    if (/公園$/.test(qq) && r.type === '公園') sc += 150;
+    if (r.src === 'gsi') sc -= 30;
+    return sc - Math.min(400, hav(r, c) / 1000 * 1.5);
+  };
+  out.forEach(r => r.sc = score(r));
+  out.sort((a, b) => b.sc - a.sc);
   if (!out.length){ box.innerHTML = '<div class="res">見つかりませんでした。別の言い方で試してください。</div>'; return; }
   searchResults = out.slice(0, 12);
   box.innerHTML = `<div class="res" style="background:#f8fafc;font-size:12px;color:#475569;cursor:default">${key === 'S' ? '🟢 出発地' : '🔴 目的地'}を選んでください</div>`
-    + searchResults.map((r, i) => `<div class="res" data-i="${i}">${esc(r.name)}<small>${esc(r.sub)}</small></div>`).join('');
+    + searchResults.map((r, i) => `<div class="res" data-i="${i}"><span class="rt">${esc(r.type)}</span>${esc(r.name)}<small>${esc(r.area || (r.src === 'gsi' ? '国土地理院の住所データ' : ''))}${r.area || r.src === 'gsi' ? ' ・ ' : ''}約${Math.round(hav(r, c) / 1000)}km先</small></div>`).join('');
+}
+function nomType(x){
+  const c = x.category || x.class || '', t = x.type || '';
+  if ((c === 'railway' || c === 'public_transport') && /^(station|halt|stop|stop_position|platform)$/.test(t)) return '駅';
+  if (t === 'park' || t === 'garden') return '公園';
+  if (c === 'place' || c === 'boundary') return '地域・町名';
+  if (c === 'tourism' || c === 'historic') return '観光地';
+  if (c === 'leisure') return 'レジャー';
+  if (c === 'amenity') return '施設';
+  if (c === 'shop') return '店';
+  if (c === 'highway') return '道路';
+  if (c === 'natural' || c === 'waterway') return '自然';
+  if (c === 'building') return '建物';
+  return '場所';
 }
 function setEndpoint(key, w){
   pushUndo();
@@ -1832,6 +1945,255 @@ $('btnPoiRoute').onclick = findAlongRoute;
 map.on('moveend', schedulePoi);
 map.on('zoomend', () => renderPois());
 
+/* ---------- 避けて再検索（nogo） ---------- */
+let nogos = [];
+const nogoLayer = L.layerGroup().addTo(map);
+function nogoParam(){ return nogos.length ? '&nogos=' + nogos.map(n => `${n.lng.toFixed(6)},${n.lat.toFixed(6)},${Math.round(n.r)}`).join('|') : ''; }
+function addNogo(w){
+  if (!route) return;
+  const pts = route.pts, mid = pts[Math.floor((w.from + w.to) / 2)];
+  let r = Math.min(250, Math.max(30, w.len / 2 + 15));
+  for (const p of wps){ const d = hav(p, mid); if (d < r + 25) r = d - 25; }
+  if (r < 15){ toast('出発地・経由地に近すぎるため、この区間は避けられません。地点を少し動かしてください', 3800); return; }
+  nogos.push({lat:+mid.lat.toFixed(6), lng:+mid.lng.toFixed(6), r:Math.round(r)});
+  renderNogos(); updateHash(); clearCands();
+  toast('この区間を避けてルートを探し直します');
+  scheduleRoute(0);
+}
+function renderNogos(){
+  nogoLayer.clearLayers();
+  nogos.forEach(n => L.circle([n.lat, n.lng], {radius:n.r, color:'#dc2626', weight:2, dashArray:'5 4', fillOpacity:.1, interactive:false}).addTo(nogoLayer));
+  $('nogoBox').innerHTML = nogos.length ? `<div class="nogo">⛔ 避けている区間 ${nogos.length}件（地図の赤い円）<button id="btnNogoClr">すべて解除</button></div>` : '';
+}
+$('nogoBox').addEventListener('click', e => {
+  if (!e.target.closest('#btnNogoClr')) return;
+  nogos = []; renderNogos(); updateHash(); clearCands(); scheduleRoute(0);
+});
+
+/* ---------- 候補の比較 ---------- */
+let cands = [], candSel = -1, candMode = 'ab';
+const candLayer = L.layerGroup().addTo(map);
+const CAND_COLORS = ['#f97316', '#2563eb', '#16a34a', '#9333ea', '#db2777', '#0891b2'];
+const SEVERE = new Set(['nobike', 'steps', 'dismount', 'cond']);
+function clearCands(){
+  if (!cands.length && $('cardCand').hidden) return;
+  cands = []; candSel = -1; candLayer.clearLayers(); $('cardCand').hidden = true;
+}
+async function pool(items, n, fn){
+  const out = new Array(items.length); let k = 0;
+  await Promise.all(Array.from({length:n}, async () => {
+    while (k < items.length){ const i = k++; try { out[i] = await fn(items[i], i); } catch (e) { out[i] = null; } }
+  }));
+  return out;
+}
+function routeStats(r){
+  const tot = r.pts[r.pts.length-1].d || 1, acc = {};
+  r.segs.forEach(s => acc[s.cat] = (acc[s.cat] || 0) + s.len);
+  const W = buildWarnings(r);
+  // 同じ道を2回通る割合（40mごとの点で判定）
+  const samp = []; let last = -1e9;
+  r.pts.forEach(p => { if (p.d - last >= 40){ samp.push(p); last = p.d; } });
+  const grid = new Map(), key = (a, b) => a + ',' + b;
+  samp.forEach((p, i) => { const k = key(Math.floor(p.lat / 0.0004), Math.floor(p.lng / 0.0005)); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(i); });
+  let ov = 0;
+  samp.forEach((p, i) => {
+    const gy = Math.floor(p.lat / 0.0004), gx = Math.floor(p.lng / 0.0005);
+    let hit = false;
+    for (let dy = -1; dy <= 1 && !hit; dy++) for (let dx = -1; dx <= 1 && !hit; dx++){
+      const arr = grid.get(key(gy + dy, gx + dx)); if (!arr) continue;
+      for (const j of arr){ if (Math.abs(samp[j].d - p.d) > 600 && hav(samp[j], p) < 30){ hit = true; break; } }
+    }
+    if (hit) ov++;
+  });
+  return {dist:r.dist, asc:r.asc || 0, busy:(acc.busy || 0) / tot, quiet:((acc.quiet || 0) + (acc.cycle || 0)) / tot,
+          unpaved:(acc.unpaved || 0) / tot, overlap: samp.length ? ov / samp.length : 0, severe: W.filter(w => SEVERE.has(w.type)).length, warns: W.length};
+}
+function sameRoute(a, b){
+  // 形で比較：aの点の9割以上がbから60m以内なら同じルートとみなす
+  if (Math.abs(a.st.dist - b.st.dist) / Math.max(a.st.dist, 1) > 0.05) return false;
+  const A = a.route.pts, B = b.route.pts, sa = Math.max(1, Math.floor(A.length / 60)), sb = Math.max(1, Math.floor(B.length / 400));
+  let n = 0, hit = 0;
+  for (let i = 0; i < A.length; i += sa){
+    n++;
+    for (let j = 0; j < B.length; j += sb){ if (hav(A[i], B[j]) < 60){ hit++; break; } }
+  }
+  return hit / n > 0.9;
+}
+function plainTime(r){ const m = Math.round((r.dist / 1000 / pref.speed + (r.asc || 0) / 600) * 60); return m >= 60 ? `${Math.floor(m/60)}時間${m%60}分` : `${m}分`; }
+function renderCands(){
+  const card = $('cardCand');
+  candLayer.clearLayers();
+  if (!cands.length){ card.hidden = true; return; }
+  card.hidden = false; card.open = true;
+  $('candCount').textContent = `${cands.length}件`;
+  const bestIdx = f => { let bi = 0; cands.forEach((c, i) => { if (f(c) < f(cands[bi])) bi = i; }); return bi; };
+  const D = pref.loopKm * 1000;
+  const bDist = candMode === 'loop' ? bestIdx(c => Math.abs(c.st.dist - D)) : bestIdx(c => c.st.dist);
+  const spread = f => { const v = cands.map(f), mx = Math.max(...v), mn = Math.min(...v); return mx > 0 ? (mx - mn) / mx : 0; };
+  const bAsc = bestIdx(c => c.st.asc / Math.max(c.st.dist, 1)), bBusy = bestIdx(c => c.st.busy), bOv = bestIdx(c => c.st.overlap);
+  $('candHint').textContent = candMode === 'loop'
+    ? `出発地に戻る ${pref.loopKm}km前後のコースです。タップすると地図に表示します。`
+    : 'タップすると地図で強調表示します。ほかの候補は細い線で残ります。';
+  $('candList').innerHTML = cands.map((c, i) => {
+    const t = [];
+    if (i === bDist) t.push(candMode === 'loop' ? '距離ぴったり' : '最短');
+    if (i === bAsc && spread(c => c.st.asc / Math.max(c.st.dist, 1)) > 0.15) t.push('坂が少ない');
+    if (i === bBusy && spread(c => c.st.busy) > 0.05) t.push('幹線道路が少ない');
+    if (candMode === 'loop' && i === bOv && c.st.overlap < 0.25 && cands.length > 1) t.push('同じ道が少ない');
+    if (c.st.quiet > 0.6) t.push('生活道路・自転車道中心');
+    const w = [];
+    if (c.st.severe) w.push(`要確認の区間 ${c.st.severe}件`);
+    if (c.st.unpaved > 0.03) w.push(`未舗装 ${Math.round(c.st.unpaved * 100)}%`);
+    if (candMode === 'loop' && c.kind === 'loop' && c.st.overlap >= 0.25) w.push(`同じ道 ${Math.round(c.st.overlap * 100)}%`);
+    return `<div class="cand${i === candSel ? ' on' : ''}" data-ci="${i}">
+      <div class="ct"><span class="sw" style="background:${c.color}"></span>${esc(c.name)}${i === candSel ? '<span style="margin-left:auto;font-size:11px;color:#f97316">表示中</span>' : ''}</div>
+      <div class="nums"><div><b>${(c.st.dist/1000).toFixed(1)}km</b><span>距離</span></div><div><b>${Math.round(c.st.asc)}m</b><span>獲得標高</span></div><div><b>${plainTime(c.route)}</b><span>予想時間</span></div><div><b>${Math.round(c.st.busy*100)}%</b><span>幹線道路</span></div></div>
+      ${t.length || w.length ? `<div class="tags">${t.map(x => `<i>${x}</i>`).join('')}${w.map(x => `<i class="w">${x}</i>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+  cands.forEach((c, i) => {
+    if (i === candSel) return;
+    const ln = L.polyline(c.route.pts.map(p => [p.lat, p.lng]), {color:c.color, weight:4, opacity:.55, dashArray:'8 6'}).addTo(candLayer);
+    ln.on('click', e => { L.DomEvent.stopPropagation(e); selectCand(i); });
+  });
+}
+$('candList').addEventListener('click', e => { const t = e.target.closest('[data-ci]'); if (t) selectCand(+t.dataset.ci); });
+function selectCand(i){
+  const c = cands[i]; if (!c) return;
+  pushUndo();
+  candSel = i;
+  wps = c.wps.map(w => ({lat:w.lat, lng:w.lng, name:w.name || ''}));
+  pendingGoal = null;
+  if (c.profile !== pref.profile){ pref.profile = c.profile; $('profile').value = c.profile; showProfDesc(); savePref(); }
+  alt = c.alt;
+  clearTimeout(routeTimer); if (abortCtl) abortCtl.abort(); reqSeq++;
+  wps.forEach(needName); syncInputs(); renderMarkers(); renderWpList(); updateHash();
+  applyRoute(c.route);
+  setStatus(`候補「${c.name}」を表示中`);
+  renderCands();
+  if (window.innerWidth <= 760){ sheet('mid'); setTimeout(fitRoute, 320); }
+}
+async function compareRoutes(){
+  if (wps.length < 2) return;
+  const btn = $('btnCompare'); btn.disabled = true;
+  const pts = wps.map(w => ({lat:w.lat, lng:w.lng, name:w.name}));
+  const variants = [
+    {name:'速さ優先', profile:'fastbike', alt:0}, {name:'交通量少なめ', profile:'fastbike-lowtraffic', alt:0},
+    {name:'静かな道', profile:'fastbike-verylowtraffic', alt:0}, {name:'安全優先', profile:'safety', alt:0},
+    {name:'別ルート（速さ優先）', profile:'fastbike', alt:1}, {name:'別ルート（交通量少なめ）', profile:'fastbike-lowtraffic', alt:1}];
+  let done = 0;
+  setStatus(`候補を探しています… 0/${variants.length}`, 'busy');
+  const res = await pool(variants, 2, async v => {
+    const r = parseRoute(await fetchRouteFor(pts, v.profile, v.alt));
+    r.profile = v.profile;
+    done++; setStatus(`候補を探しています… ${done}/${variants.length}`, 'busy');
+    return Object.assign({}, v, {route:r, wps:pts, kind:'ab'});
+  });
+  btn.disabled = false;
+  const list = [];
+  res.forEach(c => { if (!c) return; c.st = routeStats(c.route); if (!list.some(o => sameRoute(o, c))) list.push(c); });
+  if (!list.length){ setStatus('候補を作れませんでした。少し待ってもう一度お試しください。', 'err'); return; }
+  list.forEach((c, i) => c.color = CAND_COLORS[i % CAND_COLORS.length]);
+  cands = list; candMode = 'ab';
+  const cur = list.findIndex(c => c.profile === pref.profile && c.alt === alt);
+  setStatus(`違うルートが ${list.length}件 見つかりました`);
+  selectCand(cur >= 0 ? cur : 0);
+  setTimeout(fitRoute, 50);
+}
+$('btnCompare').onclick = compareRoutes;
+
+/* ---------- 距離を指定して周回コースを提案 ---------- */
+function destPt(p, brg, dist){
+  const R = 6371008.8, d = dist / R, b = brg * Math.PI / 180, la = p.lat * Math.PI / 180, lo = p.lng * Math.PI / 180;
+  const la2 = Math.asin(Math.sin(la) * Math.cos(d) + Math.cos(la) * Math.sin(d) * Math.cos(b));
+  const lo2 = lo + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(la), Math.cos(d) - Math.sin(la) * Math.sin(la2));
+  return {lat:la2 * 180 / Math.PI, lng:lo2 * 180 / Math.PI};
+}
+function dirName(b){ return ['北','北東','東','南東','南','南西','西','北西'][Math.round(((b % 360) + 360) % 360 / 45) % 8]; }
+function loopPts(S, brg, D, shape, k){
+  if (shape === 'out') return [S, Object.assign(destPt(S, brg, D / 2 / 1.3 * k), {name:'折り返し点'}), S];
+  const r = D / (3 * 1.35) * k;
+  return [S, Object.assign(destPt(S, brg - 30, r), {name:'周回ポイント1'}), Object.assign(destPt(S, brg + 30, r), {name:'周回ポイント2'}), S];
+}
+function loopStatus(msg, err){ const s = $('loopStatus'); s.textContent = msg || ''; s.style.color = err ? '#dc2626' : ''; }
+async function genLoops(){
+  if (!wps.length){ toast('先に出発地（S）を決めてください。上の欄で検索するか、地図をタップします', 3500); loopStatus('出発地（S）を決めてから押してください', true); return; }
+  const S = {lat:wps[0].lat, lng:wps[0].lng, name:wps[0].name || ''};
+  const D = pref.loopKm * 1000, shape = pref.loopShape, profile = pref.profile;
+  const base = Math.random() * 60, brgs = [0, 60, 120, 180, 240, 300].map(b => b + base);
+  const btn = $('btnLoopGen'); btn.disabled = true;
+  let done = 0;
+  loopStatus(`コースを作成中… 0/${brgs.length}`);
+  const res = await pool(brgs, 2, async b => {
+    let k = 1, best = null;
+    for (let tr = 0; tr < 3; tr++){
+      const pts = loopPts(S, b, D, shape, k);
+      let r;
+      try { r = parseRoute(await fetchRouteFor(pts, profile, 0)); }
+      catch (e) { k *= 0.7; continue; }            // 海や山の中に点が落ちた → 小さくしてやり直し
+      r.profile = profile;
+      const c = {wps:pts, route:r, profile, alt:0, brg:b, kind: shape === 'out' ? 'out' : 'loop'};
+      if (!best || Math.abs(r.dist - D) < Math.abs(best.route.dist - D)) best = c;
+      const ratio = r.dist / D;
+      if (ratio > 0.9 && ratio < 1.1) break;
+      k *= Math.min(1.8, Math.max(0.55, 1 / ratio));
+    }
+    done++; loopStatus(`コースを作成中… ${done}/${brgs.length}`);
+    return best;
+  });
+  btn.disabled = false;
+  let list = [];
+  res.forEach(c => { if (!c) return; c.st = routeStats(c.route); if (!list.some(o => sameRoute(o, c))) list.push(c); });
+  if (!list.length){ loopStatus('コースを作れませんでした。出発地を道路の近くにするか、距離を変えて試してください。', true); return; }
+  const err = c => Math.abs(c.st.dist - D) / D;
+  const score = {
+    dist:  c => err(c) * 10 + c.st.overlap * 2 + c.st.severe * 0.3,
+    flat:  c => c.st.asc / (c.st.dist / 1000) + err(c) * 30 + c.st.overlap * 5 + c.st.severe,
+    quiet: c => c.st.busy * 10 + err(c) * 5 + c.st.overlap * 3 + c.st.severe * 0.5
+  }[pref.loopSort] || (c => err(c));
+  list.sort((a, b) => score(a) - score(b));
+  list = list.slice(0, 4);
+  list.forEach((c, i) => { c.color = CAND_COLORS[i]; c.name = `コース${i + 1}（${dirName(c.brg)}まわり）`; });
+  cands = list; candMode = 'loop';
+  loopStatus(`${list.length}つのコースを提案しました。下の「ルート候補の比較」から選べます。`);
+  selectCand(0);
+  setTimeout(fitRoute, 50);
+}
+$('btnLoopGen').onclick = genLoops;
+function wireSeg(id, key, cb){
+  document.querySelectorAll(`#${id} button`).forEach(b => {
+    b.classList.toggle('on', String(pref[key]) === b.dataset.v);
+    b.onclick = () => {
+      pref[key] = isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v; savePref();
+      document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle('on', x === b));
+      if (cb) cb();
+    };
+  });
+}
+function syncLoopKm(){ $('loopKm').value = pref.loopKm; $('loopKmV').textContent = pref.loopKm; document.querySelectorAll('#loopPreset button').forEach(x => x.classList.toggle('on', +x.dataset.v === pref.loopKm)); }
+wireSeg('loopPreset', 'loopKm', syncLoopKm);
+wireSeg('loopShape', 'loopShape');
+wireSeg('loopSort', 'loopSort');
+$('loopKm').addEventListener('input', () => { pref.loopKm = +$('loopKm').value; savePref(); syncLoopKm(); });
+syncLoopKm();
+
+/* ---------- ヘッダーの概要・折りたたみ ---------- */
+function renderMini(){
+  const el = $('miniTxt');
+  if (!route){ el.textContent = wps.length ? '目的地を決めるか、「距離を指定してコースを提案」を使ってください' : '出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください'; return; }
+  const W = warnings || [], sev = W.filter(w => SEVERE.has(w.type)).length;
+  el.innerHTML = `📏 <b>${fmtKm(route.dist)}</b>km ・ ⏱ <b>${plainTime(route)}</b> ・ ⛰ ↑<b>${route.asc == null ? '—' : Math.round(route.asc)}</b>m${sev ? ` ・ <span style="color:#fca5a5">⚠ 要確認${sev}</span>` : ''}`;
+}
+$('btnMini').onclick = () => sheet('max');
+document.querySelectorAll('details.card[data-k]').forEach(d => {
+  const k = d.dataset.k;
+  if (pref.open && k in pref.open && k !== 'cand') d.open = pref.open[k];
+  d.addEventListener('toggle', () => {
+    pref.open = pref.open || {}; pref.open[k] = d.open; savePref();
+    if (k === 'elev' && d.open) setTimeout(drawElev, 30);
+  });
+});
+
 /* ---------- location ---------- */
 $('btnLocate').onclick = () => {
   if (!navigator.geolocation){ toast('この端末では現在地を取得できません'); return; }
@@ -1852,7 +2214,7 @@ if (!PROFILES.some(p => p.id === pref.profile)) pref.profile = 'fastbike';
 $('profile').value = pref.profile;
 function showProfDesc(){ $('profDesc').textContent = (PROFILES.find(p => p.id === pref.profile) || PROFILES[0]).desc; }
 showProfDesc();
-$('profile').onchange = () => { pref.profile = $('profile').value; savePref(); showProfDesc(); alt = 0; $('altNo').textContent = '1'; updateHash(); scheduleRoute(0); };
+$('profile').onchange = () => { pref.profile = $('profile').value; savePref(); showProfDesc(); alt = 0; clearCands(); updateHash(); scheduleRoute(0); };
 $('layerSel').innerHTML = LAYERS.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
 $('layerSel').value = LAYERS.some(l => l.id === pref.layer) ? pref.layer : 'gsipale';
 setLayer($('layerSel').value);
@@ -1886,6 +2248,7 @@ $('savedList').addEventListener('click', e => {
   }
   pushUndo();
   wps = r.wps.map(w => ({lat:w.lat, lng:w.lng, name:w.name || ''}));
+  nogos = Array.isArray(r.nogos) ? r.nogos.slice() : []; renderNogos();
   if (r.profile && PROFILES.some(p => p.id === r.profile)){ pref.profile = r.profile; $('profile').value = r.profile; showProfDesc(); savePref(); }
   $('routeName').value = r.name;
   onWpsChanged({immediate:true});
@@ -1897,7 +2260,7 @@ $('btnSave').onclick = () => {
   const list = store.get(LS_ROUTES, []);
   const name = routeTitle();
   const d = new Date();
-  const item = {name, wps: wps.map(w => ({lat:+w.lat.toFixed(6), lng:+w.lng.toFixed(6), name:w.name || ''})), profile:pref.profile, dist:route.dist, asc:route.asc, date:`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`};
+  const item = {name, wps: wps.map(w => ({lat:+w.lat.toFixed(6), lng:+w.lng.toFixed(6), name:w.name || ''})), profile:pref.profile, nogos:nogos.slice(), dist:route.dist, asc:route.asc, date:`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`};
   const ex = list.findIndex(r => r.name === name);
   if (ex >= 0) list[ex] = item; else list.unshift(item);
   store.set(LS_ROUTES, list.slice(0, 100)); renderSaved();
@@ -1956,7 +2319,7 @@ function safeReplace(u){ try { history.replaceState(null, '', u); } catch (e) {}
 function updateHash(){
   if (wps.length < 1){ safeReplace(location.pathname + location.search); return; }
   const r = wps.map(w => w.lat.toFixed(5) + ',' + w.lng.toFixed(5)).join(';');
-  safeReplace('#r=' + r + '&p=' + pref.profile);
+  safeReplace('#r=' + r + '&p=' + pref.profile + (alt ? '&a=' + alt : '') + (nogos.length ? '&n=' + nogos.map(n => `${n.lat},${n.lng},${n.r}`).join(';') : ''));
 }
 function loadHash(){
   const h = location.hash.slice(1);
@@ -1968,6 +2331,8 @@ function loadHash(){
   if (!list.length) return false;
   wps = list.slice(0, 50).map(a => ({lat:a[0], lng:a[1], name:''}));
   if (q.p && PROFILES.some(p => p.id === q.p)){ pref.profile = q.p; $('profile').value = q.p; showProfDesc(); }
+  if (q.n) nogos = q.n.split(';').map(x => x.split(',').map(Number)).filter(a => a.length === 3 && a.every(isFinite)).slice(0, 30).map(a => ({lat:a[0], lng:a[1], r:a[2]}));
+  hashAlt = Math.min(3, Math.max(0, +q.a || 0));
   return true;
 }
 
@@ -1988,7 +2353,7 @@ $('sheetHandle').onclick = () => {
 $('ver').textContent = VERSION;
 applyPoiToggles(); schedulePoi();
 renderSaved(); renderMix();
-if (loadHash()){ onWpsChanged({immediate:true}); setTimeout(fitRoute, 100); }
+if (loadHash()){ renderNogos(); onWpsChanged({immediate:true}); alt = hashAlt; setTimeout(fitRoute, 100); }
 else { renderWpList(); updateButtons(); drawElev(); }
 setTimeout(() => { map.invalidateSize(); drawElev(); }, 200);
 
