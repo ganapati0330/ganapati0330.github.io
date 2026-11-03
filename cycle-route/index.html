@@ -744,6 +744,15 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
 .foot{font-size:10.5px;color:#94a3b8;line-height:1.6;padding:4px 2px}
 .wpicon{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
 .wpicon.s{background:#16a34a}.wpicon.v{background:#2563eb;width:24px;height:24px;font-size:11px}.wpicon.g{background:#dc2626}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
+.pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.pk.sm{display:inline-block;width:16px;height:16px;line-height:16px;font-size:10px}
+.pshop{width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid #475569;font-size:12px;line-height:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.psight{position:relative;width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid #94a3b8;font-size:16px;line-height:26px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.35)}
+.psight.rec{border:3px solid #16a34a;line-height:24px}
+.psight i{position:absolute;right:-9px;top:-9px;font-style:normal;font-size:11px;background:#16a34a;border-radius:50%;width:18px;height:18px;line-height:18px;border:1.5px solid #fff}
+.popbtns small{display:block;font-size:12px;color:#64748b;margin:-2px 0 2px}
 .hovdot{width:14px;height:14px;border-radius:50%;background:#f97316;border:3px solid #fff;box-shadow:0 0 0 2px #f97316}
 .medot{width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 6px rgba(37,99,235,.25)}
 .popbtns{display:flex;flex-direction:column;gap:5px;min-width:150px}
@@ -842,6 +851,22 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
     </div>
 
     <div class="card">
+      <h2>🏯 観光地・自転車置き場</h2>
+      <div class="chips">
+        <label><input type="checkbox" id="poiA"> 🏯 観光地</label>
+        <label><input type="checkbox" id="poiP"> <span class="pk sm">P</span> 自転車置き場</label>
+        <label><input type="checkbox" id="poiS"> 🔧 自転車店・修理</label>
+      </div>
+      <p class="hint" id="poiStatus" style="margin-top:6px"></p>
+      <p class="hint" style="margin-top:4px">⭐＝近く（200m以内）に自転車置き場がある、自転車で寄りやすい観光地です。</p>
+      <div class="btnrow">
+        <button class="btn dark" id="btnPoiRoute">ルート沿いの観光地を探す</button>
+        <label class="row" style="font-size:12px"><input type="checkbox" id="poiRecOnly"> ⭐だけ表示</label>
+      </div>
+      <div id="poiList"></div>
+    </div>
+
+    <div class="card">
       <h2>💾 保存・書き出し</h2>
       <div class="row"><input type="text" id="routeName" placeholder="ルート名（例：霞ヶ浦一周）" maxlength="40"></div>
       <div class="btnrow">
@@ -874,7 +899,7 @@ select.sel{width:100%;padding:8px;border-radius:8px;border:1px solid #cbd5e1;bac
 <script>
 'use strict';
 (function(){
-const VERSION = 'v3';
+const VERSION = 'v4';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -922,7 +947,7 @@ let wps = [];             // {lat,lng,name}
 let pendingGoal = null;   // goal chosen before a start exists
 let undoStack = [];
 let route = null;         // parsed route
-let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale'}, store.get(LS_PREF, {}));
+let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false}, store.get(LS_PREF, {}));
 let alt = 0;
 let reqSeq = 0, abortCtl = null, routeTimer = null;
 
@@ -1061,6 +1086,7 @@ function updateButtons(){
   $('btnLoop').disabled = wps.length < 2;
   $('btnClear').disabled = !wps.length && !pendingGoal;
   $('btnAlt').disabled = wps.length < 2;
+  $('btnPoiRoute').disabled = !route;
   const has = !!route;
   $('btnSave').disabled = !has; $('btnGpx').disabled = !has; $('btnShare').disabled = wps.length < 2;
 }
@@ -1116,6 +1142,7 @@ async function calcRoute(){
     route = parseRoute(gj);
     route.profile = profile;
     drawRoute(); renderStats(); drawElev(); renderMix(); renderWarnings(); updateButtons();
+    if (poiRouteList){ poiRouteList = null; renderPoiList(); renderPois(); }
     setStatus(alt > 0 ? `別ルート候補 ${alt+1} を表示中` : '');
   } catch (e) {
     if (e.name === 'AbortError' || seq !== reqSeq) return;
@@ -1589,16 +1616,221 @@ function showPlacePopup(r){
   bindPopup(pop, a => {
     const w = {lat:r.lat, lng:r.lng, name:r.name};
     if (a === 'start' || a === 'goal'){ map.closePopup(); setEndpoint(a === 'start' ? 'S' : 'G', w); return; }
-    pushUndo();
-    {
-      // insert as via at the position that adds least distance
-      let best = 1, bc = Infinity;
-      for (let i = 1; i < wps.length; i++){ const cst = hav(wps[i-1], w) + hav(w, wps[i]) - hav(wps[i-1], wps[i]); if (cst < bc){ bc = cst; best = i; } }
-      wps.splice(best, 0, w);
-    }
-    map.closePopup(); onWpsChanged({immediate:true});
+    map.closePopup(); addVia(w);
   });
 }
+
+/* ---------- 観光地・自転車置き場（OpenStreetMap / Overpass API） ---------- */
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const POI_MINZOOM = 12, PARK_MINZOOM = 14, PARK_NEAR = 200, MAX_POI = 4000;
+const poiData = new Map();               // id -> poi
+const poiLayerA = L.layerGroup(), poiLayerP = L.layerGroup(), poiLayerS = L.layerGroup();
+let poiLoaded = null, poiTimer = null, poiCtl = null, poiRouteList = null;
+function poiKind(t){
+  if (t.amenity === 'bicycle_parking') return 'park';
+  if (t.shop === 'bicycle' || t.amenity === 'bicycle_repair_station') return 'shop';
+  return 'sight';
+}
+function sightInfo(t){
+  if (t.highway === 'services' || t.highway === 'rest_area') return {ic:'🛣️', nm:'道の駅'};
+  if (t.historic === 'castle' || t.historic === 'fort') return {ic:'🏯', nm:'城・城跡'};
+  if (t.historic) return {ic:'🗿', nm:'史跡'};
+  const m = {viewpoint:['🌄','展望スポット'], museum:['🏛️','博物館・資料館'], gallery:['🖼️','美術館・ギャラリー'], theme_park:['🎡','テーマパーク'], zoo:['🦁','動物園'], aquarium:['🐟','水族館'], attraction:['⭐','観光スポット']};
+  const x = m[t.tourism] || ['📍','観光スポット'];
+  return {ic:x[0], nm:x[1]};
+}
+function buildQuery(area){
+  return `[out:json][timeout:25];(
+nwr["tourism"~"^(attraction|viewpoint|museum|theme_park|zoo|aquarium|gallery)$"]["name"]${area};
+nwr["historic"~"^(castle|fort|ruins|archaeological_site|monument)$"]["name"]${area};
+nwr["highway"~"^(services|rest_area)$"]["name"~"道の駅"]${area};
+nwr["amenity"="bicycle_parking"]${area};
+nwr["shop"="bicycle"]${area};
+nwr["amenity"="bicycle_repair_station"]${area};
+);out center tags 3000;`;
+}
+async function overpass(q, signal){
+  let lastErr;
+  for (const url of OVERPASS){
+    try {
+      const r = await fetch(url, {method:'POST', body:'data=' + encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch (e) { if (e.name === 'AbortError') throw e; lastErr = e; }
+  }
+  throw lastErr;
+}
+function ingest(json){
+  (json.elements || []).forEach(el => {
+    const lat = el.lat != null ? el.lat : el.center && el.center.lat, lng = el.lon != null ? el.lon : el.center && el.center.lon;
+    if (lat == null || lng == null) return;
+    const id = el.type[0] + el.id;
+    if (poiData.has(id)) return;
+    const t = el.tags || {};
+    poiData.set(id, {id, lat, lng, t, kind:poiKind(t), name:t['name:ja'] || t.name || ''});
+  });
+  if (poiData.size > MAX_POI){ const ks = [...poiData.keys()].slice(0, poiData.size - MAX_POI); ks.forEach(k => poiData.delete(k)); }
+  linkParking();
+}
+function linkParking(){
+  const parks = [...poiData.values()].filter(p => p.kind === 'park');
+  poiData.forEach(p => {
+    if (p.kind !== 'sight') return;
+    let best = Infinity;
+    const cosl = Math.cos(p.lat * Math.PI/180);
+    for (const k of parks){
+      const dy = (k.lat - p.lat) * 111320, dx = (k.lng - p.lng) * 111320 * cosl;
+      if (Math.abs(dy) > PARK_NEAR || Math.abs(dx) > PARK_NEAR) continue;
+      const d = Math.hypot(dx, dy); if (d < best) best = d;
+    }
+    p.park = best <= PARK_NEAR ? Math.round(best) : (p.t.bicycle_parking && p.t.bicycle_parking !== 'no' ? 0 : null);
+  });
+}
+function poiIcon(p){
+  if (p.kind === 'park') return L.divIcon({className:'', html:'<div class="pk">P</div>', iconSize:[18,18], iconAnchor:[9,9]});
+  if (p.kind === 'shop') return L.divIcon({className:'', html:'<div class="pshop">🔧</div>', iconSize:[22,22], iconAnchor:[11,11]});
+  const s = sightInfo(p.t);
+  return L.divIcon({className:'', html:`<div class="psight${p.park != null ? ' rec' : ''}">${s.ic}${p.park != null ? '<i>🚲</i>' : ''}</div>`, iconSize:[30,30], iconAnchor:[15,15]});
+}
+function renderPois(){
+  poiLayerA.clearLayers(); poiLayerP.clearLayers(); poiLayerS.clearLayers();
+  const z = map.getZoom(), b = map.getBounds().pad(0.3);
+  const onRoute = new Set((poiRouteList || []).map(x => x.p.id));
+  poiData.forEach(p => {
+    if (!b.contains([p.lat, p.lng]) && !onRoute.has(p.id)) return;
+    if (p.kind === 'park' && z < PARK_MINZOOM) return;
+    if (p.kind === 'sight' && !p.name) return;
+    const m = L.marker([p.lat, p.lng], {icon:poiIcon(p), zIndexOffset: p.kind === 'sight' ? 200 : 0, keyboard:false});
+    m.on('click', ev => { L.DomEvent.stopPropagation(ev); poiPopup(p); });
+    m.addTo(p.kind === 'park' ? poiLayerP : p.kind === 'shop' ? poiLayerS : poiLayerA);
+  });
+}
+function applyPoiToggles(){
+  [['A', poiLayerA], ['P', poiLayerP], ['S', poiLayerS]].forEach(([k, lay]) => {
+    const on = !!pref['poi' + k];
+    $('poi' + k).checked = on;
+    if (on && !map.hasLayer(lay)) lay.addTo(map); else if (!on && map.hasLayer(lay)) map.removeLayer(lay);
+  });
+}
+function poiStatus(msg){ $('poiStatus').textContent = msg; }
+function schedulePoi(){ clearTimeout(poiTimer); poiTimer = setTimeout(loadPoiView, 700); }
+async function loadPoiView(){
+  if (!pref.poiA && !pref.poiP && !pref.poiS){ poiStatus(''); return; }
+  if (map.getZoom() < POI_MINZOOM){ renderPois(); poiStatus('地図をもう少し拡大すると、この周辺の観光地を表示します'); return; }
+  const b = map.getBounds();
+  if (poiLoaded && poiLoaded.contains(b)){ renderPois(); poiStatus(viewSummary()); return; }
+  const lb = b.pad(0.25);
+  if (poiCtl) poiCtl.abort();
+  poiCtl = new AbortController();
+  poiStatus('観光地・自転車置き場を読み込み中…');
+  try {
+    const area = `(${lb.getSouth().toFixed(4)},${lb.getWest().toFixed(4)},${lb.getNorth().toFixed(4)},${lb.getEast().toFixed(4)})`;
+    ingest(await overpass(buildQuery(area), poiCtl.signal));
+    poiLoaded = lb;
+    renderPois(); poiStatus(viewSummary());
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    poiStatus('観光地データを読み込めませんでした（混み合っている可能性）。少し待って地図を動かすと再読み込みします。');
+  }
+}
+function viewSummary(){
+  const b = map.getBounds(); let a = 0, r = 0, k = 0;
+  poiData.forEach(p => { if (!b.contains([p.lat, p.lng])) return; if (p.kind === 'sight' && p.name){ a++; if (p.park != null) r++; } if (p.kind === 'park') k++; });
+  return `この範囲：観光地 ${a}件（うち⭐自転車置き場あり ${r}件）・自転車置き場 ${k}件` + (map.getZoom() < PARK_MINZOOM && pref.poiP ? '（自転車置き場はさらに拡大すると表示）' : '');
+}
+function wikiLink(t){
+  const w = t.wikipedia; if (!w) return '';
+  const i = w.indexOf(':'); const lang = i > 0 ? w.slice(0, i) : 'ja', title = i > 0 ? w.slice(i+1) : w;
+  return `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+}
+function poiPopup(p){
+  const t = p.t;
+  let body = '';
+  if (p.kind === 'park'){
+    body = `<b>🚲 自転車置き場${p.name ? '：' + esc(p.name) : ''}</b>`
+      + `<small>${t.capacity ? '台数 ' + esc(t.capacity) + '台 ・ ' : ''}${t.covered === 'yes' ? '屋根あり ・ ' : ''}${t.fee === 'yes' ? '有料' : t.fee === 'no' ? '無料' : '料金不明'}${t.bicycle_parking ? ' ・ 形式 ' + esc(t.bicycle_parking) : ''}</small>`;
+  } else if (p.kind === 'shop'){
+    body = `<b>🔧 ${esc(p.name || (t.amenity === 'bicycle_repair_station' ? '修理ステーション' : '自転車店'))}</b><small>${t.amenity === 'bicycle_repair_station' ? '空気入れ・工具あり（セルフ）' : '自転車店'}${t.opening_hours ? ' ・ ' + esc(t.opening_hours) : ''}</small>`;
+  } else {
+    const s = sightInfo(t), wl = wikiLink(t);
+    body = `<b>${s.ic} ${esc(p.name)}</b><small>${s.nm}${t.opening_hours ? ' ・ ' + esc(t.opening_hours) : ''}</small>`
+      + `<small style="color:${p.park != null ? '#16a34a' : '#64748b'};font-weight:${p.park != null ? 700 : 400}">${p.park != null ? '⭐ 自転車置き場あり' + (p.park > 0 ? `（約${p.park}m）` : '') : '近くの自転車置き場は地図データに未登録'}</small>`
+      + (wl ? `<a href="${wl}" target="_blank" rel="noopener" style="font-size:12px">Wikipediaで見る</a>` : '')
+      + (t.website ? `<a href="${esc(t.website)}" target="_blank" rel="noopener" style="font-size:12px">公式サイト</a>` : '');
+  }
+  const html = `<div class="popbtns">${body}
+    ${wps.length >= 2 ? '<button data-a="via">🔵 経由地として追加</button>' : ''}
+    <button data-a="start">🟢 ここを出発地に</button><button data-a="goal">🔴 ここを目的地に</button></div>`;
+  const pop = L.popup({offset:[0,-10]}).setLatLng([p.lat, p.lng]).setContent(html).openOn(map);
+  const label = p.name || (p.kind === 'park' ? '自転車置き場' : '自転車店');
+  bindPopup(pop, a => {
+    const w = {lat:p.lat, lng:p.lng, name:label};
+    map.closePopup();
+    if (a === 'via') addVia(w); else setEndpoint(a === 'start' ? 'S' : 'G', w);
+  });
+}
+function addVia(w){
+  pushUndo();
+  let best = 1, bc = Infinity;
+  for (let i = 1; i < wps.length; i++){ const c = hav(wps[i-1], w) + hav(w, wps[i]) - hav(wps[i-1], wps[i]); if (c < bc){ bc = c; best = i; } }
+  wps.splice(best, 0, w);
+  onWpsChanged({immediate:true});
+  toast(`「${w.name}」を経由地に追加しました`);
+}
+/* ルート沿い（1km以内）の観光地を探す */
+async function findAlongRoute(){
+  if (!route) return;
+  const pts = route.pts, step = Math.max(1, Math.ceil(pts.length / 120));
+  const line = [];
+  for (let i = 0; i < pts.length; i += step) line.push(pts[i].lat.toFixed(5), pts[i].lng.toFixed(5));
+  line.push(pts[pts.length-1].lat.toFixed(5), pts[pts.length-1].lng.toFixed(5));
+  const btn = $('btnPoiRoute'); btn.disabled = true;
+  $('poiList').innerHTML = '<p class="hint">ルート沿いの観光地を探しています…</p>';
+  try {
+    ingest(await overpass(buildQuery(`(around:1000,${line.join(',')})`)));
+    const cand = [];
+    poiData.forEach(p => {
+      if (p.kind !== 'sight' || !p.name) return;
+      let bd = Infinity, bi = 0; const cosl = Math.cos(p.lat * Math.PI/180);
+      for (let i = 0; i < pts.length; i++){
+        const dy = (pts[i].lat - p.lat) * 111320, dx = (pts[i].lng - p.lng) * 111320 * cosl, d = dx*dx + dy*dy;
+        if (d < bd){ bd = d; bi = i; }
+      }
+      bd = Math.sqrt(bd);
+      if (bd <= 1000) cand.push({p, off:Math.round(bd), km:pts[bi].d * route.cumScale / 1000});
+    });
+    cand.sort((a, b) => a.km - b.km);
+    poiRouteList = cand;
+    if (!pref.poiA){ pref.poiA = true; savePref(); applyPoiToggles(); }
+    renderPois(); renderPoiList();
+  } catch (e) {
+    $('poiList').innerHTML = '<p class="hint" style="color:#dc2626">読み込めませんでした（混み合っている可能性）。少し待ってもう一度お試しください。</p>';
+  }
+  btn.disabled = !route;
+}
+function renderPoiList(){
+  const box = $('poiList');
+  if (!poiRouteList){ box.innerHTML = ''; return; }
+  if (!poiRouteList.length){ box.innerHTML = '<p class="hint">ルートから1km以内に登録された観光地は見つかりませんでした。</p>'; return; }
+  const onlyRec = $('poiRecOnly').checked;
+  const list = onlyRec ? poiRouteList.filter(x => x.p.park != null) : poiRouteList;
+  const rec = poiRouteList.filter(x => x.p.park != null).length;
+  box.innerHTML = `<p class="hint" style="margin:6px 0">ルートから1km以内：${poiRouteList.length}件（⭐自転車置き場あり ${rec}件）</p>`
+    + (list.length ? list.slice(0, 80).map((x, i) => { const s = sightInfo(x.p.t); return `<div class="warn" data-pi="${poiRouteList.indexOf(x)}"><span class="ic">${s.ic}</span><div>${x.p.park != null ? '⭐ ' : ''}${esc(x.p.name)}<small>${x.km.toFixed(1)}km地点 ・ ルートから${x.off < 50 ? 'すぐ' : x.off + 'm'} ・ ${s.nm}${x.p.park != null ? ' ・ 🚲置き場あり' : ''}</small></div></div>`; }).join('')
+      : '<p class="hint">⭐（自転車置き場あり）の観光地はありませんでした。</p>');
+}
+$('poiList').addEventListener('click', e => {
+  const t = e.target.closest('[data-pi]'); if (!t) return;
+  const x = poiRouteList[+t.dataset.pi];
+  map.setView([x.p.lat, x.p.lng], Math.max(map.getZoom(), 15));
+  sheet('min');
+  setTimeout(() => poiPopup(x.p), 350);
+});
+$('poiRecOnly').addEventListener('change', renderPoiList);
+$('btnPoiRoute').onclick = findAlongRoute;
+['A','P','S'].forEach(k => $('poi' + k).addEventListener('change', () => { pref['poi' + k] = $('poi' + k).checked; savePref(); applyPoiToggles(); loadPoiView(); }));
+map.on('moveend', schedulePoi);
+map.on('zoomend', () => renderPois());
 
 /* ---------- location ---------- */
 $('btnLocate').onclick = () => {
@@ -1754,6 +1986,7 @@ $('sheetHandle').onclick = () => {
 
 /* ---------- init ---------- */
 $('ver').textContent = VERSION;
+applyPoiToggles(); schedulePoi();
 renderSaved(); renderMix();
 if (loadHash()){ onWpsChanged({immediate:true}); setTimeout(fitRoute, 100); }
 else { renderWpList(); updateButtons(); drawElev(); }
