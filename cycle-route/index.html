@@ -1028,7 +1028,7 @@ body.riding #map{left:0!important;bottom:var(--rideH,260px)!important;top:0}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v8';
+const VERSION = 'v9';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -1052,7 +1052,8 @@ const ROADCAT = {
   normal: {name:'一般道（県道等）', color:'#f59e0b'},
   busy:   {name:'幹線道路（国道等）', color:'#dc2626'},
   path:   {name:'歩道・小道',    color:'#6b7280'},
-  unpaved:{name:'未舗装',        color:'#92400e'}
+  unpaved:{name:'未舗装',        color:'#92400e'},
+  ferry:  {name:'フェリー航路（海上）', color:'#06b6d4'}
 };
 const GRADES = [
   {max:-3, name:'下り', color:'#60a5fa'},
@@ -1380,8 +1381,10 @@ function isUnpaved(t){
   if (t.tracktype && t.tracktype !== 'grade1') return true;
   return t.highway === 'track' || t.highway === 'bridleway';
 }
+function isFerry(t){ return t.route === 'ferry' || t.ferry === 'yes' || (!t.highway && /^(ferry|boat)/.test(t.route || '')); }
 function classify(t){
   const h = t.highway || '';
+  if (isFerry(t)) return 'ferry';
   if (!h) return 'quiet';
   if (isUnpaved(t)) return 'unpaved';
   if (h === 'cycleway' || t.bicycle === 'designated') return 'cycle';
@@ -1516,7 +1519,8 @@ function buildWarnings(r){
   const OKB = /^(yes|designated|permissive)$/;
   r.segs.forEach(s => {
     const t = s.tags, h = t.highway || '', bk = t.bicycle || '';
-    if (bk === 'no' || bk === 'use_sidepath' || (/^(no|private)$/.test(t.access || '') && !OKB.test(bk))) add('nobike', s.from, s.to);
+    if (isFerry(t)) add('ferry', s.from, s.to);
+    else if (bk === 'no' || bk === 'use_sidepath' || (/^(no|private)$/.test(t.access || '') && !OKB.test(bk))) add('nobike', s.from, s.to);
     else if (h === 'steps') add('steps', s.from, s.to);
     else if (bk === 'dismount') add('dismount', s.from, s.to);
     else if (/^(footway|pedestrian|corridor)$/.test(h) && !OKB.test(bk)) add('sidewalk', s.from, s.to);
@@ -1538,10 +1542,11 @@ function buildWarnings(r){
       }
     }
   }
-  const MIN = {nobike:1, steps:1, dismount:1, sidewalk:20, cond:1, unknown:50, busy:300, unpaved:50, tunnel:150, steep:150};
+  const MIN = {ferry:1, nobike:1, steps:1, dismount:1, sidewalk:20, cond:1, unknown:50, busy:300, unpaved:50, tunnel:150, steep:150};
   return W.filter(w => w.len >= MIN[w.type]).sort((a, b) => a.from - b.from);
 }
 const WINFO = {
+  ferry:   {ic:'⛴️', lv:'reg', name:'フェリー航路（海の上）', adv:'船に乗る区間で、自転車では走れません。「避ける」で陸の道に変えられます'},
   nobike:  {ic:'🚫', lv:'reg', name:'自転車通行不可', adv:'地図データに「自転車通行不可」と登録されています。現地の標識も確認し、迂回してください'},
   steps:   {ic:'🪜', lv:'reg', name:'階段', adv:'地図データに階段として登録。自転車を担いで通る必要があります'},
   dismount:{ic:'🚶', lv:'reg', name:'押し歩き区間', adv:'地図データに「自転車は降りて押す」と登録されています'},
@@ -2092,7 +2097,7 @@ $('nogoBox').addEventListener('click', e => {
 let cands = [], candSel = -1, candMode = 'ab';
 const candLayer = L.layerGroup().addTo(map);
 const CAND_COLORS = ['#f97316', '#2563eb', '#16a34a', '#9333ea', '#db2777', '#0891b2'];
-const SEVERE = new Set(['nobike', 'steps', 'dismount', 'cond']);
+const SEVERE = new Set(['nobike', 'steps', 'dismount', 'cond', 'ferry']);
 function clearCands(){
   if (!cands.length && $('cardCand').hidden) return;
   cands = []; candSel = -1; candLayer.clearLayers(); $('cardCand').hidden = true;
@@ -2487,6 +2492,10 @@ async function genLoops(){
       let r;
       try { r = parseRoute(await fetchRouteFor(pts, profile, 0, signal)); }
       catch (e) { if (e.name === 'AbortError') break; k *= 0.7; continue; }   // 海や山の中に点が落ちた → 小さくしてやり直し
+      // 目印の点が海の上などにあり、ルートが遠くの道や船の航路に寄せられた → 小さくしてやり直し
+      const ferry = r.segs.some(sg => sg.cat === 'ferry' && sg.len > 0);
+      const strayed = pts.slice(1, -1).some(w => { let md = Infinity; for (let i = 0; i < r.pts.length; i += 2){ const d = hav(r.pts[i], w); if (d < md) md = d; } return md > 400; });
+      if (ferry || strayed){ k *= 0.72; continue; }
       r.profile = profile;
       const c = {wps:pts, route:r, profile, alt:0, brg:b, kind: shape === 'out' ? 'out' : 'loop'};
       if (!best || Math.abs(r.dist - D) < Math.abs(best.route.dist - D)) best = c;
