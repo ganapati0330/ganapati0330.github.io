@@ -64,7 +64,7 @@ button{font-family:inherit;cursor:pointer}
 .pc .bub{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;background:#fff;color:#333;border-radius:12px;padding:4px 8px;font-size:12px;font-weight:700;white-space:nowrap;z-index:30;box-shadow:0 2px 6px rgba(0,0,0,.3);pointer-events:none;animation:pop .25s}
 .pc .bub:before{content:"";position:absolute;bottom:100%;left:50%;margin-left:-6px;border:6px solid transparent;border-bottom-color:#fff}
 @keyframes pop{from{transform:translateX(-50%) scale(.5);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
-#field{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:0;padding:4px}
+#field{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:0;padding:4px;overflow:hidden}
 #msg{flex:none;text-align:center;color:#fff;font-weight:800;font-size:clamp(15px,4vw,19px);min-height:1.6em;padding:2px 8px;text-shadow:0 2px 3px rgba(0,0,0,.5)}
 #hand{flex:none;position:relative;margin:0 auto;width:100%}
 #ctrl{flex:none;display:flex;justify-content:center;gap:8px;padding:6px 8px;padding-bottom:max(8px,env(safe-area-inset-bottom));min-height:54px;align-items:center;flex-wrap:wrap}
@@ -181,6 +181,99 @@ button{font-family:inherit;cursor:pointer}
 .bname{color:#fff;font-weight:800;font-size:15px;text-shadow:0 2px 3px rgba(0,0,0,.5)}
 .bname b{font-size:1.5em;color:#ffd54a}
 .card.sel{box-shadow:0 0 0 4px #ff3b6b,0 6px 10px rgba(0,0,0,.5)!important}
+/* ---- v9 ゲーム画面デザイン ---- */
+#sPlay{background:radial-gradient(ellipse at 50% 35%,#367a4e 0%,#2a6341 55%,#1e4b30 100%)}
+#sPlay .bar{background:linear-gradient(#fbf4e6,#f1e2c6);color:#4a2a12;border-bottom:3px solid #e0b24a;padding:6px 8px;padding-top:max(6px,env(safe-area-inset-top));gap:6px;box-shadow:0 3px 8px rgba(0,0,0,.25)}
+#sPlay .bar .ttl{display:flex;flex-direction:column;align-items:center;line-height:1}
+#playTitle{font-size:clamp(22px,6.4vw,34px);font-weight:900;color:#4a2a12;letter-spacing:1px}
+#sPlay .bar .ttl i{font-style:normal;font-size:12px;color:#2b2b2b;letter-spacing:3px;margin-top:2px}
+#sPlay .bar .ttl i em{font-style:normal;color:#e0532f}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:4px;background:linear-gradient(#fffaf0,#f4e4c4);border:3px solid #e3b955;border-radius:999px;color:#4a2a12;font-weight:900;padding:3px 14px;font-size:15px;box-shadow:0 2px 0 rgba(0,0,0,.18);font-family:inherit;white-space:nowrap}
+.pill.sm{font-size:13px;padding:2px 10px;border-width:2px}
+.pill.big{font-size:clamp(17px,5vw,22px);padding:4px 22px}
+.pill.big.me{background:linear-gradient(#fff3b8,#ffd86b);animation:pulse .9s infinite alternate}
+.pill b{font-size:1.2em}
+.pill b.red,.markpill b.red{color:#d42a2a}
+button.pill{cursor:pointer}
+.backb{font-size:15px;padding:5px 12px}
+.circ{width:40px;height:40px;border-radius:50%;border:3px solid #e3b955;background:linear-gradient(#fffaf0,#f4e4c4);color:#4a2a12;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.circ.hm{display:none}
+#turnBan{flex:none;display:flex;justify-content:center;padding:6px 0 0;min-height:8px}
+#turnBan:empty{padding:0}
+.bbar{flex:none;display:flex;gap:10px;justify-content:center;padding:6px 10px;padding-bottom:max(8px,env(safe-area-inset-bottom));background:linear-gradient(#f6ecd8,#eedcb8);border-top:3px solid #e0b24a}
+.pill.wide{flex:1;max-width:240px;font-size:16px;padding:6px 8px}
+#sPlay #ctrl{padding-bottom:6px}
+/* プレイヤー */
+#players{gap:5px;padding:6px 6px 2px}
+.pc{background:linear-gradient(#fffaf0,#f3e3c3);border:3px solid #e3b955;color:#4a2a12;border-radius:16px;flex-direction:row;align-items:center;gap:3px;padding:3px 5px}
+.pc.turn{border-color:#ffb31a;background:linear-gradient(#fff6cc,#ffe08a);box-shadow:0 0 12px rgba(255,200,60,.9)}
+.pc .av{height:clamp(40px,11vw,62px);width:clamp(36px,10vw,56px);flex:none}
+.pc .pinfo{display:flex;flex-direction:column;align-items:center;min-width:0;flex:1;gap:1px}
+.pc .nm{color:#4a2a12;font-size:12px;background:#fffaf0;border:2px solid #e3b955;border-radius:999px;padding:0 6px;max-width:100%}
+.pc .ct{background:#fffaf0;border:2px solid #e3b955;border-radius:999px;color:#4a2a12;font-weight:800;font-size:11px;padding:0 6px;margin-top:0}
+.pc .ct b{color:#4a2a12;font-size:1.35em}
+.mf i{background:#c9452f;border:1px solid #fbeedd;width:7px;height:11px}
+.pc .badge{background:#ffd54a}
+/* カード（クリーム色・赤いうら） */
+.card{background:#fffaf0;border:1px solid #d9c9a8}
+.card.back{background:#c9452f;border:calc(var(--cw)*.06) solid #fbeedd;box-shadow:0 2px 5px rgba(0,0,0,.4)}
+.card.back:before{content:"";position:absolute;inset:calc(var(--cw)*.05);border:1.5px solid rgba(251,238,221,.7);border-radius:calc(var(--cw)*.06);background:repeating-linear-gradient(45deg,rgba(255,255,255,.07) 0 3px,transparent 3px 7px),repeating-linear-gradient(-45deg,rgba(0,0,0,.06) 0 3px,transparent 3px 7px)}
+.card.back:after{content:"";position:absolute;left:18%;right:18%;top:26%;height:48%;border-radius:0;box-shadow:none;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cg%20fill%3D%22%23fbeedd%22%3E%3Cellipse%20cx%3D%2250%22%20cy%3D%2264%22%20rx%3D%2222%22%20ry%3D%2218%22/%3E%3Cellipse%20cx%3D%2225%22%20cy%3D%2242%22%20rx%3D%229%22%20ry%3D%2211%22/%3E%3Cellipse%20cx%3D%2241%22%20cy%3D%2228%22%20rx%3D%229%22%20ry%3D%2211%22/%3E%3Cellipse%20cx%3D%2259%22%20cy%3D%2228%22%20rx%3D%229%22%20ry%3D%2211%22/%3E%3Cellipse%20cx%3D%2275%22%20cy%3D%2242%22%20rx%3D%229%22%20ry%3D%2211%22/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat}
+.card.back.stack{box-shadow:2px 2px 0 #fbeedd,4px 4px 0 #d8c7a6,6px 6px 0 #fbeedd,7px 8px 8px rgba(0,0,0,.4)}
+.card.can{box-shadow:0 0 0 3px #ffd54a,0 0 14px rgba(255,213,74,.9)}
+.card.dim{filter:brightness(.72) saturate(.8)}
+.hcard{overflow:visible}
+#hand .hcard.can:before{content:"だせる";position:absolute;left:50%;top:0;transform:translate(-50%,-62%);background:linear-gradient(#fff6c8,#ffd86b);border:2px solid #e0a72a;border-radius:999px;color:#5a3a12;font-size:11px;font-weight:900;padding:0 6px;white-space:nowrap;z-index:5;font-family:"Hiragino Maru Gothic ProN",sans-serif}
+#hand .hcard.chk:after{content:"✔";position:absolute;right:-4px;top:-10px;width:22px;height:22px;border-radius:50%;background:#3bb36b;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;z-index:6;border:2px solid #fff}
+.card.pick{transform:translateY(-22%)!important}
+#field .card.sel{box-shadow:0 0 0 4px #ffd54a,0 0 18px rgba(255,213,74,1)!important}
+#field .hcard.sel:after{content:"▼";position:absolute;left:50%;top:-24px;transform:translateX(-50%);color:#ffd54a;font-size:22px;text-shadow:0 2px 2px rgba(0,0,0,.4);z-index:9}
+/* 手札パネル */
+#handBox{flex:none;margin:0 6px 2px;background:rgba(20,70,40,.55);border:3px solid #e3b955;border-radius:18px;padding:4px 0 6px}
+.hhead{display:flex;justify-content:space-between;padding:0 8px 2px}
+.hhead .pill{font-size:13px;padding:1px 10px;border-width:2px}
+#hand{padding-top:8px}
+/* 大きいボタン */
+.goldbtn{border:3px solid #c98a1a;border-radius:999px;background:linear-gradient(#ffe68a,#f2b632);color:#4a2a12;font-weight:900;font-size:clamp(18px,5.4vw,24px);padding:8px 28px;box-shadow:0 5px 0 #a86f12,0 0 14px rgba(255,210,80,.6);font-family:inherit;cursor:pointer;animation:glow 1s infinite alternate}
+.goldbtn.sm{font-size:15px;padding:3px 14px;box-shadow:0 3px 0 #a86f12;animation:none}
+.goldbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #a86f12}
+@keyframes glow{from{filter:brightness(1)}to{filter:brightness(1.12)}}
+.cb.sm{font-size:13px;padding:6px 10px}
+#ctrl .goldbtn{order:-1;flex-basis:auto}
+#msg{font-size:clamp(14px,3.8vw,17px)}
+/* ババぬき */
+.tgt{display:flex;align-items:center;gap:8px;justify-content:center;position:relative}
+.tface img{filter:drop-shadow(0 4px 4px rgba(0,0,0,.4))}
+.tinfo{display:flex;flex-direction:column;gap:5px;align-items:center}
+.tbub{position:relative;background:#fffaf0;color:#4a2a12;border-radius:50%/45%;padding:12px 16px;font-weight:900;font-size:clamp(14px,4.2vw,19px);max-width:34vw;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.3);animation:popb .25s}
+.tbub:before{content:"";position:absolute;left:-10px;top:55%;border:9px solid transparent;border-right-color:#fffaf0;border-left:0}
+.hintline{text-align:center;margin-top:6px}
+/* ページワン */
+.pofield{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.orderbar{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:3px;background:linear-gradient(#fffaf0,#f4e4c4);border:3px solid #e3b955;border-radius:999px;padding:2px 12px;font-weight:900;font-size:12px;color:#4a2a12;max-width:96%}
+.orderbar span.now{background:#ffd86b;border-radius:999px;padding:0 6px}
+.orderbar i{font-style:normal;color:#8a6a3a}
+.markpill .pill{font-size:18px}
+.pileBox{color:#4a2a12;gap:5px}
+.pileWrap{gap:clamp(20px,9vw,60px)}
+/* 7ならべ・しんけいすいじゃく */
+.card.slot{border-color:rgba(255,240,200,.35)}
+/* v9 fix */
+.pill.big{font-size:clamp(16px,4.6vw,20px);padding:2px 20px}
+#players.n4 .pc{flex-direction:column;padding:3px 3px 4px;gap:1px}
+#players.n4 .pc .av{height:clamp(34px,9vw,52px);width:100%}
+.tbub{min-width:6.5em;max-width:40vw;white-space:normal;line-height:1.3}
+#hand{padding-top:4px}
+.hcnt{display:flex;gap:4px;align-items:center}
+.pill.hb{cursor:pointer;background:linear-gradient(#f3f0ea,#ddd6c8);border-color:#bfb39a;font-size:12px;padding:1px 8px}
+#playTitle.long{font-size:clamp(17px,4.8vw,26px)}
+.pofield{gap:4px}
+.orderbar{font-size:11px;padding:1px 10px;border-width:2px}
+.markpill .pill{font-size:15px;padding:1px 14px}
+.pofield .pileBox{gap:3px}
+.pofield .hintline{margin-top:2px}
+.pofield .hintline .pill{font-size:13px;padding:2px 12px;white-space:normal;text-align:center}
+.pc .badge{top:-6px;right:-2px;font-size:11px;padding:0 5px;max-width:70%;white-space:nowrap;overflow:hidden}
 /* ---- v8 menu ---- */
 #sTitle{padding:0 0 16px;background:#f7efe0}
 #sTitle .foot{margin-top:8px}
@@ -270,6 +363,39 @@ button{font-family:inherit;cursor:pointer}
   .cb{padding:7px 6px;font-size:14px}
   .cb.pg1{font-size:15px}
 }
+
+@media (max-height:899px){ .bbar{display:none} .circ.hm{display:flex} }
+@media (max-height:700px){ .orderbar{font-size:10px;flex-wrap:nowrap;overflow:hidden} .pc .ct{font-size:10px;padding:0 3px} #turnBan{display:none} .pc .ct br{display:none} #players{padding-top:3px} #players.n4 .pc .av{height:32px} #handBox{padding:2px 0 3px} .hhead .pill{font-size:12px} #sPlay #ctrl{min-height:44px;padding:3px 6px} #sPlay .goldbtn{font-size:17px;padding:5px 18px} #sPlay .cb{padding:6px 12px;font-size:14px} .pc .av{height:36px;width:32px} #turnBan .pill.big{font-size:15px;padding:1px 14px} #sPlay .bar .ttl i{display:none} #playTitle{font-size:22px} .circ{width:34px;height:34px;font-size:17px} }
+@media (min-aspect-ratio:4/3) and (max-height:560px){
+  #sPlay.on{grid-template-rows:auto auto 1fr auto auto}
+  #turnBan{grid-column:1;grid-row:2;padding-top:2px}
+  #turnBan .pill.big{font-size:14px;padding:1px 14px}
+  #field{grid-row:3}
+  #msg{grid-row:4}
+  #handBox{grid-column:1;grid-row:5}
+  #hand{grid-row:auto}
+  #players{grid-row:2/5}
+  #ctrl{grid-row:5}
+  .bbar{display:none}
+  .circ.hm{display:flex}
+  #playTitle{font-size:20px}
+  #sPlay .bar .ttl i{display:none}
+  .hhead{display:none!important}
+  .goldbtn{font-size:15px;padding:5px 10px}
+  .pc{display:grid}
+  #sPlay.on{grid-template-columns:1fr 150px}
+  #sPlay .goldbtn{font-size:14px;padding:6px 8px;animation:none}
+  .bwrap.land .tgt{flex-direction:column;gap:2px;max-width:40%}
+  .bwrap.land .tbub{max-width:100%;font-size:13px;padding:6px 10px}
+  .bwrap.land .tbub:before{display:none}
+  #handBox{margin:0 4px 2px}
+  #players .pc,#players.n4 .pc{display:flex;flex-direction:row;padding:2px 4px;gap:4px;border-width:2px;border-radius:12px}
+  #players .pc .av,#players.n4 .pc .av{height:30px;width:30px}
+  #players .mf{display:none}
+  #players .pc .pinfo{gap:0;align-items:flex-start}
+  #players .pc .nm,#players .pc .ct{font-size:10px;border-width:1px;padding:0 5px}
+  #players{gap:3px;overflow:hidden}
+}
 </style>
 </head>
 <body>
@@ -320,16 +446,18 @@ button{font-family:inherit;cursor:pointer}
   </section>
   <section id="sPlay" class="scr">
     <div class="bar">
-      <button class="ib" id="btnQuit">◀ やめる</button>
-      <div class="ttl" id="playTitle"></div>
-      <button class="ib" id="btnRule">？</button>
-      <button class="ib" id="btnMute">🔊</button>
+      <button class="pill backb" id="btnQuit">＜ もどる</button>
+      <div class="ttl"><span id="playTitle"></span><i>♠<em>♥</em>♣<em>♦</em></i></div>
+      <button class="circ" id="btnRule">？</button>
+      <button class="circ hm" id="btnMute">🔊</button>
     </div>
+    <div id="turnBan"></div>
     <div id="players"></div>
     <div id="field"></div>
     <div id="msg">&nbsp;</div>
-    <div id="hand"></div>
+    <div id="handBox"><div class="hhead" id="handHead"><span class="pill" id="handLbl"></span><span class="hcnt" id="handCnt"></span></div><div id="hand"></div></div>
     <div id="ctrl"></div>
+    <div class="bbar" id="bbar"><button class="pill wide" id="btnRule2">📖 ルール</button><button class="pill wide" id="btnMute2">🔊 おと：オン</button></div>
   </section>
 </div>
 <div class="ov" id="ovRules"><div class="box"><h2 id="ruleTitle"></h2><div class="rules" id="ruleBody"></div><p><button class="big" id="btnRuleClose">わかった！</button></p></div></div>
@@ -661,7 +789,7 @@ var AI = {
 if (typeof module !== 'undefined' && module.exports) module.exports = { BABA: BABA, SEVENS: SEVENS, PO: PO, CONC: CONC, AI: AI, RNG: RNG, mkDeck: mkDeck };
 </script>
 <script>'use strict';
-var VERSION = 'v8';
+var VERSION = 'v9';
 var SPR = JSON.parse(document.getElementById('spr').textContent);
 var CHARS = {
   fute: { name: 'フテ猫', lv: 2, tag: 'つよい' },
@@ -907,7 +1035,7 @@ function startGame(netPlayers) {
   G.viewer = -1;
   if (G.net) G.viewer = 0;
   else if (hcount === 1) for (var j = 0; j < P.length; j++) if (!P[j].cpu) G.viewer = j;
-  $('playTitle').textContent = GAMES[setup.game].name;
+  $('playTitle').textContent = GAMES[setup.game].name; $('playTitle').classList.toggle('long', GAMES[setup.game].name.length > 6);
   ov('ovResult', false); ov('ovCurtain', false); ov('ovSuit', false); ov('ovQuit', false);
   G.mod.start();
   show('sPlay');
@@ -980,26 +1108,43 @@ function renderPlayers() {
   P.forEach(function (p, i) {
     var turn = !G.st.done && G.st.turn === i;
     var bd = G.mod.badge(i);
-    h += '<div class="pc' + (turn ? ' turn' : '') + (bd ? ' done' : '') + '"><div class="av">' + avHTML(p, i) + '</div><div class="nm">' + esc(p.name) + '</div><div class="ct">' + G.mod.count(i) + '</div>' + (G.mod.hidden ? miniFan(G.st.hands[i].length) : '') + '' + (bd ? '<div class="badge' + (bd.bad ? ' bad' : '') + '">' + bd.t + '</div>' : '') + (p.bub && !(G.mod.hideBub && G.mod.hideBub(i)) ? '<div class="bub">' + esc(p.bub) + '</div>' : '') + '</div>';
+    h += '<div class="pc' + (turn ? ' turn' : '') + (bd ? ' done' : '') + '"><div class="av">' + avHTML(p, i) + '</div><div class="pinfo"><div class="nm">' + esc(p.name) + '</div><div class="ct">' + G.mod.count(i) + '</div>' + (G.mod.hidden ? miniFan(G.st.hands[i].length) : '') + '</div>' + (bd ? '<div class="badge' + (bd.bad ? ' bad' : '') + '">' + bd.t + '</div>' : '') + (p.bub && !(G.mod.hideBub && G.mod.hideBub(i)) ? '<div class="bub">' + esc(p.bub) + '</div>' : '') + '</div>';
   });
   $('players').innerHTML = h;
+  $('players').className = P.length >= 4 ? 'n4' : '';
   scheduleSync();
 }
 function handCW() {
   var W = Math.min(window.innerWidth, 900);
-  return Math.max(38, Math.min(88, W / 6.3, window.innerHeight * 0.125));
+  var land = window.innerWidth > window.innerHeight * 1.3;
+  return Math.max(36, Math.min(88, W / 5.9, window.innerHeight * (land ? 0.15 : window.innerHeight < 720 ? 0.085 : 0.115)));
 }
 function renderHand() {
   var el = $('hand');
+  var showBox = !!G.mod.handCards && G.viewer >= 0;
+  $('handBox').style.display = G.mod.handCards ? '' : 'none';
+  $('handHead').style.display = showBox ? '' : 'none';
+  if (showBox) {
+    $('handLbl').textContent = (G.net || G.humans > 1 ? P[G.viewer].name + 'の' : 'あなたの') + ' てふだ';
+    var nh = G.mod.handCards(G.viewer).length;
+    $('handCnt').innerHTML = (G.mod === MB && nh > 1 && !G.st.done ? '<button class="pill sm hb" data-c="mix" title="まぜる">🔀</button><button class="pill sm hb" data-c="sort" title="ならべる">🔢</button>' : '') + '<span class="pill sm">' + nh + 'まい</span>';
+  }
   if (!G.mod.handCards || G.viewer < 0) { el.innerHTML = G.mod.hidden && G.viewer < 0 && G.humans > 1 && !G.st.done ? '<div style="text-align:center;color:#fff;opacity:.7;padding:10px">（手札はかくしているよ）</div>' : ''; el.style.height = ''; return; }
   var cards = G.mod.handCards(G.viewer);
-  var W = Math.min(el.clientWidth || window.innerWidth, 900) - 12, cw = handCW();
+  var W = Math.min(el.clientWidth || window.innerWidth, 900) - 16, cw = handCW();
   var f = fanHTML(cards, W, cw, { cls: G.mod.handCls ? function (c, k) { return G.mod.handCls(c, k); } : null, maxRows: 3, minStep: 0.42 });
   el.style.height = f.h + 'px';
   el.innerHTML = '<div class="fan" style="width:' + W + 'px;height:' + f.h + 'px;margin:0 auto">' + f.html + '</div>';
 }
+function turnBanner() {
+  var st = G.st, b = $('turnBan');
+  if (!st || st.done) { b.innerHTML = ''; return; }
+  var p = P[st.turn], me = G.viewer === st.turn && !p.cpu;
+  b.innerHTML = '<span class="pill big' + (me ? ' me' : '') + '">' + esc(me && !G.net && G.humans <= 1 ? 'あなた' : p.name) + 'の ばん！</span>';
+}
 function render() {
   if (!G.st) return;
+  turnBanner();
   renderPlayers();
   renderHand();
   $('ctrl').innerHTML = G.mod.ctrl ? G.mod.ctrl() : '';
@@ -1037,6 +1182,10 @@ $('field').addEventListener('click', function (e) {
   var c = pickStacked(e, '#field [data-f]'); if (!c || !G.mod.onField) return;
   G.mod.onField(c.getAttribute('data-f'));
 });
+$('handHead').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-c]'); if (!b || !G.mod.onCtrl) return;
+  G.mod.onCtrl(b.getAttribute('data-c'));
+});
 $('ctrl').addEventListener('click', function (e) {
   var b = e.target.closest('[data-c]'); if (!b || !G.mod.onCtrl) return;
   G.mod.onCtrl(b.getAttribute('data-c'));
@@ -1066,10 +1215,12 @@ var MB = {
   handCls: function (c, k) { return MB.lift && MB.lift.seat === G.viewer && k === MB.lift.k ? 'pick' : ''; },
   hideBub: function (i) { var st = G.st; if (!st || st.done) return false; if (MB.reveal) return MB.reveal.seat >= 0 && MB.reveal.seat !== G.viewer && i === MB.reveal.from; var t = BABA.target(st); return (i === t && t !== G.viewer) || (i === st.turn && t === G.viewer && G.viewer >= 0); },
   ctrl: function () {
-    if (G.viewer >= 0 && G.st.hands[G.viewer].length > 1 && !G.st.done) return '<button class="cb gry" data-c="mix">🔀 まぜる</button><button class="cb gry" data-c="sort">ならべる</button>';
-    return '';
+    var h = '';
+    if (myTurn() && MB.pickK >= 0) h += '<button class="goldbtn" data-c="drawsel">このカードを ひく</button>';
+    return h;
   },
   onCtrl: function (c) {
+    if (c === 'drawsel') { if (myTurn() && MB.pickK >= 0) { SFX.tap(); act({ draw: MB.pickK }); } return; }
     if (G.net && NET.role === 'guest') { netSend({ t: 'hand', op: c }); SFX.card(); return; }
     MB.handOp(G.viewer, c);
     SFX.card(); render();
@@ -1090,19 +1241,21 @@ var MB = {
       return;
     }
     if (MB.reveal) { el.innerHTML = '<div class="bwrap">' + MB.bigFace(MB.reveal.from, sz.h * 0.45) + '<div class="bname">' + esc(P[MB.reveal.from].name) + '　のこり <b>' + st.hands[MB.reveal.from].length + '</b>まい</div></div>'; return; }
-    var land = sz.w > sz.h * 1.6;
+    var land = window.innerWidth > window.innerHeight * 1.3;
     if (t === G.viewer && G.viewer >= 0) {
       el.innerHTML = '<div class="bwrap' + (land ? ' land' : '') + '">' + MB.bigFace(st.turn, sz.h * (land ? 0.8 : 0.5)) + '<div class="disc" style="font-size:16px;text-align:center">' + esc(P[st.turn].name) + ' が<br>あなたのカードを えらんでいるよ…</div></div>';
       return;
     }
-    var n = st.hands[t].length, faceH = land ? Math.min(sz.h * 0.8, 150) : Math.min(sz.h * 0.36, 140);
-    var fw = land ? sz.w - faceH - 20 : sz.w, fh = land ? sz.h - 30 : sz.h - faceH - 34;
+    var n = st.hands[t].length, faceH = land ? Math.min(sz.h * 0.45, 110) : Math.min(sz.h * 0.3, 120);
+    var fw = land ? Math.floor(sz.w * 0.56) : sz.w, fh = land ? sz.h - 40 : sz.h - faceH - 50;
     var cw = Math.max(34, Math.min(80, fh / 1.42 / 1.25, (fw - 10) / Math.max(3, n * 0.62)));
     var mine = myTurn();
     var f = fanHTML(st.hands[t], fw, cw, { back: true, minStep: 0.5, maxRows: 2, cls: function (c, k) { return (k === MB.pickK ? 'pick sel ' : '') + (mine ? 'tap can' : ''); } });
-    var hint = mine ? (MB.pickK < 0 ? 'カードを えらんでね（タップ）' : 'もう1回 タップで ひく！（ほかも えらべる）') : esc(P[st.turn].name) + ' が えらんでいるよ';
-    el.innerHTML = '<div class="bwrap' + (land ? ' land' : '') + '"><div class="bface">' + MB.bigFace(t, faceH) + '<div class="bname">' + esc(P[t].name) + '　のこり <b>' + n + '</b>まい</div></div>' +
-      '<div><div class="fan" style="width:' + fw + 'px;height:' + f.h + 'px">' + f.html.replace(/data-k=/g, 'data-f=') + '</div><div class="disc" style="text-align:center">' + hint + '</div></div></div>';
+    var hint = mine ? (MB.pickK < 0 ? 'カードを 1まい えらんでね' : 'えらんだカードを もういちど タップ') : esc(P[st.turn].name) + ' が えらんでいるよ';
+    var p = P[t], img = p.cpu ? '<img src="' + (SPR[p.ch][p.pose] || SPR[p.ch].idle) + '" style="height:' + Math.round(faceH) + 'px" alt="">' : '<div class="hav" style="background:' + p.col + ';width:' + Math.round(faceH * 0.6) + 'px;height:' + Math.round(faceH * 0.6) + 'px;font-size:' + Math.round(faceH * 0.3) + 'px">' + esc(Array.from(p.name)[0] || '?') + '</div>';
+    var bub = p.bub ? p.bub : (mine ? (p.ch === 'fute' ? 'どれを ひくにゃ？' : p.ch === 'kuro' ? 'さあ、えらべ' : p.ch === 'chap' ? 'どれに する〜？' : '') : '');
+    el.innerHTML = '<div class="bwrap' + (land ? ' land' : '') + '"><div class="tgt"><div class="tface">' + img + '</div><div class="tinfo"><span class="pill">' + esc(p.name) + '</span><span class="pill">のこり <b>' + n + '</b> まい</span></div>' + (bub ? '<div class="tbub">' + esc(bub) + '</div>' : '') + '</div>' +
+      '<div><div class="fan" style="width:' + fw + 'px;height:' + f.h + 'px">' + f.html.replace(/data-k=/g, 'data-f=') + '</div><div class="hintline"><span class="pill sm">' + hint + '</span></div></div></div>';
   },
   onField: function (k) {
     if (!myTurn()) return;
@@ -1206,7 +1359,7 @@ var MS = {
     return null;
   },
   handCards: function (i) { return G.st.hands[i]; },
-  handCls: function (c) { if (!myTurn()) return ''; return SEVENS.legal(G.st, c) ? 'can' : 'dim'; },
+  handCls: function (c) { if (!myTurn()) return ''; return SEVENS.legal(G.st, c) ? 'can' + (MS.sel === c.id ? ' pick chk' : '') : 'dim'; },
   hintText: function (i) {
     var st = G.st, L = SEVENS.legalCards(st, i), mine = {};
     st.hands[i].forEach(function (c) { mine[c.id] = 1; });
@@ -1216,10 +1369,11 @@ var MS = {
     return 'いま出せるのは ' + L.length + 'まい。どれを出すと、ほかの人が よろこぶかな？ ずっと とっておくと パスが へっちゃうよ。';
   },
   ctrl: function () {
-    if (!myTurn()) { MS.hint = ''; return ''; }
+    if (!myTurn()) { MS.hint = ''; MS.sel = null; return ''; }
     var i = G.st.turn, can = SEVENS.legalCards(G.st, i).length, left = G.st.passLimit - G.st.passes[i];
     var hb = (MS.hint ? '<div class="hintb"><img src="' + SPR.chap.think + '" alt="">' + esc(MS.hint) + '</div>' : '') + (can >= 2 && !MS.hint ? '<button class="cb gry" data-c="hint">💡 ヒント</button>' : '');
-    return hb + MS.ctrl2(i, can, left);
+    var selc = MS.sel && G.st.hands[i].filter(function (c) { return c.id === MS.sel; })[0];
+    return (selc ? '<button class="goldbtn" data-c="playsel">このカードを だす</button>' : '') + hb + MS.ctrl2(i, can, left);
   },
   ctrl2: function (i, can, left) {
     if (!can) return '<button class="cb org" data-c="pass">' + (left > 0 ? 'パス（あと' + left + 'かい）' : 'パス…（アウト）') + '</button>';
@@ -1227,14 +1381,16 @@ var MS = {
     return '';
   },
   onCtrl: function (c) {
+    if (c === 'playsel' && myTurn() && MS.sel) { var sc = G.st.hands[G.st.turn].filter(function (x) { return x.id === MS.sel; })[0]; MS.sel = null; if (sc && SEVENS.legal(G.st, sc)) act({ card: sc }); return; }
     if (c === 'hint' && myTurn()) { MS.hint = MS.hintText(G.st.turn); SFX.tap(); render(); return; }
     if (c === 'pass' && myTurn() && SEVENS.canPass(G.st, G.st.turn)) act({ pass: true });
   },
   onHand: function (k) {
     if (!myTurn()) return;
     var c = G.st.hands[G.st.turn][k];
-    if (SEVENS.legal(G.st, c)) act({ card: c });
-    else { SFX.bad(); setMsg('そのカードは まだ 出せないよ'); }
+    if (!SEVENS.legal(G.st, c)) { SFX.bad(); setMsg('そのカードは まだ 出せないよ'); return; }
+    if (MS.sel === c.id) { MS.sel = null; act({ card: c }); return; }
+    MS.sel = c.id; SFX.tap(); render();
   },
   field: function (el) {
     var st = G.st, sz = fieldSize();
@@ -1310,21 +1466,22 @@ var MP = {
   handCards: function (i) { return G.st.hands[i]; },
   handCls: function (c) {
     if (!myTurn()) return '';
-    if (MP.drawn) return c.id === MP.drawn.id ? 'can' : 'dim';
-    return PO.canPlay(G.st, c) ? 'can' : 'dim';
+    var sl = MP.sel === c.id ? ' pick chk' : '';
+    if (MP.drawn) return c.id === MP.drawn.id ? 'can' + sl : 'dim';
+    return PO.canPlay(G.st, c) ? 'can' + sl : 'dim';
   },
   ctrl: function () {
-    if (!myTurn()) return '';
+    if (!myTurn()) { MP.sel = null; return ''; }
     var st = G.st, i = st.turn, h = '';
+    if (MP.sel && st.hands[i].some(function (c) { return c.id === MP.sel; })) h += '<button class="goldbtn" data-c="playsel">このカードを だす</button>';
     if (st.hands[i].length === 2 && PO.playable(st, i).length && !MP.declared && !MP.drawn) h += '<div class="hintb"><img src="' + SPR.chap.idea + '" alt="">あと2まい！ 出すまえに「ページワン！」だよ</div>';
     if (st.hands[i].length === 2 && PO.playable(st, i).length) h += '<button class="cb pg1' + (MP.declared ? ' ok' : '') + '" data-c="pg1">' + (MP.declared ? 'ページワン！✓' : 'ページワン！') + '</button>';
     if (MP.drawn) h += '<button class="cb gry" data-c="pass">出さない（パス）</button>';
-    else if (st.pending > 0) h += '<button class="cb org" data-c="draw">' + st.pending + 'まい ひく</button>';
-    else h += '<button class="cb" data-c="draw">山から ひく</button>';
     return h;
   },
   onCtrl: function (c) {
     if (!myTurn()) return;
+    if (c === 'playsel') { MP.playSel(); return; }
     if (c === 'pg1') { if (!MP.declared) { MP.declared = true; SFX.pg1(); centerMsg('ページワン！'); render(); } }
     else if (c === 'draw' && !MP.drawn) act({ draw: true });
     else if (c === 'pass' && MP.drawn) act({ pass: true });
@@ -1335,20 +1492,32 @@ var MP = {
     var c = G.st.hands[G.st.turn][k];
     if (MP.drawn && c.id !== MP.drawn.id) { SFX.bad(); setMsg('ひいたカードだけ 出せるよ'); return; }
     if (!PO.canPlay(G.st, c)) { SFX.bad(); setMsg(G.st.pending ? '2を出すか、カードをひいてね' : 'おなじマークか おなじ数字を出してね'); return; }
+    if (MP.sel !== c.id) { MP.sel = c.id; SFX.tap(); render(); return; }
+    MP.playSel();
+  },
+  playSel: function () {
+    var c = G.st.hands[G.st.turn].filter(function (x) { return x.id === MP.sel; })[0];
+    MP.sel = null;
+    if (!c || !PO.canPlay(G.st, c)) return;
     var dec = MP.declared;
     if (c.r === 8) chooseSuit().then(function (s) { if (myTurn()) act({ card: c, suit: s, declared: dec }); });
     else act({ card: c, declared: dec });
   },
   field: function (el) {
     var st = G.st, sz = fieldSize(), top = PO.top(st);
-    var cw = Math.max(44, Math.min(96, sz.w / 3.6, (sz.h - 60) / 1.42));
+    var cw = Math.max(36, Math.min(96, sz.w / 3.4, (sz.h - 128) / 1.42));
     var canDraw = myTurn() && !MP.drawn;
-    var h = '<div><div class="pileWrap">';
-    h += '<div class="pileBox">' + cardHTML(null, { cw: cw, back: true, cls: canDraw ? 'tap can' : '', attr: 'data-f="pile"' }) + '<span>山 ' + st.pile.length + 'まい</span></div>';
-    h += '<div class="pileBox">' + cardHTML(top, { cw: cw, cls: MP.last ? 'flip' : '' }) + '<span>場のカード</span></div>';
-    h += '<div class="pileBox"><div class="suitInd' + (st.suit === 1 || st.suit === 2 ? ' red' : '') + '">' + SUITS[st.suit] + '</div><span>いまのマーク</span><span class="dirInd">' + (st.dir > 0 ? 'じゅん →' : '← ぎゃく') + '</span></div>';
+    /* じゅんばん */
+    var ord = [], k = st.turn;
+    for (var x = 0; x < st.n; x++) { if (PO.active(st, k)) ord.push(k); k = ((k + st.dir) % st.n + st.n) % st.n; }
+    var oh = '<div class="orderbar">' + ord.map(function (q, ix) { return '<span class="' + (ix === 0 ? 'now' : '') + '">' + esc(G.viewer === q && !G.net && G.humans <= 1 ? 'あなた' : P[q].name) + '</span>'; }).join('<i>→</i>') + '<i>→</i><span>' + esc(G.viewer === ord[0] && !G.net && G.humans <= 1 ? 'あなた' : P[ord[0]].name) + '</span></div>';
+    var red = st.suit === 1 || st.suit === 2;
+    var h = '<div class="pofield">' + oh + '<div class="markpill"><span class="pill big">いまのマーク：<b class="' + (red ? 'red' : '') + '">' + SUITS[st.suit] + '</b></span></div><div class="pileWrap">';
+    h += '<div class="pileBox">' + cardHTML(null, { cw: cw, back: true, cls: 'stack' + (canDraw ? ' tap can' : ''), attr: 'data-f="pile"' }) + (canDraw ? '<button class="goldbtn sm" data-f="pile">' + (st.pending ? st.pending + 'まい ひく' : '1まい ひく') + '</button>' : '<span class="pill sm">やまふだ ' + st.pile.length + '</span>') + '</div>';
+    h += '<div class="pileBox">' + cardHTML(top, { cw: cw, cls: MP.last ? 'flip' : '' }) + '<span class="pill sm">ばのカード</span></div>';
     h += '</div>';
-    if (st.pending) h += '<div style="text-align:center;margin-top:8px"><span class="pend">+' + st.pending + 'まい たまってる！</span></div>';
+    if (st.pending) h += '<div class="hintline"><span class="pend">+' + st.pending + 'まい たまってる！ 2を だすか ひいてね</span></div>';
+    else if (myTurn()) h += '<div class="hintline"><span class="pill">' + (MP.drawn ? 'ひいたカードを だすか、パス' : '<b class="' + (red ? 'red' : '') + '">' + SUITS[st.suit] + '</b> か <b>' + RANKS[top.r] + '</b> のカードを だせるよ（8は いつでも）') + '</span></div>';
     el.innerHTML = h + '</div>';
     MP.last = false;
   },
@@ -1690,8 +1859,10 @@ $('btnFinMenu').addEventListener('click', function () { SFX.tap(); ov('ovFinal',
 function openRules() { $('ruleTitle').textContent = GAMES[setup.game].name + ' のルール'; $('ruleBody').innerHTML = RULES[setup.game]; ov('ovRules', true); }
 $('btnRule').addEventListener('click', openRules);
 $('btnRuleClose').addEventListener('click', function () { ov('ovRules', false); });
-function setMuted(m) { muted = m; $('btnMute').textContent = muted ? '🔇' : '🔊'; $('sndOff').style.display = muted ? 'flex' : 'none'; try { localStorage.setItem('futeTrumpMute', muted ? '1' : '0'); } catch (e) { /* むし */ } }
+function setMuted(m) { muted = m; $('btnMute').textContent = muted ? '🔇' : '🔊'; $('btnMute2').innerHTML = (muted ? '🔇' : '🔊') + ' おと：' + (muted ? 'オフ' : 'オン'); $('sndOff').style.display = muted ? 'flex' : 'none'; try { localStorage.setItem('futeTrumpMute', muted ? '1' : '0'); } catch (e) { /* むし */ } }
 $('btnMute').addEventListener('click', function () { setMuted(!muted); });
+$('btnMute2').addEventListener('click', function () { setMuted(!muted); });
+$('btnRule2').addEventListener('click', function () { openRules(); });
 $('btnTitleSnd').addEventListener('click', function () { setMuted(!muted); if (!muted) SFX.tap(); });
 $('btnHowTo').addEventListener('click', function () {
   SFX.tap();
@@ -1967,7 +2138,7 @@ function applyView(v) {
   if (NET.vid !== v.id) {
     NET.vid = v.id; NET.wasMine = false;
     ov('ovResult', false); ov('ovSuit', false); ov('ovQuit', false); SCAN.close();
-    $('playTitle').textContent = GAMES[v.g].name; setup.game = v.g;
+    $('playTitle').textContent = GAMES[v.g].name; $('playTitle').classList.toggle('long', GAMES[v.g].name.length > 6); setup.game = v.g;
     MP.declared = false;
     show('sPlay');
   }
