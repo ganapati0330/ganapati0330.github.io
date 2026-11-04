@@ -777,6 +777,35 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
 .warn .adv{color:#b45309;display:block;font-size:11px}
 .nogo{display:flex;align-items:center;gap:6px;background:#fef2f2;border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px;color:#991b1b}
 .nogo button{margin-left:auto;border:0;background:#fff;border-radius:6px;padding:3px 8px;font-size:12px}
+#ride{position:fixed;left:0;right:0;bottom:0;z-index:2600;background:#0f172a;color:#fff;padding:12px 14px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.35);border-radius:16px 16px 0 0}
+#ride h3{margin:0 0 6px;font-size:18px}
+#ride ul{margin:0 0 10px;padding-left:20px;font-size:13px;line-height:1.6;color:#cbd5e1}
+#ride ul b{color:#fff}
+.r-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.r-btns button{flex:1;min-width:110px;border:0;border-radius:10px;padding:11px 8px;font-size:14px;font-weight:700;background:#334155;color:#fff}
+.r-btns button.go{background:#f97316}
+.r-btns button.end{background:#7f1d1d}
+.r-top{display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-bottom:4px}
+.r-next{display:flex;align-items:center;gap:12px}
+.r-next svg{flex:none;background:#1e293b;border-radius:14px}
+.r-dist{font-size:40px;font-weight:900;line-height:1.05;letter-spacing:-.02em}
+.r-turn{font-size:22px;font-weight:800;color:#fde68a}
+.r-warn{margin-top:8px;background:#7f1d1d;border-radius:10px;padding:8px 10px;font-size:18px;font-weight:800}
+.r-warn.soft{background:#78350f}
+.r-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;text-align:center}
+.r-grid b{display:block;font-size:26px;font-weight:900;line-height:1.1}
+.r-grid span{font-size:11px;color:#94a3b8}
+.r-off{background:#b91c1c!important}
+#rBlock{position:fixed;inset:0;z-index:2700;background:transparent;display:flex;align-items:flex-start;justify-content:center;padding-top:calc(10px + env(safe-area-inset-top))}
+#rBlock[hidden]{display:none}
+#rBlock span{background:rgba(15,23,42,.8);color:#fff;font-size:12px;border-radius:999px;padding:5px 12px}
+body.riding #panel,body.riding .mapbtns{display:none}
+body.riding #map{left:0!important;bottom:var(--rideH,260px)!important;top:0}
+.medir{width:26px;height:26px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 7px rgba(37,99,235,.25),0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center}
+.medir i{display:block;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid #fff;margin-top:-3px}
+.mini .ridebtn{display:block;background:#f97316;font-weight:700}
+.mini .ridebtn[hidden]{display:none}
+.ridecta{width:100%;margin-top:10px;border:0;border-radius:10px;background:#f97316;color:#fff;font-weight:800;font-size:15px;padding:11px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
 .pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -824,7 +853,7 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
       <div class="rin"><span class="badge b-g">G</span><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button id="btnSearchG">検索</button></div>
       <div id="results"></div>
     </div>
-    <div class="mini" id="mini"><span id="miniTxt">出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください</span><button id="btnMini">詳細 ▴</button></div>
+    <div class="mini" id="mini"><span id="miniTxt">出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください</span><button id="btnRide" class="ridebtn" hidden>🚴 走行</button><button id="btnMini">詳細 ▴</button></div>
   </div>
   <div class="pbody" id="pbody">
     <details class="card" data-k="loop" open>
@@ -887,7 +916,8 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
       <div class="row" style="margin-top:10px">
         <span>平均速度</span><input type="range" id="speed" min="12" max="40" step="1" value="24"><b id="speedV">24</b>km/h
       </div>
-      <p class="hint" style="margin-top:4px">走行時間 ＝ 距離 ÷ 平均速度 ＋ 登りの時間（1時間に600m登る想定）<br>お出かけ時間 ＝ 走行時間 ＋ 信号・一時停止（走行の15%）＋ 休憩（1時間ごとに10分）。立ち寄り先での滞在は含みません。</p>
+      <button class="ridecta" id="btnRide2" disabled>🚴 このルートで走行モードを始める</button>
+      <p class="hint" style="margin-top:6px">走行時間 ＝ 距離 ÷ 平均速度 ＋ 登りの時間（1時間に600m登る想定）<br>お出かけ時間 ＝ 走行時間 ＋ 信号・一時停止（走行の15%）＋ 休憩（1時間ごとに10分）。立ち寄り先での滞在は含みません。</p>
     </details>
 
     <details class="card" data-k="warn">
@@ -951,6 +981,43 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
     </div>
   </div>
 </div>
+<div id="ride" hidden>
+  <div id="rIntro">
+    <h3>🚴 走行モード</h3>
+    <ul>
+      <li>スマホは<b>ハンドルのホルダーに固定</b>してください（手に持っての操作・画面の注視は法律で禁止されています）。</li>
+      <li>曲がり角や注意ポイントは<b>音声でお知らせ</b>します。画面は止まっているときに確認しましょう。</li>
+      <li>走行中は画面の操作を受け付けません。操作は停車してから行ってください。</li>
+      <li>アプリを開いたまま・画面を付けたままにしてください。電池の減りが早くなります。</li>
+    </ul>
+    <div class="r-btns">
+      <button id="rStartGps" class="go">📍 GPSで走行開始</button>
+      <button id="rStartSim">▶ テスト走行（画面の動きを試す）</button>
+      <button id="rCancel">やめる</button>
+    </div>
+  </div>
+  <div id="rMain" hidden>
+    <div class="r-top"><span id="rMode"></span><span id="rGps"></span></div>
+    <div class="r-next">
+      <svg id="rArrow" viewBox="0 0 100 100" width="76" height="76"><path id="rArrowPath" d="M50 92 V42 M50 42 L30 62 M50 42 L70 62" stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="r-ins"><div class="r-dist" id="rTurnDist">—</div><div class="r-turn" id="rTurnTxt">位置を確認しています…</div></div>
+    </div>
+    <div class="r-warn" id="rWarn" hidden></div>
+    <div class="r-grid">
+      <div><b id="rRemain">—</b><span>残り km</span></div>
+      <div><b id="rEta">—</b><span>残り時間</span></div>
+      <div><b id="rSpeed">—</b><span>km/h</span></div>
+      <div><b id="rDone">0.0</b><span>走った km</span></div>
+    </div>
+    <div class="r-btns">
+      <button id="rVoice">🔊 音声ON</button>
+      <button id="rFollow">◎ 現在地へ</button>
+      <button id="rReroute" hidden>↻ 現在地から引き直す</button>
+      <button id="rEnd" class="end">■ 終了</button>
+    </div>
+  </div>
+</div>
+<div id="rBlock" hidden><span>走行中は操作できません（停車すると操作できます）</span></div>
 <div id="toast"></div>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -961,7 +1028,7 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v7';
+const VERSION = 'v8';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -1034,6 +1101,7 @@ map.on('moveend', () => { const c = map.getCenter(); store.set(LS_VIEW, {lat:+c.
 let lastPopupClose = 0;
 map.on('popupclose', () => { lastPopupClose = Date.now(); });
 map.on('click', e => {
+  if (document.body.classList.contains('riding')) return;
   if (Date.now() - lastPopupClose < 400) return;          // tap was used to close a popup
   if ($('results').classList.contains('show')){ closeResults(); return; }
   pushUndo();
@@ -2489,6 +2557,7 @@ syncLoopKm();
 /* ---------- ヘッダーの概要・折りたたみ ---------- */
 function renderMini(){
   const el = $('miniTxt');
+  $('btnRide').hidden = !route; $('btnRide2').disabled = !route;
   if (!route){ el.textContent = wps.length ? '目的地を決めるか、「距離を指定してコースを提案」を使ってください' : '出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください'; return; }
   const W = warnings || [], sev = W.filter(w => SEVERE.has(w.type)).length;
   el.innerHTML = `📏 <b>${fmtKm(route.dist)}</b>km ・ ⏱ <b>${plainTime(route)}</b>（休憩込み${hmShort(outingH(route))}） ・ ⛰ ↑<b>${route.asc == null ? '—' : Math.round(route.asc)}</b>m${sev ? ` ・ <span style="color:#fca5a5">⚠ 要確認${sev}</span>` : ''}`;
@@ -2502,6 +2571,286 @@ document.querySelectorAll('details.card[data-k]').forEach(d => {
     if (k === 'elev' && d.open) setTimeout(drawElev, 30);
   });
 });
+
+/* ---------- 走行モード（v8） ---------- */
+const RIDE = {on:false, sim:false, watch:null, simTimer:null, wake:null, voice:true, follow:true,
+  idx:0, prog:0, off:0, offSince:0, last:null, lastT:0, speed:0, done:0, turns:[], warns:[], vias:[], said:new Set(), marker:null, startT:0, arrived:false, endArm:0, blockT:0};
+function computeTurns(r){
+  const pts = r.pts, rs = []; let next = 0;
+  pts.forEach(p => { if (p.d >= next){ rs.push(p); next = p.d + 10; } });
+  if (rs[rs.length-1] !== pts[pts.length-1]) rs.push(pts[pts.length-1]);
+  const brg = (a, b) => Math.atan2((b.lng - a.lng) * Math.cos(a.lat * Math.PI / 180), b.lat - a.lat) * 180 / Math.PI;
+  const cand = [];
+  let j = 0, k = 0;
+  for (let i = 1; i < rs.length - 1; i++){
+    while (j < i && rs[i].d - rs[j+1].d >= 25) j++;
+    if (k < i) k = i;
+    while (k < rs.length - 1 && rs[k].d - rs[i].d < 25) k++;
+    if (rs[i].d - rs[j].d < 15 || rs[k].d - rs[i].d < 15) continue;
+    let a = brg(rs[i], rs[k]) - brg(rs[j], rs[i]);
+    while (a > 180) a -= 360; while (a <= -180) a += 360;
+    if (Math.abs(a) >= 35) cand.push({d:rs[i].d, ang:a});
+  }
+  const out = [];
+  cand.forEach(c => {
+    const last = out[out.length-1];
+    if (last && c.d - last.d < 40){ if (Math.abs(c.ang) > Math.abs(last.ang)) out[out.length-1] = c; }
+    else out.push(c);
+  });
+  return out.map(t => ({d:t.d, ang:t.ang, txt:turnText(t.ang)}));
+}
+function turnText(a){
+  const s = a > 0 ? '右' : '左', x = Math.abs(a);
+  return x < 60 ? `やや${s}` : x < 135 ? `${s}` : `大きく${s}（Uターン気味）`;
+}
+function arrowPath(a){
+  // 角度aの方向に曲がる矢印
+  const r = Math.max(-150, Math.min(150, a)) * Math.PI / 180;
+  const x2 = 50 + Math.sin(r) * 34, y2 = 46 - Math.cos(r) * 34;
+  const hl = r - Math.PI * 0.8, hr = r + Math.PI * 0.8;
+  return `M50 92 V46 L${x2.toFixed(1)} ${y2.toFixed(1)} M${x2.toFixed(1)} ${y2.toFixed(1)} L${(x2 + Math.sin(hl) * 18).toFixed(1)} ${(y2 - Math.cos(hl) * 18).toFixed(1)} M${x2.toFixed(1)} ${y2.toFixed(1)} L${(x2 + Math.sin(hr) * 18).toFixed(1)} ${(y2 - Math.cos(hr) * 18).toFixed(1)}`;
+}
+function say(text, key){
+  if (key){ if (RIDE.said.has(key)) return; RIDE.said.add(key); }
+  if (!RIDE.voice || !('speechSynthesis' in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = 1.05;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function speakDist(m){ return m >= 1000 ? `${(m/1000).toFixed(1)}キロ` : `${Math.round(m / 50) * 50}メートル`; }
+async function wakeOn(){
+  try { if ('wakeLock' in navigator) RIDE.wake = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (RIDE.on && document.visibilityState === 'visible') wakeOn(); });
+function rideOpen(){
+  if (!route){ toast('先にルートを作ってください'); return; }
+  document.body.classList.add('riding');
+  $('ride').hidden = false; $('rIntro').hidden = false; $('rMain').hidden = true;
+  setRideH();
+}
+function setRideH(){ setTimeout(() => { document.body.style.setProperty('--rideH', $('ride').offsetHeight + 'px'); map.invalidateSize(); }, 30); }
+function rideClose(){
+  RIDE.on = false;
+  if (RIDE.watch != null){ navigator.geolocation.clearWatch(RIDE.watch); RIDE.watch = null; }
+  clearInterval(RIDE.simTimer); RIDE.simTimer = null; clearInterval(RIDE.blockTimer);
+  try { RIDE.wake && RIDE.wake.release(); } catch (e) {}
+  RIDE.wake = null;
+  try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+  if (RIDE.marker){ map.removeLayer(RIDE.marker); RIDE.marker = null; }
+  $('ride').hidden = true; $('rBlock').hidden = true;
+  document.body.classList.remove('riding');
+  setTimeout(() => { map.invalidateSize(); fitRoute(); }, 50);
+}
+function rideStart(sim){
+  const r = route;
+  RIDE.on = true; RIDE.sim = sim; RIDE.idx = 0; RIDE.prog = 0; RIDE.off = 0; RIDE.offSince = 0; RIDE.last = null; RIDE.speed = 0; RIDE.done = 0;
+  RIDE.said = new Set(); RIDE.arrived = false; RIDE.startT = Date.now(); RIDE.follow = true;
+  RIDE.turns = computeTurns(r);
+  RIDE.warns = buildWarnings(r).filter(w => w.type !== 'busy' || w.len >= 1000).map(w => ({d:r.pts[w.from].d, type:w.type, len:w.len, info:w.info}));
+  // 経由地の位置（ルート上の距離）
+  RIDE.vias = []; let from = 0;
+  wps.forEach((w, i) => {
+    let bi = from, bd = Infinity;
+    for (let k = from; k < r.pts.length; k++){ const d = hav(r.pts[k], w); if (d < bd){ bd = d; bi = k; } }
+    if (i > 0 && i < wps.length - 1) RIDE.vias.push({d:r.pts[bi].d, name:w.name || `経由地${i}`});
+    from = bi;
+  });
+  $('rIntro').hidden = true; $('rMain').hidden = false;
+  $('rMode').textContent = sim ? '▶ テスト走行中（実際の位置ではありません）' : '📍 GPSで走行中';
+  $('rVoice').textContent = RIDE.voice ? '🔊 音声ON' : '🔇 音声OFF';
+  setRideH(); wakeOn();
+  say(sim ? 'テスト走行を始めます' : '走行モードを開始します。安全運転で楽しんでください。');
+  const p0 = r.pts[0];
+  map.setView([p0.lat, p0.lng], Math.max(map.getZoom(), 16));
+  if (sim){
+    let simD = 0; const v = 30 / 3.6, mult = 6;
+    RIDE.simTimer = setInterval(() => {
+      simD += v * mult * 0.5;
+      const pts = r.pts, tot = pts[pts.length-1].d;
+      if (simD > tot) simD = tot;
+      let i = 0; while (i < pts.length - 1 && pts[i+1].d < simD) i++;
+      const a = pts[i], b = pts[Math.min(i+1, pts.length-1)], t = b.d > a.d ? (simD - a.d) / (b.d - a.d) : 0;
+      onFix({lat:a.lat + (b.lat - a.lat) * t, lng:a.lng + (b.lng - a.lng) * t, acc:5, speed:v, t:Date.now()});
+      if (simD >= tot) { clearInterval(RIDE.simTimer); RIDE.simTimer = null; }
+    }, 500);
+  } else {
+    if (!navigator.geolocation){ toast('この端末では位置情報が使えません'); return; }
+    RIDE.blockTimer = setInterval(checkBlock, 1000);
+    $('rGps').textContent = 'GPS 取得中…';
+    RIDE.watch = navigator.geolocation.watchPosition(pos => {
+      onFix({lat:pos.coords.latitude, lng:pos.coords.longitude, acc:pos.coords.accuracy || 50, speed:pos.coords.speed, t:pos.timestamp || Date.now()});
+    }, e => { $('rGps').textContent = e.code === 1 ? '⚠ 位置情報が許可されていません' : '⚠ GPSを受信できません'; if (e.code === 1) say('位置情報が許可されていません', 'perm'); },
+    {enableHighAccuracy:true, maximumAge:1000, timeout:20000});
+  }
+}
+function matchRoute(p){
+  const pts = route.pts;
+  const best = (a, b) => {
+    let bd = Infinity, bi = a, bt = 0;
+    for (let i = Math.max(0, a); i < Math.min(pts.length - 1, b); i++){
+      const A = pts[i], B = pts[i+1];
+      const kx = Math.cos(A.lat * Math.PI / 180) * 111320, ky = 111320;
+      const ax = 0, ay = 0, bx = (B.lng - A.lng) * kx, by = (B.lat - A.lat) * ky, px = (p.lng - A.lng) * kx, py = (p.lat - A.lat) * ky;
+      const L2 = bx * bx + by * by;
+      let t = L2 ? ((px - ax) * bx + (py - ay) * by) / L2 : 0; t = Math.max(0, Math.min(1, t));
+      const dx = px - bx * t, dy = py - by * t, d = Math.sqrt(dx * dx + dy * dy);
+      if (d < bd){ bd = d; bi = i; bt = t; }
+    }
+    return {d:bd, i:bi, prog: pts[bi].d + (pts[bi+1] ? (pts[bi+1].d - pts[bi].d) * bt : 0)};
+  };
+  // まず今いる付近（少し手前〜1.5km先）を探し、見つからなければ先の区間全体を探す（周回ルートで終点に飛ばないように）
+  let lim = RIDE.idx; while (lim < pts.length - 1 && pts[lim].d - RIDE.prog < 1500) lim++;
+  let m = best(RIDE.idx - 30, lim + 1);
+  if (m.d > 60){
+    // 少し先（5km以内）で合流したか。周回ルートの交差で終盤に飛ばないよう範囲を限る
+    let lim2 = lim; while (lim2 < pts.length - 1 && pts[lim2].d - RIDE.prog < 5000) lim2++;
+    const m2 = best(RIDE.idx, lim2 + 1); if (m2.d < 40) m = m2;
+    else m.d = Math.min(m.d, best(0, pts.length).d);   // 表示用：ルート全体で一番近い距離
+  }
+  return m;
+}
+function onFix(f){
+  if (!RIDE.on || !route) return;
+  const now = f.t || Date.now();
+  // 速度：GPSの値があれば使い、なければ前回位置から計算
+  let v = (f.speed != null && f.speed >= 0) ? f.speed : null;
+  if (RIDE.last){
+    const dt = (now - RIDE.lastT) / 1000, dd = hav(RIDE.last, f);
+    if (v == null && dt > 0.4) v = dd / dt;
+    const jump = !RIDE.sim && dt > 0 && dd / dt > 22;                  // 時速80km超は位置の飛び（GPSの誤差）とみなす
+    if (jump) v = null;
+    if (f.acc < 35 && !jump) RIDE.done += dd;
+  }
+  RIDE.speed = v == null ? RIDE.speed * 0.5 : RIDE.speed * 0.4 + v * 0.6;
+  const heading = RIDE.last && hav(RIDE.last, f) > 3 ? Math.atan2((f.lng - RIDE.last.lng) * Math.cos(f.lat * Math.PI / 180), f.lat - RIDE.last.lat) * 180 / Math.PI : (RIDE.heading || 0);
+  RIDE.heading = heading;
+  RIDE.last = {lat:f.lat, lng:f.lng}; RIDE.lastT = now;
+  if (!RIDE.sim) $('rGps').textContent = `GPS 精度 約${Math.round(f.acc)}m`;
+  // 地図上の現在地
+  const icon = L.divIcon({className:'', html:`<div class="medir" style="transform:rotate(${Math.round(heading)}deg)"><i></i></div>`, iconSize:[26,26], iconAnchor:[13,13]});
+  if (!RIDE.marker) RIDE.marker = L.marker([f.lat, f.lng], {icon, zIndexOffset:3000, interactive:false}).addTo(map);
+  else { RIDE.marker.setLatLng([f.lat, f.lng]); RIDE.marker.setIcon(icon); }
+  if (RIDE.follow) map.panTo([f.lat, f.lng], {animate:true, duration:0.4});
+  // ルートとの照合
+  const m = matchRoute(f);
+  const offRoute = m.d > Math.max(50, f.acc * 1.2);
+  if (!offRoute){ RIDE.idx = m.i; RIDE.prog = Math.max(RIDE.prog - 20, m.prog); RIDE.offSince = 0; RIDE.said.delete('off'); }
+  else if (!RIDE.offSince) RIDE.offSince = now;
+  const isOff = RIDE.offSince && now - RIDE.offSince > 6000;
+  if (isOff) say('ルートから外れています。', 'off');
+  rideRender(isOff, m.d);
+  // 走行中は画面操作をブロック（テスト走行では無効）
+  const moving = RIDE.speed * 3.6 > 6;
+  if (!RIDE.sim){ if (moving) RIDE.blockT = now; checkBlock(); }
+}
+function checkBlock(){
+  if (!RIDE.on || RIDE.sim){ $('rBlock').hidden = true; return; }
+  const now = Date.now();
+  // 位置の更新が4秒以上ない＝止まっているとみなして速度を下げる
+  if (now - RIDE.lastT > 4000){ RIDE.speed *= 0.5; $('rSpeed').textContent = Math.round(RIDE.speed * 3.6); }
+  const moving = RIDE.speed * 3.6 > 6;
+  if (moving) RIDE.blockT = Math.max(RIDE.blockT, RIDE.lastT);
+  $('rBlock').hidden = !(moving || now - RIDE.blockT < 3000);
+}
+function rideRender(isOff, offD){
+  const r = route, S = r.cumScale, tot = r.pts[r.pts.length-1].d, prog = RIDE.prog;
+  const remain = Math.max(0, tot - prog) * S;
+  $('rRemain').textContent = (remain / 1000).toFixed(1);
+  const hRem = remain / 1000 / pref.speed;
+  $('rEta').textContent = hmShort(hRem);
+  $('rSpeed').textContent = Math.round(RIDE.speed * 3.6);
+  $('rDone').textContent = (RIDE.done / 1000).toFixed(1);
+  $('rReroute').hidden = !isOff;
+  $('rMain').classList.toggle('r-off', !!isOff);
+  // 到着
+  if (!RIDE.arrived && remain < 30 && RIDE.idx > r.pts.length * 0.8){
+    RIDE.arrived = true;
+    say('目的地に到着しました。おつかれさまでした。', 'arr');
+    $('rTurnDist').textContent = 'ゴール！'; $('rTurnTxt').textContent = `${(RIDE.done/1000).toFixed(1)}km ・ ${hm((Date.now() - RIDE.startT) / 3600000)}`;
+    $('rArrowPath').setAttribute('d', 'M25 52 L43 70 L76 32'); $('rWarn').hidden = true;
+    return;
+  }
+  if (RIDE.arrived) return;
+  if (isOff){
+    $('rTurnDist').textContent = 'ルート外'; $('rTurnTxt').textContent = `ルートまで約${Math.round(offD)}m。停車して確認してください`;
+    $('rArrowPath').setAttribute('d', 'M50 20 V62 M50 80 V82');
+    return;
+  }
+  // 次の曲がり角
+  const t = RIDE.turns.find(x => x.d > prog + 5);
+  const via = RIDE.vias.find(x => x.d > prog + 5);
+  const goalD = tot - prog;
+  let target = t, kind = 'turn';
+  if (via && (!t || via.d <= t.d)) { target = via; kind = 'via'; }
+  if (!target || target.d - prog > goalD){ target = {d:tot}; kind = 'goal'; }
+  const dist = (target.d - prog) * S;
+  $('rTurnDist').textContent = dist >= 1000 ? (dist / 1000).toFixed(1) + 'km' : (Math.round(dist / 10) * 10) + 'm';
+  if (kind === 'turn'){
+    $('rTurnTxt').textContent = dist > 800 ? `道なり → その先 ${target.txt}` : `${target.txt}へ`;
+    $('rArrowPath').setAttribute('d', dist > 800 ? 'M50 92 V12 M50 12 L30 32 M50 12 L70 32' : arrowPath(target.ang));
+    const key = Math.round(target.d);
+    if (dist <= 220 && dist > 70) say(`${speakDist(dist)}先、${target.txt}です`, 't200_' + key);
+    if (dist <= 45) say(`まもなく${target.txt}です`, 't40_' + key);
+  } else if (kind === 'via'){
+    $('rTurnTxt').textContent = `経由地：${target.name}`;
+    $('rArrowPath').setAttribute('d', 'M50 90 L32 52 A22 22 0 1 1 68 52 Z M50 28 m-7 0 a7 7 0 1 0 14 0 a7 7 0 1 0 -14 0');
+    if (dist <= 220 && dist > 60) say(`${speakDist(dist)}先、経由地 ${target.name} です`, 'v200_' + Math.round(target.d));
+    if (dist <= 30) say(`経由地 ${target.name} です`, 'v0_' + Math.round(target.d));
+  } else {
+    $('rTurnTxt').textContent = 'ゴールまで';
+    $('rArrowPath').setAttribute('d', 'M30 92 V10 M30 12 h44 l-10 12 l10 12 h-44');
+    if (dist <= 300 && dist > 60) say(`${speakDist(dist)}先、目的地です`, 'g300');
+  }
+  // 次の注意ポイント（1.5km以内）
+  const w = RIDE.warns.find(x => x.d > prog - 20);
+  const wd = w ? (w.d - prog) * S : Infinity;
+  if (w && wd < 1500){
+    const info = WINFO[w.type];
+    $('rWarn').hidden = false;
+    $('rWarn').className = 'r-warn' + (SEVERE.has(w.type) ? '' : ' soft');
+    $('rWarn').textContent = `${info.ic} ${wd < 20 ? 'ここから' : (wd >= 1000 ? (wd/1000).toFixed(1) + 'km' : Math.round(wd / 10) * 10 + 'm') + '先'} ${info.name}`;
+    if (wd <= 320 && wd > 40){
+      const extra = w.type === 'steps' ? '。担いで通ってください' : w.type === 'dismount' || w.type === 'sidewalk' ? '。押し歩きの可能性があります' : w.type === 'nobike' ? '。通れない可能性があります' : w.type === 'tunnel' ? '。ライトを点けてください' : '';
+      say(`${speakDist(wd)}先、${info.name}${extra}`, 'w_' + Math.round(w.d));
+    }
+  } else $('rWarn').hidden = true;
+}
+function rideReroute(){
+  if (!RIDE.last) return;
+  // 通過済みの経由地を除き、現在地からの新しいルートにする
+  const left = wps.filter((w, i) => i > 0 && (i === wps.length - 1 || !RIDE.vias[i-1] || RIDE.vias[i-1].d > RIDE.prog));
+  pushUndo();
+  wps = [{lat:RIDE.last.lat, lng:RIDE.last.lng, name:'現在地'}].concat(left);
+  onWpsChanged({immediate:true});
+  $('rTurnTxt').textContent = 'ルートを引き直しています…';
+  const wait = setInterval(() => {
+    if (route && hav(route.pts[0], RIDE.last) < 300){
+      clearInterval(wait);
+      RIDE.turns = computeTurns(route);
+      RIDE.warns = buildWarnings(route).filter(w => w.type !== 'busy' || w.len >= 1000).map(w => ({d:route.pts[w.from].d, type:w.type, len:w.len, info:w.info}));
+      RIDE.vias = []; RIDE.idx = 0; RIDE.prog = 0; RIDE.offSince = 0; RIDE.said = new Set();
+      say('ルートを引き直しました');
+    }
+  }, 500);
+  setTimeout(() => clearInterval(wait), 20000);
+}
+$('rStartGps').onclick = () => rideStart(false);
+$('rStartSim').onclick = () => rideStart(true);
+$('rCancel').onclick = rideClose;
+$('rVoice').onclick = () => { RIDE.voice = !RIDE.voice; $('rVoice').textContent = RIDE.voice ? '🔊 音声ON' : '🔇 音声OFF'; if (RIDE.voice) say('音声案内をオンにしました'); else try { speechSynthesis.cancel(); } catch (e) {} };
+$('rFollow').onclick = () => { RIDE.follow = true; if (RIDE.last) map.setView([RIDE.last.lat, RIDE.last.lng], Math.max(map.getZoom(), 16)); };
+$('rReroute').onclick = rideReroute;
+$('rEnd').onclick = () => {
+  const now = Date.now();
+  if (now - RIDE.endArm < 3000){ rideClose(); return; }
+  RIDE.endArm = now; $('rEnd').textContent = 'もう一度押すと終了';
+  setTimeout(() => { $('rEnd').textContent = '■ 終了'; }, 3000);
+};
+map.on('dragstart', () => { if (RIDE.on) RIDE.follow = false; });
+$('btnRide').onclick = rideOpen;
+$('btnRide2').onclick = rideOpen;
 
 /* ---------- location ---------- */
 $('btnLocate').onclick = () => {
@@ -2669,7 +3018,7 @@ setTimeout(() => { map.invalidateSize(); drawElev(); }, 200);
 if ('serviceWorker' in navigator && location.protocol === 'https:'){
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-window.__crp = {get wps(){ return wps; }, get route(){ return route; }, buildGpx, parseRoute, classify, VERSION};
+window.__crp = {get wps(){ return wps; }, get route(){ return route; }, buildGpx, parseRoute, classify, VERSION, RIDE, onFix, computeTurns};
 })();
 </script>
 </body>
