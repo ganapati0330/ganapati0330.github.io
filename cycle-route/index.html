@@ -689,6 +689,7 @@ button{cursor:pointer}
 .rin{display:flex;gap:6px;align-items:center}
 .rin input{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 10px;font-size:15px;color:#0f172a}
 .rin input::placeholder{color:#94a3b8;font-size:13px}
+.rin .herebtn{background:#334155;padding:0 9px;font-size:16px}
 .rin button{border:0;border-radius:8px;background:#f97316;color:#fff;padding:0 11px;height:38px;font-weight:700;flex:none}
 #results{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#fff;color:#0f172a;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-height:50vh;overflow:auto;z-index:5;display:none}
 #results.show{display:block}
@@ -863,7 +864,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <div id="map"></div>
 <div class="mapbtns">
   <button id="btnFull" title="全画面">⛶</button>
-  <button id="btnLocate" title="現在地">◎</button>
+  <button id="btnLocate" title="現在地を出発地にする">📍</button>
   <button id="btnFit" title="ルート全体を表示">⤢</button>
 </div>
 <div id="panel">
@@ -871,8 +872,8 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
   <div class="phead">
     <h1>🚴 サイクルルートプランナー <small id="ver"></small></h1>
     <div class="search">
-      <div class="rin"><span class="badge b-s">S</span><input id="qS" type="search" placeholder="出発地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button id="btnSearchS">検索</button></div>
-      <div class="rin"><span class="badge b-g">G</span><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button id="btnSearchG">検索</button></div>
+      <div class="rin"><span class="badge b-s">S</span><input id="qS" type="search" placeholder="出発地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button class="herebtn" id="btnHereS" title="現在地を出発地に">📍</button><button id="btnSearchS">検索</button></div>
+      <div class="rin"><span class="badge b-g">G</span><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button class="herebtn" id="btnHereG" title="現在地を目的地に">📍</button><button id="btnSearchG">検索</button></div>
       <div id="results"></div>
     </div>
     <div class="mini" id="mini"><span id="miniTxt">出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください</span><button id="btnRide" class="ridebtn" hidden>🚴 走行</button><button id="btnMini">詳細 ▴</button></div>
@@ -1061,7 +1062,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v12';
+const VERSION = 'v13';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -1774,7 +1775,11 @@ function nomType(x){
 }
 function setEndpoint(key, w){
   pushUndo();
-  if (key === 'S'){ if (wps.length) wps[0] = w; else wps.push(w); }
+  if (key === 'S'){
+    const loop = wps.length >= 3 && hav(wps[0], wps[wps.length-1]) < 30;   // 周回ルートなら終点も一緒に動かす
+    if (wps.length) wps[0] = w; else wps.push(w);
+    if (loop) wps[wps.length-1] = w;
+  }
   else if (wps.length >= 2) wps[wps.length-1] = w;
   else if (wps.length === 1) wps.push(w);
   else pendingGoal = w;
@@ -3005,17 +3010,35 @@ $('autoHere').checked = pref.autoHere !== false;
 $('autoHere').addEventListener('change', () => { pref.autoHere = $('autoHere').checked; savePref(); if (pref.autoHere) hereAsStart(true); });
 
 /* ---------- location ---------- */
-$('btnLocate').onclick = () => {
+/* 現在地を出発地（S）または目的地（G）に設定する */
+let setHereStop = null;
+function setHereAs(key){
   if (!navigator.geolocation){ toast('この端末では現在地を取得できません'); return; }
+  if (setHereStop) setHereStop();
+  if (hereWatchStop) hereWatchStop();
   toast('現在地を取得しています…');
-  let first = true;
-  watchHere(f => {
+  const label = key === 'S' ? '出発地（S）' : '目的地（G）';
+  let obj = null;
+  const alive = () => obj && obj.name === '現在地' && (wps.includes(obj) || pendingGoal === obj);
+  setHereStop = watchHere(f => {
     showMe(f.ll, f.acc);
-    map.setView(f.ll, f.acc > 1500 ? 13 : Math.max(map.getZoom(), 15));
-    toast(`現在地（誤差${accText(f.acc)}）` + (accAdvice(f.acc) ? '。' + accAdvice(f.acc) : ''), accAdvice(f.acc) ? 6000 : 2500);
-    if (!wps.length) showPlacePopup({lat:f.ll[0], lng:f.ll[1], name:'現在地'});
-  }, f => { showMe(f.ll, f.acc); map.panTo(f.ll); }, () => toast('現在地を取得できませんでした（位置情報の許可を確認してください）', 3200));
-};
+    obj = {lat:f.ll[0], lng:f.ll[1], name:'現在地'};
+    setEndpoint(key, obj);
+    if (wps.length < 2) map.setView(f.ll, f.acc > 1500 ? 13 : Math.max(map.getZoom(), 15));
+    const adv = accAdvice(f.acc);
+    toast(`現在地を${label}にしました（誤差${accText(f.acc)}）` + (adv ? '。' + adv : ''), adv ? 6000 : 3000);
+  }, f => {
+    showMe(f.ll, f.acc);
+    if (!alive()) return;
+    obj.lat = f.ll[0]; obj.lng = f.ll[1];
+    onWpsChanged();
+    if (wps.length < 2) map.panTo(f.ll);
+    toast(`現在地の精度が上がりました（誤差${accText(f.acc)}）`);
+  }, () => toast('現在地を取得できませんでした（位置情報の許可を確認してください）', 3500));
+}
+$('btnLocate').onclick = () => setHereAs('S');
+$('btnHereS').onclick = () => { closeResults(); setHereAs('S'); };
+$('btnHereG').onclick = () => { closeResults(); setHereAs('G'); };
 
 /* ---------- profile & layer selects ---------- */
 $('profile').innerHTML = PROFILES.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
