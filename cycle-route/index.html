@@ -761,11 +761,12 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
 .cand.on{border-color:#f97316;background:#fff7ed}
 .cand .ct{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
 .cand .sw{width:14px;height:6px;border-radius:3px;flex:none}
-.cand .nums{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:5px;font-size:12px}
+.cand .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:5px;font-size:12px}
 .cand .nums b{display:block;font-size:14px}
 .cand .nums span{color:#64748b;font-size:10.5px}
 .cand .tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px}
 .cand .tags i{font-style:normal;font-size:10.5px;background:#dcfce7;color:#166534;border-radius:999px;padding:1px 7px}
+.cand .tags i.s{background:#e0f2fe;color:#075985}
 .cand .tags i.w{background:#fee2e2;color:#991b1b}
 .warn .act{margin-left:auto;flex:none;border:1px solid #fca5a5;background:#fff;color:#b91c1c;border-radius:7px;font-size:11px;padding:4px 7px;align-self:center}
 .warn .adv{color:#b45309;display:block;font-size:11px}
@@ -831,7 +832,9 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
       <div class="lbl">形</div>
       <div class="seg" id="loopShape"><button data-v="loop">周回（同じ道をなるべく通らない）</button><button data-v="out">往復</button></div>
       <div class="lbl">優先すること</div>
-      <div class="seg" id="loopSort"><button data-v="dist">距離ぴったり</button><button data-v="flat">坂少なめ</button><button data-v="quiet">幹線道路少なめ</button></div>
+      <div class="seg" id="loopSort"><button data-v="dist">距離ぴったり</button><button data-v="flat">坂少なめ</button><button data-v="quiet">幹線道路少なめ</button><button data-v="water">水辺・海沿い</button></div>
+      <div class="lbl">途中で立ち寄りたい場所</div>
+      <div class="seg" id="loopStop"><button data-v="none">なし</button><button data-v="view">🌄 景色・観光</button><button data-v="cafe">☕ カフェ・食事</button><button data-v="michi">🛣️ 道の駅</button></div>
       <div class="btnrow"><button class="btn pri" id="btnLoopGen" style="flex:1">🔄 コースを提案する</button></div>
       <div id="loopStatus" class="hint" style="margin-top:6px"></div>
     </details>
@@ -951,7 +954,7 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v5';
+const VERSION = 'v6';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -999,7 +1002,7 @@ let wps = [];             // {lat,lng,name}
 let pendingGoal = null;   // goal chosen before a start exists
 let undoStack = [];
 let route = null;         // parsed route
-let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist'}, store.get(LS_PREF, {}));
+let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist', loopStop:'none'}, store.get(LS_PREF, {}));
 let alt = 0;
 let hashAlt = 0;
 let reqSeq = 0, abortCtl = null, routeTimer = null;
@@ -2006,7 +2009,7 @@ function routeStats(r){
     if (hit) ov++;
   });
   return {dist:r.dist, asc:r.asc || 0, busy:(acc.busy || 0) / tot, quiet:((acc.quiet || 0) + (acc.cycle || 0)) / tot,
-          unpaved:(acc.unpaved || 0) / tot, overlap: samp.length ? ov / samp.length : 0, severe: W.filter(w => SEVERE.has(w.type)).length, warns: W.length};
+          unpaved:(acc.unpaved || 0) / tot, overlap: samp.length ? ov / samp.length : 0, turns: countTurns(r.pts), severe: W.filter(w => SEVERE.has(w.type)).length, warns: W.length};
 }
 function sameRoute(a, b){
   // 形で比較：aの点の9割以上がbから60m以内なら同じルートとみなす
@@ -2031,6 +2034,7 @@ function renderCands(){
   const bDist = candMode === 'loop' ? bestIdx(c => Math.abs(c.st.dist - D)) : bestIdx(c => c.st.dist);
   const spread = f => { const v = cands.map(f), mx = Math.max(...v), mn = Math.min(...v); return mx > 0 ? (mx - mn) / mx : 0; };
   const bAsc = bestIdx(c => c.st.asc / Math.max(c.st.dist, 1)), bBusy = bestIdx(c => c.st.busy), bOv = bestIdx(c => c.st.overlap);
+  const bWater = bestIdx(c => -(c.st.water || 0)), bTurn = bestIdx(c => c.st.turns / Math.max(c.st.dist, 1));
   $('candHint').textContent = candMode === 'loop'
     ? `出発地に戻る ${pref.loopKm}km前後のコースです。タップすると地図に表示します。`
     : 'タップすると地図で強調表示します。ほかの候補は細い線で残ります。';
@@ -2041,14 +2045,17 @@ function renderCands(){
     if (i === bBusy && spread(c => c.st.busy) > 0.05) t.push('幹線道路が少ない');
     if (candMode === 'loop' && i === bOv && c.st.overlap < 0.25 && cands.length > 1) t.push('同じ道が少ない');
     if (c.st.quiet > 0.6) t.push('生活道路・自転車道中心');
+    if (i === bWater && c.st.water > 0.15 && spread(c => c.st.water || 0) > 0.1) t.push('水辺が多い');
+    if (i === bTurn && cands.length > 1 && spread(c => c.st.turns / Math.max(c.st.dist, 1)) > 0.15) t.push('曲がり角が少ない');
+    const stopTag = c.stop ? `<i class="s">${c.stop.ic} 立ち寄り：${esc(c.stop.name)}${c.stop.park ? '（🚲置き場あり）' : ''}</i>` : '';
     const w = [];
     if (c.st.severe) w.push(`要確認の区間 ${c.st.severe}件`);
     if (c.st.unpaved > 0.03) w.push(`未舗装 ${Math.round(c.st.unpaved * 100)}%`);
     if (candMode === 'loop' && c.kind === 'loop' && c.st.overlap >= 0.25) w.push(`同じ道 ${Math.round(c.st.overlap * 100)}%`);
     return `<div class="cand${i === candSel ? ' on' : ''}" data-ci="${i}">
       <div class="ct"><span class="sw" style="background:${c.color}"></span>${esc(c.name)}${i === candSel ? '<span style="margin-left:auto;font-size:11px;color:#f97316">表示中</span>' : ''}</div>
-      <div class="nums"><div><b>${(c.st.dist/1000).toFixed(1)}km</b><span>距離</span></div><div><b>${Math.round(c.st.asc)}m</b><span>獲得標高</span></div><div><b>${plainTime(c.route)}</b><span>予想時間</span></div><div><b>${Math.round(c.st.busy*100)}%</b><span>幹線道路</span></div></div>
-      ${t.length || w.length ? `<div class="tags">${t.map(x => `<i>${x}</i>`).join('')}${w.map(x => `<i class="w">${x}</i>`).join('')}</div>` : ''}
+      <div class="nums"><div><b>${(c.st.dist/1000).toFixed(1)}km</b><span>距離</span></div><div><b>${Math.round(c.st.asc)}m</b><span>獲得標高</span></div><div><b>${plainTime(c.route)}</b><span>予想時間</span></div><div><b>${Math.round(c.st.busy*100)}%</b><span>幹線道路</span></div><div><b>${c.st.water === undefined ? '…' : c.st.water === null ? '—' : Math.round(c.st.water*100) + '%'}</b><span>水辺・海沿い</span></div><div><b>${c.st.turns}回</b><span>曲がり角</span></div></div>
+      ${t.length || w.length || stopTag ? `<div class="tags">${stopTag}${t.map(x => `<i>${x}</i>`).join('')}${w.map(x => `<i class="w">${x}</i>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
   cands.forEach((c, i) => {
@@ -2099,8 +2106,128 @@ async function compareRoutes(){
   setStatus(`違うルートが ${list.length}件 見つかりました`);
   selectCand(cur >= 0 ? cur : 0);
   setTimeout(fitRoute, 50);
+  enrichWater(list, () => { if (cands === list) renderCands(); });
 }
 $('btnCompare').onclick = compareRoutes;
+
+/* ---------- 水辺の割合・曲がり角・立ち寄り（v6） ---------- */
+function countTurns(pts){
+  const rs = []; let next = 0;
+  pts.forEach(p => { if (p.d >= next){ rs.push(p); next = p.d + 20; } });
+  const brg = (a, b) => Math.atan2((b.lng - a.lng) * Math.cos(a.lat * Math.PI / 180), b.lat - a.lat) * 180 / Math.PI;
+  let turns = 0, lastD = -1e9;
+  for (let i = 2; i < rs.length - 2; i++){
+    let d = Math.abs(brg(rs[i], rs[i+2]) - brg(rs[i-2], rs[i]));
+    if (d > 180) d = 360 - d;
+    if (d >= 55 && rs[i].d - lastD > 60){ turns++; lastD = rs[i].d; }
+  }
+  return turns;
+}
+function samplePolyline(r, n){
+  const pts = r.pts, step = Math.max(1, Math.ceil(pts.length / n)), out = [];
+  for (let i = 0; i < pts.length; i += step) out.push(pts[i].lat.toFixed(5), pts[i].lng.toFixed(5));
+  out.push(pts[pts.length-1].lat.toFixed(5), pts[pts.length-1].lng.toFixed(5));
+  return out.join(',');
+}
+const WATER_NEAR = 120;
+function buildWaterGrid(json){
+  const grid = new Map(), cell = (la, ln) => Math.floor(la / 0.0015) + ',' + Math.floor(ln / 0.0018);
+  (json.elements || []).forEach(el => {
+    if (!el.geometry || !el.tags) return;
+    const t = el.tags;
+    if (!(t.natural === 'coastline' || t.natural === 'water' || t.natural === 'beach' || t.waterway)) return;
+    const g = el.geometry;
+    for (let i = 0; i < g.length; i++){
+      const a = g[i], b = g[i+1] || g[i];
+      const segLen = hav({lat:a.lat, lng:a.lon}, {lat:b.lat, lng:b.lon});
+      const n = Math.max(1, Math.ceil(segLen / 40));
+      for (let k = 0; k < n; k++){
+        const la = a.lat + (b.lat - a.lat) * k / n, ln = a.lon + (b.lon - a.lon) * k / n, key = cell(la, ln);
+        if (!grid.has(key)) grid.set(key, []);
+        grid.get(key).push({lat:la, lng:ln});
+      }
+    }
+  });
+  return {grid, cell};
+}
+function waterShare(r, W){
+  if (!W) return null;
+  let n = 0, hit = 0, next = 0;
+  for (const p of r.pts){
+    if (p.d < next) continue;
+    next = p.d + 50; n++;
+    const gy = Math.floor(p.lat / 0.0015), gx = Math.floor(p.lng / 0.0018);
+    let ok = false;
+    for (let dy = -1; dy <= 1 && !ok; dy++) for (let dx = -1; dx <= 1 && !ok; dx++){
+      const arr = W.grid.get((gy + dy) + ',' + (gx + dx)); if (!arr) continue;
+      for (const q of arr){ if (hav(p, q) < WATER_NEAR){ ok = true; break; } }
+    }
+    if (ok) hit++;
+  }
+  return n ? hit / n : 0;
+}
+async function fetchWater(list){
+  const q = '[out:json][timeout:40];(' + list.map(c => {
+    const pl = samplePolyline(c.route, 70);
+    return `way["natural"~"^(coastline|water|beach)$"](around:${WATER_NEAR + 40},${pl});way["waterway"~"^(river|canal|riverbank)$"](around:${WATER_NEAR + 40},${pl});`;
+  }).join('') + ');out geom;';
+  return buildWaterGrid(await overpass(q));
+}
+const STOPS = {
+  view: {ic:'🌄', nm:'景色・観光', f:['["tourism"~"^(viewpoint|attraction)$"]["name"]', '["natural"="beach"]["name"]', '["historic"~"^(castle|ruins)$"]["name"]']},
+  cafe: {ic:'☕', nm:'カフェ・食事', f:['["amenity"~"^(cafe|restaurant)$"]["name"]']},
+  michi:{ic:'🛣️', nm:'道の駅', f:['["highway"~"^(services|rest_area)$"]["name"~"道の駅"]']}
+};
+async function addStops(list, kind, profile){
+  const S = STOPS[kind]; if (!S) return 0;
+  const q = '[out:json][timeout:40];(' + list.map(c => { const pl = samplePolyline(c.route, 70); return S.f.map(f => `nwr${f}(around:500,${pl});`).join(''); }).join('')
+    + 'nwr["amenity"="bicycle_parking"](around:500,' + samplePolyline(list[0].route, 70) + '););out center tags;';
+  const json = await overpass(q);
+  const pois = [], parks = [];
+  (json.elements || []).forEach(el => {
+    const lat = el.lat != null ? el.lat : el.center && el.center.lat, lng = el.lon != null ? el.lon : el.center && el.center.lon;
+    if (lat == null) return;
+    const t = el.tags || {};
+    if (t.amenity === 'bicycle_parking') parks.push({lat, lng}); else if (t.name) pois.push({lat, lng, name:t['name:ja'] || t.name});
+  });
+  let added = 0;
+  await pool(list, 2, async c => {
+    const pts = c.route.pts, tot = pts[pts.length-1].d || 1;
+    let best = null;
+    for (const p of pois){
+      let bd = Infinity, bi = 0;
+      for (let i = 0; i < pts.length; i += 2){ const d = hav(pts[i], p); if (d < bd){ bd = d; bi = i; } }
+      if (bd > 450) continue;
+      const f = pts[bi].d / tot;
+      if (f < 0.15 || f > 0.85) continue;
+      const park = parks.some(k => hav(k, p) < PARK_NEAR);
+      const sc = bd / 450 + Math.abs(f - 0.5) * 1.2 - (park ? 0.3 : 0);
+      if (!best || sc < best.sc) best = {p, bi, sc, park};
+    }
+    if (!best) return;
+    // 立ち寄り先をルート上の正しい順番に差し込む
+    let from = 0, pos = c.wps.length - 1;
+    for (let w = 1; w < c.wps.length; w++){
+      let wi = from, wd = Infinity;
+      for (let i = from; i < pts.length; i++){ const d = hav(pts[i], c.wps[w]); if (d < wd){ wd = d; wi = i; } }
+      if (best.bi <= wi){ pos = w; break; }
+      from = wi;
+    }
+    const nw = c.wps.slice(); nw.splice(pos, 0, {lat:best.p.lat, lng:best.p.lng, name:best.p.name});
+    try {
+      const r = parseRoute(await fetchRouteFor(nw, profile, 0)); r.profile = profile;
+      c.route = r; c.wps = nw; c.stop = {name:best.p.name, ic:S.ic, park:best.park}; c.st = routeStats(r); added++;
+    } catch (e) {}
+  });
+  return added;
+}
+async function enrichWater(list, after){
+  try {
+    const W = await fetchWater(list);
+    list.forEach(c => { c.st.water = waterShare(c.route, W); });
+  } catch (e) { list.forEach(c => { if (c.st.water === undefined) c.st.water = null; }); }
+  if (after) after();
+}
 
 /* ---------- 距離を指定して周回コースを提案 ---------- */
 function destPt(p, brg, dist){
@@ -2145,19 +2272,34 @@ async function genLoops(){
   let list = [];
   res.forEach(c => { if (!c) return; c.st = routeStats(c.route); if (!list.some(o => sameRoute(o, c))) list.push(c); });
   if (!list.length){ loopStatus('コースを作れませんでした。出発地を道路の近くにするか、距離を変えて試してください。', true); return; }
+  if (pref.loopSort === 'water'){
+    loopStatus('水辺・海沿いの割合を調べています…');
+    await enrichWater(list);
+  }
   const err = c => Math.abs(c.st.dist - D) / D;
   const score = {
+    water: c => -(c.st.water || 0) * 10 + err(c) * 8 + c.st.overlap * 2 + c.st.severe * 0.3,
     dist:  c => err(c) * 10 + c.st.overlap * 2 + c.st.severe * 0.3,
     flat:  c => c.st.asc / (c.st.dist / 1000) + err(c) * 30 + c.st.overlap * 5 + c.st.severe,
     quiet: c => c.st.busy * 10 + err(c) * 5 + c.st.overlap * 3 + c.st.severe * 0.5
   }[pref.loopSort] || (c => err(c));
   list.sort((a, b) => score(a) - score(b));
   list = list.slice(0, 4);
+  let stopMsg = '';
+  if (pref.loopStop !== 'none'){
+    btn.disabled = true;
+    loopStatus(`${STOPS[pref.loopStop].nm}の立ち寄り先を探しています…`);
+    let n = 0;
+    try { n = await addStops(list, pref.loopStop, profile); } catch (e) { n = -1; }
+    btn.disabled = false;
+    stopMsg = n > 0 ? `（${n}コースに立ち寄り先を入れました）` : n === 0 ? `（コース沿いに${STOPS[pref.loopStop].nm}が見つかりませんでした）` : '（立ち寄り先を読み込めませんでした）';
+  }
   list.forEach((c, i) => { c.color = CAND_COLORS[i]; c.name = `コース${i + 1}（${dirName(c.brg)}まわり）`; });
   cands = list; candMode = 'loop';
-  loopStatus(`${list.length}つのコースを提案しました。下の「ルート候補の比較」から選べます。`);
+  loopStatus(`${list.length}つのコースを提案しました${stopMsg}。下の「ルート候補の比較」から選べます。`);
   selectCand(0);
   setTimeout(fitRoute, 50);
+  if (list.some(c => c.st.water === undefined || c.stop)) enrichWater(list, () => { if (cands === list) renderCands(); });
 }
 $('btnLoopGen').onclick = genLoops;
 function wireSeg(id, key, cb){
@@ -2174,6 +2316,7 @@ function syncLoopKm(){ $('loopKm').value = pref.loopKm; $('loopKmV').textContent
 wireSeg('loopPreset', 'loopKm', syncLoopKm);
 wireSeg('loopShape', 'loopShape');
 wireSeg('loopSort', 'loopSort');
+wireSeg('loopStop', 'loopStop');
 $('loopKm').addEventListener('input', () => { pref.loopKm = +$('loopKm').value; savePref(); syncLoopKm(); });
 syncLoopKm();
 
