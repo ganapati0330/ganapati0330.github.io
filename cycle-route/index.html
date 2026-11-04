@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="サイクルルート">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>サイクルルートプランナー</title>
 <style>/* required styles */
 
@@ -806,6 +812,21 @@ body.riding #map{left:0!important;bottom:var(--rideH,260px)!important;top:0}
 .mini .ridebtn{display:block;background:#f97316;font-weight:700}
 .mini .ridebtn[hidden]{display:none}
 .ridecta{width:100%;margin-top:10px;border:0;border-radius:10px;background:#f97316;color:#fff;font-weight:800;font-size:15px;padding:11px}
+.r-top button{border:0;background:#334155;color:#fff;border-radius:6px;font-size:11px;padding:3px 8px}
+#ride.compact .r-grid,#ride.compact .r-btns{display:none}
+#ride.compact .r-dist{font-size:30px}
+#ride.compact .r-turn{font-size:17px}
+#ride.compact .r-next svg{width:54px;height:54px}
+#ride.compact .r-warn{font-size:14px;padding:5px 8px;margin-top:6px}
+#ride.compact{padding-top:8px}
+#a2hs{position:fixed;inset:0;z-index:3500;background:rgba(15,23,42,.6);display:flex;align-items:flex-end;justify-content:center}
+#a2hs[hidden]{display:none}
+.a2box{background:#0f172a;color:#fff;border-radius:16px 16px 0 0;padding:16px 18px calc(16px + env(safe-area-inset-bottom));max-width:520px;width:100%}
+.a2box h3{margin:0 0 6px}
+.a2box p{font-size:13px;line-height:1.6;margin:6px 0;color:#cbd5e1}
+.a2box ol{font-size:14px;line-height:1.8;padding-left:22px;margin:6px 0}
+.a2box button{width:100%;border:0;border-radius:10px;background:#f97316;color:#fff;font-weight:800;padding:11px;margin-top:6px;font-size:15px}
+body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
 .pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -841,6 +862,7 @@ body.riding #map{left:0!important;bottom:var(--rideH,260px)!important;top:0}
 <body>
 <div id="map"></div>
 <div class="mapbtns">
+  <button id="btnFull" title="全画面">⛶</button>
   <button id="btnLocate" title="現在地">◎</button>
   <button id="btnFit" title="ルート全体を表示">⤢</button>
 </div>
@@ -997,7 +1019,7 @@ body.riding #map{left:0!important;bottom:var(--rideH,260px)!important;top:0}
     </div>
   </div>
   <div id="rMain" hidden>
-    <div class="r-top"><span id="rMode"></span><span id="rGps"></span></div>
+    <div class="r-top"><span id="rMode"></span><span id="rGps"></span><button id="rCompact">▾ 小さく</button></div>
     <div class="r-next">
       <svg id="rArrow" viewBox="0 0 100 100" width="76" height="76"><path id="rArrowPath" d="M50 92 V42 M50 42 L30 62 M50 42 L70 62" stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <div class="r-ins"><div class="r-dist" id="rTurnDist">—</div><div class="r-turn" id="rTurnTxt">位置を確認しています…</div></div>
@@ -1012,9 +1034,19 @@ body.riding #map{left:0!important;bottom:var(--rideH,260px)!important;top:0}
     <div class="r-btns">
       <button id="rVoice">🔊 音声ON</button>
       <button id="rFollow">◎ 現在地へ</button>
+      <button id="rFull" class="fsbtn">⛶ 全画面</button>
       <button id="rReroute" hidden>↻ 現在地から引き直す</button>
       <button id="rEnd" class="end">■ 終了</button>
     </div>
+  </div>
+</div>
+<div id="a2hs" hidden>
+  <div class="a2box">
+    <h3>⛶ 全画面で使うには</h3>
+    <p>このブラウザは、ボタンでの全画面表示に対応していません（iPhoneのSafariなど）。<b>ホーム画面に追加</b>すると、アプリのように全画面で使えます。</p>
+    <ol id="a2hsSteps"></ol>
+    <p class="hint" style="color:#94a3b8">保存したルートや設定は、ホーム画面から開いた方とは別に保存されます。</p>
+    <button id="a2hsClose">閉じる</button>
   </div>
 </div>
 <div id="rBlock" hidden><span>走行中は操作できません（停車すると操作できます）</span></div>
@@ -1028,7 +1060,7 @@ body.riding #map{left:0!important;bottom:var(--rideH,260px)!important;top:0}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v9';
+const VERSION = 'v10';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -2860,6 +2892,42 @@ $('rEnd').onclick = () => {
 map.on('dragstart', () => { if (RIDE.on) RIDE.follow = false; });
 $('btnRide').onclick = rideOpen;
 $('btnRide2').onclick = rideOpen;
+
+/* ---------- 全画面・ホーム画面に追加（v10） ---------- */
+const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || (window.matchMedia && matchMedia('(display-mode: fullscreen)').matches);
+const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function fsElement(){ return document.fullscreenElement || document.webkitFullscreenElement; }
+function canFullscreen(){ const d = document.documentElement; return !!(d.requestFullscreen || d.webkitRequestFullscreen) && (document.fullscreenEnabled || document.webkitFullscreenEnabled); }
+async function toggleFull(){
+  if (fsElement()){ try { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} return; }
+  if (canFullscreen()){
+    const d = document.documentElement;
+    try { await (d.requestFullscreen || d.webkitRequestFullscreen).call(d, {navigationUI:'hide'}); return; } catch (e) {}
+  }
+  if (isStandalone()){ toast('すでに全画面（ホーム画面から起動）で表示しています'); return; }
+  $('a2hs').hidden = false;
+}
+function onFsChange(){
+  const on = !!fsElement();
+  document.querySelectorAll('.fsbtn').forEach(b => b.textContent = on ? '⤡ 全画面を解除' : '⛶ 全画面');
+  $('btnFull').textContent = on ? '⤡' : '⛶';
+  setTimeout(() => { map.invalidateSize(); drawElev(); if (RIDE.on) setRideH(); }, 200);
+}
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
+$('btnFull').onclick = toggleFull;
+$('rFull').onclick = toggleFull;
+$('a2hsClose').onclick = () => { $('a2hs').hidden = true; };
+$('a2hsSteps').innerHTML = isiOS
+  ? '<li>画面下（iPadは上）の <b>共有ボタン</b>（□に↑のマーク）を押す</li><li>メニューを下へ送り <b>「ホーム画面に追加」</b> を選ぶ</li><li>右上の <b>「追加」</b> を押す</li><li>ホーム画面にできた <b>「サイクルルート」</b> のアイコンから開くと、アドレス欄のない全画面で使えます</li>'
+  : '<li>ブラウザのメニュー（︙）を開く</li><li><b>「ホーム画面に追加」</b> または <b>「アプリをインストール」</b> を選ぶ</li><li>ホーム画面のアイコンから開くと、全画面で使えます</li>';
+if (isStandalone()) document.body.classList.add('standalone');
+/* 走行パネルを小さくたたむ */
+$('rCompact').onclick = () => {
+  const c = $('ride').classList.toggle('compact');
+  $('rCompact').textContent = c ? '▴ 大きく' : '▾ 小さく';
+  setRideH();
+};
 
 /* ---------- location ---------- */
 $('btnLocate').onclick = () => {
