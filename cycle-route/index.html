@@ -1061,7 +1061,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v11';
+const VERSION = 'v12';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -2934,28 +2934,72 @@ $('rCompact').onclick = () => {
 };
 
 /* ---------- 現在地を出発地に（v11） ---------- */
-function showMe(ll){
+let meAcc = null;
+function showMe(ll, acc){
   if (!meMarker) meMarker = L.marker(ll, {zIndexOffset:1500, icon:L.divIcon({className:'', html:'<div class="medot"></div>', iconSize:[16,16], iconAnchor:[8,8]})}).addTo(map);
   else meMarker.setLatLng(ll);
   meMarker.off('click').on('click', ev => { L.DomEvent.stopPropagation(ev); showPlacePopup({lat:ll[0], lng:ll[1], name:'現在地'}); });
+  if (acc != null){
+    if (!meAcc) meAcc = L.circle(ll, {radius:acc, color:'#2563eb', weight:1, fillOpacity:.08, interactive:false}).addTo(map);
+    else { meAcc.setLatLng(ll); meAcc.setRadius(acc); }
+  }
+}
+function accText(a){ return a >= 1000 ? `約${(a/1000).toFixed(1)}km` : `約${Math.round(a)}m`; }
+function accAdvice(a){
+  if (a <= 100) return '';
+  const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  return mobile
+    ? '位置の誤差が大きいです。屋外で少し待つか、スマホの設定で「正確な位置情報」をオンにしてください。出発地の印はドラッグで直せます。'
+    : 'パソコンにはGPSがないため、ネットワークから推定した位置で、数km以上ずれることがあります。出発地は地図をドラッグするか検索で直してください。';
+}
+/* 現在地を取得：最初の位置ですぐ返し、その後最大20秒は精度が良くなるたびに onBetter で知らせる */
+function watchHere(onFirst, onBetter, onFail){
+  if (!navigator.geolocation){ onFail && onFail(); return () => {}; }
+  let best = null, id = null, done = false;
+  const stop = () => { if (id != null){ navigator.geolocation.clearWatch(id); id = null; } done = true; };
+  id = navigator.geolocation.watchPosition(pos => {
+    if (done) return;
+    const f = {ll:[pos.coords.latitude, pos.coords.longitude], acc:pos.coords.accuracy || 9999};
+    if (!best){ best = f; onFirst && onFirst(f); }
+    else if (f.acc < best.acc * 0.7 || (f.acc <= best.acc && hav({lat:f.ll[0], lng:f.ll[1]}, {lat:best.ll[0], lng:best.ll[1]}) > f.acc)){ best = f; onBetter && onBetter(f); }
+    if (best.acc <= 20) stop();
+  }, () => { if (!best){ stop(); onFail && onFail(); } }, {enableHighAccuracy:true, maximumAge:0, timeout:20000});
+  setTimeout(stop, 20000);
+  return stop;
 }
 function getHere(){
-  return new Promise(res => {
-    if (!navigator.geolocation) return res(null);
-    navigator.geolocation.getCurrentPosition(pos => res([pos.coords.latitude, pos.coords.longitude]), () => res(null), {enableHighAccuracy:true, timeout:12000, maximumAge:60000});
-  });
+  return new Promise(res => watchHere(f => res(f), null, () => res(null)));
 }
+let hereWatchStop = null;
 async function hereAsStart(loud){
   if (wps.length) return true;
-  const ll = await getHere();
-  if (!ll){ if (loud) toast('現在地を取得できませんでした（位置情報の許可を確認してください）。上の欄で検索するか、地図をタップして出発地を決めてください', 4500); return false; }
-  showMe(ll);
-  if (wps.length) return true;                       // 取得中にユーザーが地点を置いた場合はそちらを優先
-  wps = [{lat:ll[0], lng:ll[1], name:'現在地'}];
-  onWpsChanged({immediate:true});
-  if (!pendingGoal) map.setView(ll, Math.max(map.getZoom(), 15));
-  toast('現在地を出発地（S）にしました。地図をタップすると目的地になります', 3500);
-  return true;
+  if (hereWatchStop) hereWatchStop();
+  return new Promise(res => {
+    let start = null;
+    hereWatchStop = watchHere(f => {
+      showMe(f.ll, f.acc);
+      if (wps.length){ res(true); return; }               // 取得中にユーザーが地点を置いた場合はそちらを優先
+      start = {lat:f.ll[0], lng:f.ll[1], name:'現在地'};
+      wps = [start];
+      onWpsChanged({immediate:true});
+      if (!pendingGoal) map.setView(f.ll, f.acc > 1500 ? 13 : Math.max(map.getZoom(), 15));
+      const adv = accAdvice(f.acc);
+      toast(`現在地を出発地（S）にしました（誤差${accText(f.acc)}）。` + (adv || '地図をタップすると目的地になります'), adv ? 6000 : 3500);
+      res(true);
+    }, f => {
+      showMe(f.ll, f.acc);
+      // 出発地がまだ自動で入れた現在地のまま（ドラッグや検索で変えていない）なら、より正確な位置へ動かす
+      if (start && wps[0] === start && start.name === '現在地'){
+        start.lat = f.ll[0]; start.lng = f.ll[1];
+        onWpsChanged();
+        if (!route && !pendingGoal) map.panTo(f.ll);
+        toast(`現在地の精度が上がりました（誤差${accText(f.acc)}）`);
+      }
+    }, () => {
+      if (loud) toast('現在地を取得できませんでした（位置情報の許可を確認してください）。上の欄で検索するか、地図をタップして出発地を決めてください', 4500);
+      res(false);
+    });
+  });
 }
 $('autoHere').checked = pref.autoHere !== false;
 $('autoHere').addEventListener('change', () => { pref.autoHere = $('autoHere').checked; savePref(); if (pref.autoHere) hereAsStart(true); });
@@ -2964,12 +3008,13 @@ $('autoHere').addEventListener('change', () => { pref.autoHere = $('autoHere').c
 $('btnLocate').onclick = () => {
   if (!navigator.geolocation){ toast('この端末では現在地を取得できません'); return; }
   toast('現在地を取得しています…');
-  navigator.geolocation.getCurrentPosition(pos => {
-    const ll = [pos.coords.latitude, pos.coords.longitude];
-    showMe(ll);
-    map.setView(ll, Math.max(map.getZoom(), 15));
-    if (!wps.length) showPlacePopup({lat:ll[0], lng:ll[1], name:'現在地'});
-  }, () => toast('現在地を取得できませんでした（位置情報の許可を確認してください）', 3200), {enableHighAccuracy:true, timeout:12000});
+  let first = true;
+  watchHere(f => {
+    showMe(f.ll, f.acc);
+    map.setView(f.ll, f.acc > 1500 ? 13 : Math.max(map.getZoom(), 15));
+    toast(`現在地（誤差${accText(f.acc)}）` + (accAdvice(f.acc) ? '。' + accAdvice(f.acc) : ''), accAdvice(f.acc) ? 6000 : 2500);
+    if (!wps.length) showPlacePopup({lat:f.ll[0], lng:f.ll[1], name:'現在地'});
+  }, f => { showMe(f.ll, f.acc); map.panTo(f.ll); }, () => toast('現在地を取得できませんでした（位置情報の許可を確認してください）', 3200));
 };
 
 /* ---------- profile & layer selects ---------- */
