@@ -845,6 +845,16 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 .r-sbtns{display:flex;gap:6px;margin:6px 0 10px}
 .r-sbtns button{flex:1;border:0;border-radius:8px;padding:9px 4px;font-size:12.5px;font-weight:700;background:#1d4ed8;color:#fff}
 #ride.compact .r-sens{display:none}
+.rs-h{font-size:13px;font-weight:800;color:#334155;margin:12px 0 4px}
+.rs-h span{font-weight:400;font-size:11px;color:#64748b}
+.rs{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #e2e8f0;font-size:13px;cursor:pointer}
+.rs .ic{width:22px;text-align:center;font-size:16px}
+.rs .nm{flex:1;min-width:0}
+.rs .nm small{display:block;color:#64748b;font-size:11px}
+.rs button{border:1px solid #2563eb;background:#fff;color:#2563eb;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700}
+.rs-on{font-size:11px;color:#16a34a;font-weight:700}
+.cand .sights{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px}
+.cand .sights b{background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:2px 6px;font-weight:700}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
 .pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -902,11 +912,13 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
   <div class="pbody" id="pbody">
     <details class="card" data-k="loop" open>
       <summary><h2>🔄 距離を指定してコースを提案</h2></summary>
-      <p class="hint">出発地（S）だけ決めて、走りたい距離を選ぶと、出発地に戻るコースをいくつか提案します。目的地は不要です。</p>
+      <p class="hint">出発地（S）だけ決めて、走りたい距離を選ぶと、近くの観光地（城・展望地・博物館・道の駅など）をめぐって出発地に戻るコースを提案します。目的地は不要です。</p>
       <div class="seg" id="loopPreset" style="margin-top:8px">
         <button data-v="20">20km</button><button data-v="30">30km</button><button data-v="50">50km</button><button data-v="80">80km</button><button data-v="100">100km</button>
       </div>
       <div class="row" style="margin-top:8px"><span>距離</span><input type="range" id="loopKm" min="10" max="200" step="5" value="30"><b id="loopKmV">30</b>km前後</div>
+      <div class="lbl">コースの作り方</div>
+      <div class="seg" id="loopMode"><button data-v="sight">🏯 観光地をめぐる（おすすめ）</button><button data-v="dir">🧭 方角まかせ</button></div>
       <div class="lbl">形</div>
       <div class="seg" id="loopShape"><button data-v="loop">周回（同じ道をなるべく通らない）</button><button data-v="out">往復</button></div>
       <div class="lbl">優先すること</div>
@@ -961,6 +973,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
       <div class="row" style="margin-top:10px">
         <span>平均速度</span><input type="range" id="speed" min="12" max="40" step="1" value="24"><b id="speedV">24</b>km/h
       </div>
+      <div id="routeSights"></div>
       <button class="ridecta" id="btnRide2" disabled>🚴 このルートで走行モードを始める</button>
       <p class="hint" style="margin-top:6px">走行時間 ＝ 距離 ÷ 平均速度 ＋ 登りの時間（1時間に600m登る想定）<br>お出かけ時間 ＝ 走行時間 ＋ 信号・一時停止（走行の15%）＋ 休憩（1時間ごとに10分）。立ち寄り先での滞在は含みません。</p>
     </details>
@@ -1101,7 +1114,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v17';
+const VERSION = 'v18';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -1150,7 +1163,7 @@ let wps = [];             // {lat,lng,name}
 let pendingGoal = null;   // goal chosen before a start exists
 let undoStack = [];
 let route = null;         // parsed route
-let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist', loopStop:'none', autoHere:true, wheelMm:2105}, store.get(LS_PREF, {}));
+let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist', loopStop:'none', autoHere:true, wheelMm:2105, loopMode:'sight'}, store.get(LS_PREF, {}));
 let alt = 0;
 let hashAlt = 0;
 let reqSeq = 0, abortCtl = null, routeTimer = null;
@@ -1364,6 +1377,7 @@ function applyRoute(r){
   route = r;
   drawRoute(); renderStats(); drawElev(); renderMix(); renderWarnings(); updateButtons(); renderMini();
   if (poiRouteList){ poiRouteList = null; renderPoiList(); renderPois(); }
+  scheduleAutoSights();
 }
 function parseRoute(gj){
   const f = gj.features && gj.features[0];
@@ -1472,7 +1486,7 @@ function gradeColor(g){ for (const x of GRADES) if (g <= x.max) return x.color; 
 function clearRoute(){
   route = null; routeGroup.clearLayers(); warnGroup.clearLayers();
   if (hoverMarker){ map.removeLayer(hoverMarker); hoverMarker = null; }
-  renderStats(); drawElev(); renderMix(); renderWarnings(); updateButtons(); renderMini();
+  renderStats(); drawElev(); renderMix(); renderWarnings(); updateButtons(); renderMini(); scheduleAutoSights();
 }
 function drawRoute(){
   routeGroup.clearLayers();
@@ -1911,6 +1925,10 @@ function sightInfo(t){
   if (t.highway === 'services' || t.highway === 'rest_area') return {ic:'🛣️', nm:'道の駅'};
   if (t.historic === 'castle' || t.historic === 'fort') return {ic:'🏯', nm:'城・城跡'};
   if (t.historic) return {ic:'🗿', nm:'史跡'};
+  if (t.leisure === 'garden') return {ic:'🌸', nm:'庭園'};
+  if (t.leisure === 'park') return {ic:'🌳', nm:'公園'};
+  if (t.amenity === 'place_of_worship') return {ic:'⛩️', nm:'寺社'};
+  if (t.natural === 'beach') return {ic:'🏖️', nm:'海辺・砂浜'};
   const m = {viewpoint:['🌄','展望スポット'], museum:['🏛️','博物館・資料館'], gallery:['🖼️','美術館・ギャラリー'], theme_park:['🎡','テーマパーク'], zoo:['🦁','動物園'], aquarium:['🐟','水族館'], attraction:['⭐','観光スポット']};
   const x = m[t.tourism] || ['📍','観光スポット'];
   return {ic:x[0], nm:x[1]};
@@ -2257,7 +2275,7 @@ function renderCands(){
     return `<div class="cand${i === candSel ? ' on' : ''}" data-ci="${i}">
       <div class="ct"><span class="sw" style="background:${c.color}"></span>${esc(c.name)}${i === candSel ? '<span style="margin-left:auto;font-size:11px;color:#f97316">表示中</span>' : ''}</div>
       <div class="nums"><div><b>${(c.st.dist/1000).toFixed(1)}km</b><span>距離</span></div><div><b>${Math.round(c.st.asc)}m</b><span>獲得標高</span></div><div><b>${plainTime(c.route)}</b><span>走行／休憩込み${hmShort(outingH(c.route))}</span></div><div><b>${Math.round(c.st.busy*100)}%</b><span>幹線道路</span></div><div><b>${c.st.water === undefined ? '…' : c.st.water === null ? '—' : Math.round(c.st.water*100) + '%'}</b><span>水辺・海沿い</span></div><div><b>${c.st.turns}回</b><span>曲がり角</span></div></div>
-      ${c.kind !== 'ab' ? `<div class="via">🔄 経由：${c.wps.slice(1, -1).map(w => esc(w.name || (w.tmp ? w.tmp + '（地名を確認中）' : '経由地'))).join(' → ')} → ${c.kind === 'out' ? '同じ道で戻る' : '出発地へ戻る'}</div>` : ''}
+      ${c.sights ? `<div class="sights">${c.sights.map((x, k) => `<b>${x.meta.ic} ${esc(x.name)}${x.meta.park ? ' 🚲' : ''}</b>`).join('→')}<span>→ ${c.kind === 'out' ? '同じ道で戻る' : '出発地へ'}</span></div>` : c.kind !== 'ab' ? `<div class="via">🔄 経由：${c.wps.slice(1, -1).map(w => esc(w.name || (w.tmp ? w.tmp + '（地名を確認中）' : '経由地'))).join(' → ')} → ${c.kind === 'out' ? '同じ道で戻る' : '出発地へ戻る'}</div>` : ''}
       ${c.via3 && c.via3.length ? `<div class="via">📍 主な通過地点：${c.via3.map(esc).join(' → ')}</div>` : ''}
       ${c.diff ? `<div class="diff">✏️ ${diffText(c.diff)}</div>` : ''}
       ${t.length || w.length || stopTag ? `<div class="tags">${stopTag}${t.map(x => `<i>${x}</i>`).join('')}${w.map(x => `<i class="w">${x}</i>`).join('')}</div>` : ''}
@@ -2490,7 +2508,7 @@ function describeCourse(c, info){
   c.hasPark = hits.some(h => h.f.kind === 'park');
   c.st.water = waterShare(c.route, info.W);
   const km = Math.round(c.st.dist / 1000);
-  if (top.length && c.kind !== 'ab'){
+  if (top.length && c.kind !== 'ab' && !c.sights){
     const h = top[0].f;
     const lead = h.kind === 'sea' ? '海沿いを走る' : h.kind === 'water' ? `${h.name}沿いを走る` : h.kind === 'beach' ? `${h.name}をめぐる` : `${h.name}をめぐる`;
     c.name = `${lead}${km}km`;
@@ -2516,6 +2534,141 @@ function diffText(d){
   const sg = (v, u) => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)) + u;
   return `修正の効果：距離${sg(d.dist, 'm')}・獲得標高${sg(d.asc, 'm')}` + (d.sev > 0 ? `・要確認${d.sev}件解消` : d.sev < 0 ? `・要確認${-d.sev}件増加` : '');
 }
+
+/* ---------- 観光地を中心にしたコース作り・沿道の見どころ（v18） ---------- */
+function sightScore(p){
+  const t = p.t; let n = 1;
+  if (t.wikipedia || t.wikidata) n += 2;
+  if (t.historic === 'castle' || t.historic === 'fort') n += 1.5;
+  if (t.tourism === 'viewpoint') n += 1;
+  if (t.tourism === 'attraction') n += 0.8;
+  if (/^(museum|zoo|aquarium|gallery|theme_park)$/.test(t.tourism || '')) n += 0.6;
+  if (t.highway) n += 1;
+  if (t.natural === 'beach') n += 0.8;
+  if (t.amenity === 'place_of_worship') n += 0.2;
+  if (p.park != null) n += 0.7;
+  return n;
+}
+function sightMeta(p){ const s = sightInfo(p.t); return {ic:s.ic, nm:s.nm, park:p.park != null, wiki:wikiLink(p.t), id:p.id}; }
+function bearingTo(a, b){ return (Math.atan2((b.lng - a.lng) * Math.cos(a.lat * Math.PI / 180), b.lat - a.lat) * 180 / Math.PI + 360) % 360; }
+function angDiff(a, b){ let d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+function shortName(n){ return n.length > 12 ? n.slice(0, 11) + '…' : n; }
+function sightCourseName(c){
+  const km = Math.round(c.st.dist / 1000), ns = c.sights.map(s => shortName(s.name));
+  if (c.kind === 'out') return `${ns[ns.length-1]}へ行って戻る${km}km`;
+  return `${ns.length > 2 ? ns.join('・') : ns.join('と')}をめぐる${km}km`;
+}
+const SIGHT_Q = (area, park) => `[out:json][timeout:30];(
+nwr["tourism"~"^(attraction|viewpoint|museum|gallery|zoo|aquarium|theme_park)$"]["name"]${area};
+nwr["historic"~"^(castle|fort)$"]["name"]${area};
+nwr["historic"~"^(ruins|archaeological_site|monument|memorial)$"]["name"]["wikipedia"]${area};
+nwr["leisure"~"^(park|garden)$"]["name"]["wikipedia"]${area};
+nwr["natural"="beach"]["name"]${area};
+nwr["highway"~"^(services|rest_area)$"]["name"~"道の駅"]${area};
+nwr["amenity"="place_of_worship"]["name"]["wikipedia"]${area};
+${park ? `nwr["amenity"="bicycle_parking"]${area};` : ''}
+);out center tags 1500;`;
+async function planSightCombos(S, D, shape, signal){
+  const R = Math.round(Math.min(45000, D * (shape === 'out' ? 0.45 : 0.4)));
+  ingest(await overpass(SIGHT_Q(`(around:${R},${S.lat.toFixed(5)},${S.lng.toFixed(5)})`, R <= 15000), signal));
+  const seen = new Set(), cand = [];
+  poiData.forEach(p => {
+    if (p.kind !== 'sight' || !p.name || seen.has(p.name)) return;
+    const d = hav(S, p); if (d < D * 0.06 || d > R) return;
+    seen.add(p.name);
+    cand.push({p, d, b:bearingTo(S, p), n:sightScore(p)});
+  });
+  cand.sort((a, b) => b.n - a.n);
+  const top = cand.slice(0, 24), F = 1.3, combos = [];
+  const push = (arr, est) => {
+    const fit = Math.abs(est - D) / D; if (fit > 0.32) return;
+    const n = arr.reduce((s, x) => s + x.n, 0);
+    const mb = Math.atan2(arr.reduce((s, x) => s + Math.sin(x.b * Math.PI / 180), 0), arr.reduce((s, x) => s + Math.cos(x.b * Math.PI / 180), 0)) * 180 / Math.PI;
+    combos.push({sights:arr.map(x => x.p), n, fit, brg:(mb + 360) % 360, sc: fit * 5 - n * (arr.length > 2 ? 0.42 : 0.5)});
+  };
+  if (shape === 'out'){
+    top.forEach(a => push([a], 2 * a.d * F));
+    for (const a of top) for (const b of top){ if (a === b || a.d >= b.d || angDiff(a.b, b.b) > 30) continue; push([a, b], 2 * (a.d + hav(a.p, b.p)) * F); }
+  } else {
+    for (let i = 0; i < top.length; i++) for (let j = i + 1; j < top.length; j++){
+      let a = top[i], b = top[j]; const ang = angDiff(a.b, b.b);
+      if (ang < 25 || ang > 150) continue;
+      if (((b.b - a.b + 360) % 360) > 180) [a, b] = [b, a];      // 時計回りの順にする
+      push([a, b], (a.d + hav(a.p, b.p) + b.d) * F);
+    }
+    if (D >= 25000){
+      const t3 = top.slice(0, 14);
+      for (let i = 0; i < t3.length; i++) for (let j = i + 1; j < t3.length; j++) for (let k = j + 1; k < t3.length; k++){
+        const arr = [t3[i], t3[j], t3[k]].sort((x, y) => x.b - y.b);
+        // 角度のすき間が一番大きいところを出発地側にする
+        let gi = 0, gmax = -1;
+        for (let q = 0; q < 3; q++){ const g = (arr[(q + 1) % 3].b - arr[q].b + 360) % 360 || 360; if (g > gmax){ gmax = g; gi = q; } }
+        const ord = [arr[(gi + 1) % 3], arr[(gi + 2) % 3], arr[gi]];
+        const span = 360 - gmax; if (span < 50 || span > 200) continue;
+        if (angDiff(ord[0].b, ord[1].b) < 15 || angDiff(ord[1].b, ord[2].b) < 15) continue;
+        push(ord, (ord[0].d + hav(ord[0].p, ord[1].p) + hav(ord[1].p, ord[2].p) + ord[2].d) * F);
+      }
+    }
+  }
+  combos.sort((a, b) => a.sc - b.sc);
+  const picked = [];
+  for (const c of combos){
+    if (picked.length >= 6) break;
+    const ids = new Set(c.sights.map(p => p.id));
+    if (picked.some(o => o.sights.filter(p => ids.has(p.id)).length >= Math.ceil(Math.min(o.sights.length, c.sights.length) / 2) + (c.sights.length > 2 ? 0 : 0) && angDiff(o.brg, c.brg) < 35)) continue;
+    if (picked.filter(o => o.sights.some(p => ids.has(p.id))).length >= 2) continue;
+    picked.push(c);
+  }
+  return picked;
+}
+/* 出発地・目的地のルートでも、沿道の見どころを自動で探して表示 */
+let asTimer = null, asKey = '', asList = null;
+function routeKey(r){ const a = r.pts[0], b = r.pts[r.pts.length-1]; return [Math.round(r.dist), a.lat.toFixed(4), a.lng.toFixed(4), b.lat.toFixed(4), b.lng.toFixed(4), r.pts.length].join('|'); }
+function scheduleAutoSights(){
+  clearTimeout(asTimer);
+  if (!route){ asKey = ''; asList = null; renderRouteSights(); return; }
+  if (routeKey(route) === asKey){ if (asList){ poiRouteList = asList; renderPois(); } renderRouteSights(); return; }
+  if (route.dist > 150000){ asList = null; $('routeSights').innerHTML = '<p class="hint">150kmを超えるルートでは、沿道の見どころの自動表示は行いません（「観光地・自転車置き場」カードで探せます）。</p>'; return; }
+  $('routeSights').innerHTML = '<p class="hint">🏯 沿道の見どころを探しています…</p>';
+  asTimer = setTimeout(autoSights, 1200);
+}
+async function autoSights(){
+  const r = route; if (!r || RIDE.on) return;
+  const key = routeKey(r);
+  try { ingest(await overpass(SIGHT_Q(`(around:600,${samplePolyline(r, 100)})`, true))); }
+  catch (e) { if (route === r) $('routeSights').innerHTML = '<p class="hint">沿道の見どころを読み込めませんでした（混み合っている可能性）。</p>'; return; }
+  if (route !== r) return;
+  const pts = r.pts, list = [], seen = new Set();
+  poiData.forEach(p => {
+    if (p.kind !== 'sight' || !p.name || seen.has(p.name)) return;
+    let bd = Infinity, bi = 0; const cosl = Math.cos(p.lat * Math.PI / 180);
+    for (let i = 0; i < pts.length; i++){ const dy = (pts[i].lat - p.lat) * 111320, dx = (pts[i].lng - p.lng) * 111320 * cosl, d = dx * dx + dy * dy; if (d < bd){ bd = d; bi = i; } }
+    bd = Math.sqrt(bd); if (bd > 600) return;
+    seen.add(p.name);
+    list.push({p, off:Math.round(bd), km:pts[bi].d * r.cumScale / 1000, n:sightScore(p)});
+  });
+  list.sort((a, b) => a.km - b.km);
+  asKey = key; asList = list; poiRouteList = list;
+  if (!pref.poiA){ pref.poiA = true; savePref(); applyPoiToggles(); }
+  renderPois(); renderPoiList(); renderRouteSights();
+}
+function renderRouteSights(){
+  const box = $('routeSights');
+  if (!route || !asList){ if (!route) box.innerHTML = ''; return; }
+  if (!asList.length){ box.innerHTML = '<div class="rs-h">🏯 沿道の見どころ</div><p class="hint">ルートから600m以内に、地図データに登録された観光地は見つかりませんでした。「距離を指定してコースを提案」の「観光地をめぐる」なら、観光地を目的にしたコースを作れます。</p>'; return; }
+  const top = asList.slice().sort((a, b) => b.n - a.n).slice(0, 6).sort((a, b) => a.km - b.km);
+  const onRoute = new Set(wps.map(w => w.name));
+  box.innerHTML = `<div class="rs-h">🏯 沿道の見どころ <span>（ルートから600m以内 ${asList.length}件・おすすめ順に${top.length}件）</span></div>`
+    + top.map(x => { const s = sightInfo(x.p.t), via = onRoute.has(x.p.name);
+      return `<div class="rs" data-sid="${esc(x.p.id)}"><span class="ic">${s.ic}</span><div class="nm">${x.p.park != null ? '⭐ ' : ''}${esc(x.p.name)}<small>${x.km.toFixed(1)}km地点 ・ ${s.nm} ・ ${x.off < 60 ? 'ルート沿い' : 'ルートから' + x.off + 'm'}${x.p.park != null ? ' ・ 🚲置き場あり' : ''}</small></div>${via ? '<span class="rs-on">経由中</span>' : `<button data-via="${esc(x.p.id)}">寄る</button>`}</div>`; }).join('');
+}
+$('routeSights').addEventListener('click', e => {
+  const v = e.target.closest('[data-via]');
+  if (v){ const p = poiData.get(v.dataset.via); if (p) addVia({lat:p.lat, lng:p.lng, name:p.name}); return; }
+  const row = e.target.closest('[data-sid]'); if (!row) return;
+  const p = poiData.get(row.dataset.sid); if (!p) return;
+  map.setView([p.lat, p.lng], Math.max(map.getZoom(), 15)); sheet('min'); setTimeout(() => poiPopup(p), 350);
+});
 
 /* ---------- 距離を指定して周回コースを提案 ---------- */
 function destPt(p, brg, dist){
@@ -2557,16 +2710,45 @@ async function genLoops(){
     quiet: c => c.st.busy * 10 + err(c) * 5 + c.st.overlap * 3
   }[pref.loopSort] || (c => err(c));
   // 通行規制（要確認）がないコースを必ず先に、その中で好みの順
-  const rank = c => (c.st.severe > 0 ? 1000 + c.st.severe : 0) + score(c);
+  const rank = c => (c.st.severe > 0 ? 1000 + c.st.severe : 0) + score(c) - (c.sights ? 0.6 + c.sightN * 0.12 : 0);
   const partial = [];
   let done = 0;
   const showPartial = () => {
     const l = partial.slice().sort((a, b) => rank(a) - rank(b)).slice(0, 4);
-    l.forEach((c, i) => { c.color = CAND_COLORS[i]; c.name = `コース${i + 1}（${dirName(c.brg)}まわり）`; });
+    l.forEach((c, i) => { c.color = CAND_COLORS[i]; c.name = c.sights ? sightCourseName(c) : `コース${i + 1}（${dirName(c.brg)}まわり）`; });
     cands = l; candMode = 'loop'; candSel = -1; renderCands();
   };
-  loopStatus(`コースを作成中… 0/${brgs.length}（できたものから下に表示します）`);
-  await pool(brgs, 2, async b => {
+  let sightOk = false;
+  if (pref.loopMode !== 'dir'){
+    loopStatus('出発地のまわりの観光地を探しています…');
+    let combos = [];
+    try { combos = await planSightCombos(S, D, shape, signal); } catch (e) { combos = []; }
+    if (combos.length && !signal.aborted){
+      let dn = 0;
+      loopStatus(`観光地をめぐるコースを作成中… 0/${combos.length}（できたものから下に表示します）`);
+      await pool(combos, 2, async cb => {
+        if (signal.aborted) return null;
+        const pts = [S].concat(cb.sights.map(p => ({lat:p.lat, lng:p.lng, name:p.name}))).concat([S]);
+        try {
+          const r = parseRoute(await fetchRouteFor(pts, profile, 0, signal)); r.profile = profile;
+          const ferry = r.segs.some(sg => sg.cat === 'ferry' && sg.len > 0);
+          const strayed = pts.slice(1, -1).some(w => { let md = Infinity; for (let i = 0; i < r.pts.length; i += 2){ const d = hav(r.pts[i], w); if (d < md) md = d; } return md > 700; });
+          if (!ferry && !strayed){
+            const c = {wps:pts, route:r, profile, alt:0, brg:cb.brg, kind: shape === 'out' ? 'out' : 'loop', sightN:cb.n,
+                       sights:cb.sights.map(p => ({name:p.name, meta:sightMeta(p)}))};
+            c.st = routeStats(r);
+            if (Math.abs(c.st.dist - D) / D <= 0.4 && !partial.some(o => sameRoute(o, c))){ partial.push(c); showPartial(); }
+          }
+        } catch (e) {}
+        dn++; if (!signal.aborted) loopStatus(`観光地をめぐるコースを作成中… ${dn}/${combos.length}（できたものから下に表示します）`);
+        return null;
+      });
+    }
+    sightOk = partial.length >= 2;
+    if (!sightOk && !signal.aborted) loopStatus(partial.length ? '観光地をめぐるコースが少ないため、方角で作るコースも加えています…' : '近くに地図データに登録された観光地が少ないため、方角で作っています…');
+  }
+  if (!sightOk && !signal.aborted) loopStatus(`コースを作成中… 0/${brgs.length}（できたものから下に表示します）`);
+  if (!sightOk && !signal.aborted) await pool(brgs, 2, async b => {
     if (signal.aborted) return null;
     let k = 1, best = null;
     for (let tr = 0; tr < 3 && !signal.aborted; tr++){
@@ -2624,7 +2806,7 @@ async function genLoops(){
     stopMsg = n > 0 ? `（${n}コースに立ち寄り先を入れました）` : n === 0 ? `（コース沿いに${STOPS[pref.loopStop].nm}が見つかりませんでした）` : '（立ち寄り先を読み込めませんでした）';
     list.sort((a, b) => rank(a) - rank(b));
   }
-  list.forEach((c, i) => { c.color = CAND_COLORS[i]; if (!c.via3) c.name = `コース${i + 1}（${dirName(c.brg)}まわり）`; });
+  list.forEach((c, i) => { c.color = CAND_COLORS[i]; if (c.sights) c.name = sightCourseName(c); else if (!c.via3) c.name = `コース${i + 1}（${dirName(c.brg)}まわり）`; });
   cands = list; candMode = 'loop';
   const allSev = list.every(c => c.st.severe > 0);
   loopStatus((cancelled ? `中止しました。できた${list.length}コースを表示しています` : `${list.length}つのコースを提案しました${stopMsg}`)
@@ -2650,6 +2832,7 @@ wireSeg('loopPreset', 'loopKm', syncLoopKm);
 wireSeg('loopShape', 'loopShape');
 wireSeg('loopSort', 'loopSort');
 wireSeg('loopStop', 'loopStop');
+wireSeg('loopMode', 'loopMode');
 $('loopKm').addEventListener('input', () => { pref.loopKm = +$('loopKm').value; savePref(); syncLoopKm(); });
 syncLoopKm();
 
