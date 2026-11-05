@@ -870,6 +870,10 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
   #panel.min{height:250px}
   .mini button{display:block}
   #panel.max{height:88vh;height:88dvh}
+  #panel.peek{height:calc(76px + env(safe-area-inset-bottom))}
+  #panel.peek .phead h1,#panel.peek .search{display:none}
+  #panel.peek .phead{padding-top:22px}
+  #panel.peek .mini{margin-top:0}
   #sheetHandle{display:block;position:absolute;top:0;left:0;right:0;height:18px;z-index:3;border:0;background:transparent}
   #sheetHandle::after{content:"";position:absolute;left:50%;top:6px;width:44px;height:5px;margin-left:-22px;border-radius:3px;background:rgba(255,255,255,.55)}
   .phead{border-radius:16px 16px 0 0;padding-top:18px}
@@ -1097,7 +1101,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v15';
+const VERSION = 'v16';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -2647,7 +2651,7 @@ function renderMini(){
   const W = warnings || [], sev = W.filter(w => SEVERE.has(w.type)).length;
   el.innerHTML = `📏 <b>${fmtKm(route.dist)}</b>km ・ ⏱ <b>${plainTime(route)}</b>（休憩込み${hmShort(outingH(route))}） ・ ⛰ ↑<b>${route.asc == null ? '—' : Math.round(route.asc)}</b>m${sev ? ` ・ <span style="color:#fca5a5">⚠ 要確認${sev}</span>` : ''}`;
 }
-$('btnMini').onclick = () => sheet('max');
+$('btnMini').onclick = () => sheet(sheetState() === 'max' ? 'peek' : 'max');
 document.querySelectorAll('details.card[data-k]').forEach(d => {
   const k = d.dataset.k;
   if (pref.open && k in pref.open && k !== 'cand') d.open = pref.open[k];
@@ -3399,17 +3403,33 @@ function loadHash(){
 }
 
 /* ---------- mobile sheet ---------- */
+const SHEETS = ['peek', 'min', 'mid', 'max'];
+function sheetState(){ const p = $('panel'); return SHEETS.find(k => k !== 'mid' && p.classList.contains(k)) || 'mid'; }
 function sheet(state){
   if (window.innerWidth > 760) return;
   const p = $('panel');
-  p.classList.remove('min', 'max');
-  if (state === 'min' || state === 'max') p.classList.add(state);
-  setTimeout(drawElev, 280);
+  p.classList.remove('peek', 'min', 'max');
+  if (state !== 'mid') p.classList.add(state);
+  const big = state === 'max';
+  $('btnMini').textContent = big ? '🗺️ 地図' : '詳細 ▴';
+  setTimeout(() => { drawElev(); map.invalidateSize(); }, 280);
 }
-$('sheetHandle').onclick = () => {
-  const p = $('panel');
-  sheet(p.classList.contains('min') ? 'mid' : p.classList.contains('max') ? 'min' : 'max');
-};
+function sheetStep(dir){ const i = SHEETS.indexOf(sheetState()); sheet(SHEETS[Math.max(0, Math.min(SHEETS.length - 1, i + dir))]); }
+$('sheetHandle').onclick = () => { const st = sheetState(); sheet(st === 'max' ? 'peek' : SHEETS[SHEETS.indexOf(st) + 1]); };
+// パネルの上の部分を上下になぞって大きさを変える
+(function(){
+  let y0 = null, x0 = 0;
+  const head = document.querySelector('.phead');
+  head.addEventListener('touchstart', e => { if (e.target.closest('input,button,select') && !e.target.closest('#sheetHandle')) { y0 = null; return; } y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; }, {passive:true});
+  $('sheetHandle').addEventListener('touchstart', e => { y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; }, {passive:true});
+  const end = e => {
+    if (y0 == null) return;
+    const t = e.changedTouches[0], dy = t.clientY - y0, dx = t.clientX - x0; y0 = null;
+    if (Math.abs(dy) < 35 || Math.abs(dx) > Math.abs(dy)) return;
+    sheetStep(dy > 0 ? (Math.abs(dy) > 160 ? -3 : -1) : (Math.abs(dy) > 160 ? 3 : 1));
+  };
+  head.addEventListener('touchend', end); $('sheetHandle').addEventListener('touchend', end);
+})();
 
 /* ---------- iPhoneでキーボードを閉じた後に画面がずれたままになるのを防ぐ ---------- */
 function resetScroll(){ if (window.scrollX || window.scrollY) window.scrollTo(0, 0); }
