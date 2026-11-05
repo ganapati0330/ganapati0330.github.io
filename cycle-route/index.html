@@ -828,6 +828,23 @@ body.riding #map{left:0!important;bottom:var(--rideH,260px)!important;top:0}
 .a2box ol{font-size:14px;line-height:1.8;padding-left:22px;margin:6px 0}
 .a2box button{width:100%;border:0;border-radius:10px;background:#f97316;color:#fff;font-weight:800;padding:11px;margin-top:6px;font-size:15px}
 body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
+.sens{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed #e2e8f0;font-size:13px}
+.sens .ic{width:22px;text-align:center}
+.sens .nm{flex:1;min-width:0}
+.sens .nm small{display:block;color:#64748b;font-size:11px}
+.sens .val{font-size:13px;white-space:nowrap}
+.sens button{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:6px 10px;font-size:13px}
+.sens button.pri{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:700}
+.r-sens{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;text-align:center;background:#1e293b;border-radius:10px;padding:6px 0}
+.r-sens b{display:block;font-size:24px;font-weight:900;line-height:1.1}
+.r-sens span{font-size:11px;color:#94a3b8}
+.r-sens[hidden],#rMeter[hidden],.r-next[hidden],.r-warn[hidden]{display:none}
+#rMeter{display:flex;align-items:baseline;justify-content:center;gap:6px;padding:4px 0}
+#rMeter b{font-size:76px;font-weight:900;line-height:1;letter-spacing:-.03em}
+#rMeter span{font-size:18px;color:#94a3b8}
+.r-sbtns{display:flex;gap:6px;margin:6px 0 10px}
+.r-sbtns button{flex:1;border:0;border-radius:8px;padding:9px 4px;font-size:12.5px;font-weight:700;background:#1d4ed8;color:#fff}
+#ride.compact .r-sens{display:none}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
 .pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -876,7 +893,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
       <div class="rin"><span class="badge b-g">G</span><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button class="herebtn" id="btnHereG" title="現在地を目的地に">📍</button><button id="btnSearchG">検索</button></div>
       <div id="results"></div>
     </div>
-    <div class="mini" id="mini"><span id="miniTxt">出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください</span><button id="btnRide" class="ridebtn" hidden>🚴 走行</button><button id="btnMini">詳細 ▴</button></div>
+    <div class="mini" id="mini"><span id="miniTxt">出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください</span><button id="btnRide" class="ridebtn">🚴 走行</button><button id="btnMini">詳細 ▴</button></div>
   </div>
   <div class="pbody" id="pbody">
     <details class="card" data-k="loop" open>
@@ -944,6 +961,16 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
       <p class="hint" style="margin-top:6px">走行時間 ＝ 距離 ÷ 平均速度 ＋ 登りの時間（1時間に600m登る想定）<br>お出かけ時間 ＝ 走行時間 ＋ 信号・一時停止（走行の15%）＋ 休憩（1時間ごとに10分）。立ち寄り先での滞在は含みません。</p>
     </details>
 
+    <details class="card" data-k="sens">
+      <summary><h2>📡 センサー（スピード・ケイデンス・心拍・パワー）</h2></summary>
+      <p class="hint">Bluetooth（BLE）対応のサイクル用センサーにつなぐと、ホイールの回転から正確な速度と距離、クランクの回転からケイデンスを表示します。ANT+だけの製品は使えません。</p>
+      <p class="hint" id="btHelp" style="color:#b45309;font-weight:700;margin-top:4px"></p>
+      <div id="sensList"></div>
+      <div class="lbl">タイヤの大きさ（速度・距離の計算に使います）</div>
+      <div class="row"><select class="sel" id="wheelSel"></select><input type="number" id="wheelMm" min="1000" max="2500" step="1" style="width:90px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px" hidden>mm</div>
+      <p class="hint" style="margin-top:4px">タイヤの側面に書かれたサイズ（例：700×25C）を選びます。より正確にするには、タイヤを1回転させて進んだ距離（mm）を測って「その他」に入力してください。</p>
+    </details>
+
     <details class="card" data-k="warn">
       <summary><h2>⚠️ 注意ポイント・通りにくい区間 <span class="sp" id="warnCount"></span></h2></summary>
       <div id="warnList"><p class="hint">ルートを作ると、自転車通行不可・階段・押し歩き・時間制限・通行可否が未確認の区間、交通量の多い道・未舗装・急坂・トンネルを表示します。</p></div>
@@ -1007,13 +1034,15 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 </div>
 <div id="ride" hidden>
   <div id="rIntro">
-    <h3>🚴 走行モード</h3>
+    <h3 id="rTitle">🚴 走行モード</h3>
     <ul>
       <li>スマホは<b>ハンドルのホルダーに固定</b>してください（手に持っての操作・画面の注視は法律で禁止されています）。</li>
       <li>曲がり角や注意ポイントは<b>音声でお知らせ</b>します。画面は止まっているときに確認しましょう。</li>
       <li>走行中は画面の操作を受け付けません。操作は停車してから行ってください。</li>
       <li>アプリを開いたまま・画面を付けたままにしてください。電池の減りが早くなります。</li>
     </ul>
+    <p id="rSensIntro" style="font-size:12.5px;color:#cbd5e1;margin:0 0 4px">📡 センサーをつなぐ（任意・停車中に）：</p>
+    <div class="r-sbtns"><button id="rsCsc">🚲 スピード・ケイデンス</button><button id="rsHr">❤️ 心拍計</button><button id="rsPw">⚡ パワー</button></div>
     <div class="r-btns">
       <button id="rStartGps" class="go">📍 GPSで走行開始</button>
       <button id="rStartSim">▶ テスト走行（画面の動きを試す）</button>
@@ -1022,16 +1051,22 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
   </div>
   <div id="rMain" hidden>
     <div class="r-top"><span id="rMode"></span><span id="rGps"></span><button id="rCompact">▾ 小さく</button></div>
-    <div class="r-next">
+    <div id="rMeter" hidden><b id="rBig">0.0</b><span>km/h</span></div>
+    <div class="r-next" id="rNext">
       <svg id="rArrow" viewBox="0 0 100 100" width="76" height="76"><path id="rArrowPath" d="M50 92 V42 M50 42 L30 62 M50 42 L70 62" stroke="#fff" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <div class="r-ins"><div class="r-dist" id="rTurnDist">—</div><div class="r-turn" id="rTurnTxt">位置を確認しています…</div></div>
     </div>
     <div class="r-warn" id="rWarn" hidden></div>
     <div class="r-grid">
-      <div><b id="rRemain">—</b><span>残り km</span></div>
-      <div><b id="rEta">—</b><span>残り時間</span></div>
-      <div><b id="rSpeed">—</b><span>km/h</span></div>
+      <div><b id="rRemain">—</b><span id="rRemainL">残り km</span></div>
+      <div><b id="rEta">—</b><span id="rEtaL">残り時間</span></div>
+      <div><b id="rSpeed">—</b><span id="rSpeedL">km/h</span></div>
       <div><b id="rDone">0.0</b><span>走った km</span></div>
+    </div>
+    <div class="r-sens" id="rSens" hidden>
+      <div><b id="rCad">—</b><span>ケイデンス rpm</span></div>
+      <div><b id="rHr">—</b><span>心拍 bpm</span></div>
+      <div><b id="rPw">—</b><span>パワー W</span></div>
     </div>
     <div class="r-btns">
       <button id="rVoice">🔊 音声ON</button>
@@ -1062,7 +1097,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v14';
+const VERSION = 'v15';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -1111,7 +1146,7 @@ let wps = [];             // {lat,lng,name}
 let pendingGoal = null;   // goal chosen before a start exists
 let undoStack = [];
 let route = null;         // parsed route
-let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist', loopStop:'none', autoHere:true}, store.get(LS_PREF, {}));
+let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist', loopStop:'none', autoHere:true, wheelMm:2105}, store.get(LS_PREF, {}));
 let alt = 0;
 let hashAlt = 0;
 let reqSeq = 0, abortCtl = null, routeTimer = null;
@@ -2607,7 +2642,7 @@ syncLoopKm();
 /* ---------- ヘッダーの概要・折りたたみ ---------- */
 function renderMini(){
   const el = $('miniTxt');
-  $('btnRide').hidden = !route; $('btnRide2').disabled = !route;
+  $('btnRide').hidden = false; $('btnRide2').disabled = false; $('btnRide2').textContent = route ? '🚴 このルートで走行モードを始める' : '🚴 メーターモード（ルートなしで走る）を始める';
   if (!route){ el.textContent = wps.length ? '目的地を決めるか、「距離を指定してコースを提案」を使ってください' : '出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください'; return; }
   const W = warnings || [], sev = W.filter(w => SEVERE.has(w.type)).length;
   el.innerHTML = `📏 <b>${fmtKm(route.dist)}</b>km ・ ⏱ <b>${plainTime(route)}</b>（休憩込み${hmShort(outingH(route))}） ・ ⛰ ↑<b>${route.asc == null ? '—' : Math.round(route.asc)}</b>m${sev ? ` ・ <span style="color:#fca5a5">⚠ 要確認${sev}</span>` : ''}`;
@@ -2675,16 +2710,18 @@ async function wakeOn(){
 }
 document.addEventListener('visibilitychange', () => { if (RIDE.on && document.visibilityState === 'visible') wakeOn(); });
 function rideOpen(){
-  if (!route){ toast('先にルートを作ってください'); return; }
   document.body.classList.add('riding');
   $('ride').hidden = false; $('rIntro').hidden = false; $('rMain').hidden = true;
+  $('rTitle').textContent = route ? '🚴 走行モード（ルート案内）' : '🚴 メーターモード（ルートなし）';
+  $('rStartSim').textContent = route ? '▶ テスト走行（画面の動きを試す）' : '▶ テスト（画面の動きを試す）';
+  renderSensors();
   setRideH();
 }
 function setRideH(){ setTimeout(() => { document.body.style.setProperty('--rideH', $('ride').offsetHeight + 'px'); map.invalidateSize(); }, 30); }
 function rideClose(){
   RIDE.on = false;
   if (RIDE.watch != null){ navigator.geolocation.clearWatch(RIDE.watch); RIDE.watch = null; }
-  clearInterval(RIDE.simTimer); RIDE.simTimer = null; clearInterval(RIDE.blockTimer);
+  clearInterval(RIDE.simTimer); RIDE.simTimer = null; clearInterval(RIDE.blockTimer); clearInterval(RIDE.tick);
   try { RIDE.wake && RIDE.wake.release(); } catch (e) {}
   RIDE.wake = null;
   try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
@@ -2695,26 +2732,36 @@ function rideClose(){
 }
 function rideStart(sim){
   const r = route;
+  RIDE.noRoute = !r; RIDE.simCad = null; RIDE.moveMs = 0; RIDE.maxV = 0; RIDE.tickT = Date.now(); RIDE.distBase = SENS.v.dist;
   RIDE.on = true; RIDE.sim = sim; RIDE.idx = 0; RIDE.prog = 0; RIDE.off = 0; RIDE.offSince = 0; RIDE.last = null; RIDE.speed = 0; RIDE.done = 0;
   RIDE.said = new Set(); RIDE.arrived = false; RIDE.startT = Date.now(); RIDE.follow = true;
-  RIDE.turns = computeTurns(r);
-  RIDE.warns = buildWarnings(r).filter(w => w.type !== 'busy' || w.len >= 1000).map(w => ({d:r.pts[w.from].d, type:w.type, len:w.len, info:w.info}));
+  RIDE.turns = r ? computeTurns(r) : [];
+  RIDE.warns = r ? buildWarnings(r).filter(w => w.type !== 'busy' || w.len >= 1000).map(w => ({d:r.pts[w.from].d, type:w.type, len:w.len, info:w.info})) : [];
   // 経由地の位置（ルート上の距離）
   RIDE.vias = []; let from = 0;
-  wps.forEach((w, i) => {
+  if (r) wps.forEach((w, i) => {
     let bi = from, bd = Infinity;
     for (let k = from; k < r.pts.length; k++){ const d = hav(r.pts[k], w); if (d < bd){ bd = d; bi = k; } }
     if (i > 0 && i < wps.length - 1) RIDE.vias.push({d:r.pts[bi].d, name:w.name || `経由地${i}`});
     from = bi;
   });
   $('rIntro').hidden = true; $('rMain').hidden = false;
-  $('rMode').textContent = sim ? '▶ テスト走行中（実際の位置ではありません）' : '📍 GPSで走行中';
+  $('rMode').textContent = sim ? '▶ テスト中（実際の位置・速度ではありません）' : (r ? '📍 GPSで走行中' : '📍 メーターモード');
+  $('rMeter').hidden = !RIDE.noRoute; $('rNext').hidden = RIDE.noRoute; $('rWarn').hidden = true;
+  $('rRemainL').textContent = RIDE.noRoute ? '走行時間' : '残り km';
+  $('rEtaL').textContent = RIDE.noRoute ? '平均 km/h' : '残り時間';
+  $('rSpeedL').textContent = RIDE.noRoute ? '最高 km/h' : 'km/h';
+  clearInterval(RIDE.tick); RIDE.tick = setInterval(rideTick, 1000);
   $('rVoice').textContent = RIDE.voice ? '🔊 音声ON' : '🔇 音声OFF';
   setRideH(); wakeOn();
   say(sim ? 'テスト走行を始めます' : '走行モードを開始します。安全運転で楽しんでください。');
-  const p0 = r.pts[0];
-  map.setView([p0.lat, p0.lng], Math.max(map.getZoom(), 16));
-  if (sim){
+  if (r){ const p0 = r.pts[0]; map.setView([p0.lat, p0.lng], Math.max(map.getZoom(), 16)); }
+  if (sim && !r){
+    // メーターモードのテスト：速度とケイデンスを模擬
+    let t0 = 0;
+    RIDE.simTimer = setInterval(() => { t0 += 0.5; RIDE.speed = (25 + Math.sin(t0 / 4) * 5) / 3.6; RIDE.done += RIDE.speed * 0.5; RIDE.simCad = 85 + Math.sin(t0 / 3) * 8; rideRender(); }, 500);
+    rideRender();
+  } else if (sim){
     let simD = 0; const v = 30 / 3.6, mult = 6;
     RIDE.simTimer = setInterval(() => {
       simD += v * mult * 0.5;
@@ -2783,6 +2830,7 @@ function onFix(f){
   if (!RIDE.marker) RIDE.marker = L.marker([f.lat, f.lng], {icon, zIndexOffset:3000, interactive:false}).addTo(map);
   else { RIDE.marker.setLatLng([f.lat, f.lng]); RIDE.marker.setIcon(icon); }
   if (RIDE.follow) map.panTo([f.lat, f.lng], {animate:true, duration:0.4});
+  if (RIDE.noRoute){ rideRender(); if (!RIDE.sim){ if (curSpeed() * 3.6 > 6) RIDE.blockT = now; checkBlock(); } return; }
   // ルートとの照合
   const m = matchRoute(f);
   const offRoute = m.d > Math.max(50, f.acc * 1.2);
@@ -2792,33 +2840,64 @@ function onFix(f){
   if (isOff) say('ルートから外れています。', 'off');
   rideRender(isOff, m.d);
   // 走行中は画面操作をブロック（テスト走行では無効）
-  const moving = RIDE.speed * 3.6 > 6;
+  const moving = curSpeed() * 3.6 > 6;
   if (!RIDE.sim){ if (moving) RIDE.blockT = now; checkBlock(); }
 }
 function checkBlock(){
   if (!RIDE.on || RIDE.sim){ $('rBlock').hidden = true; return; }
   const now = Date.now();
   // 位置の更新が4秒以上ない＝止まっているとみなして速度を下げる
-  if (now - RIDE.lastT > 4000){ RIDE.speed *= 0.5; $('rSpeed').textContent = Math.round(RIDE.speed * 3.6); }
-  const moving = RIDE.speed * 3.6 > 6;
-  if (moving) RIDE.blockT = Math.max(RIDE.blockT, RIDE.lastT);
+  if (now - RIDE.lastT > 4000) RIDE.speed *= 0.5;
+  const moving = curSpeed() * 3.6 > 6;
+  if (moving) RIDE.blockT = Math.max(RIDE.blockT, sensorSpeed() != null ? now : RIDE.lastT);
   $('rBlock').hidden = !(moving || now - RIDE.blockT < 3000);
 }
+function curSpeed(){ const s = sensorSpeed(); return s != null ? s : RIDE.speed; }
+function curDone(){ return SENS.dev.csc && SENS.v.dist > RIDE.distBase ? SENS.v.dist - RIDE.distBase : RIDE.done; }
+function rideTick(){
+  if (!RIDE.on) return;
+  const now = Date.now(), dt = now - RIDE.tickT; RIDE.tickT = now;
+  const v = curSpeed();
+  if (v * 3.6 > 2) RIDE.moveMs += dt;
+  if (v > RIDE.maxV) RIDE.maxV = v;
+  if (!RIDE.sim) checkBlock();
+  if (RIDE.noRoute) rideRender(); else rideSensorRow();
+  const sv = sensorSpeed();
+  if (!RIDE.noRoute) $('rSpeed').textContent = Math.round(v * 3.6);
+  $('rMode').textContent = RIDE.sim ? '▶ テスト中（実際の位置・速度ではありません）' : `${RIDE.noRoute ? '📍 メーターモード' : '📍 GPSで走行中'} ・ 速度：${sv != null ? 'センサー' : 'GPS'}`;
+}
+function rideSensorRow(){
+  const cad = RIDE.sim && RIDE.simCad != null && !SENS.dev.csc ? Math.round(RIDE.simCad) : sensVal('cad'), hr = sensVal('hr'), pw = sensVal('pw');
+  const any = cad != null || hr != null || pw != null;
+  $('rSens').hidden = !any;
+  $('rCad').textContent = cad == null ? '—' : cad; $('rHr').textContent = hr == null ? '—' : hr; $('rPw').textContent = pw == null ? '—' : pw;
+}
+function rideMeter(){
+  const v = curSpeed(), done = curDone();
+  $('rBig').textContent = (v * 3.6).toFixed(1);
+  const sec = Math.floor(RIDE.moveMs / 1000);
+  $('rRemain').textContent = `${Math.floor(sec / 3600)}:${String(Math.floor(sec / 60) % 60).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+  $('rEta').textContent = RIDE.moveMs > 5000 ? (done / 1000 / (RIDE.moveMs / 3600000)).toFixed(1) : '0.0';
+  $('rSpeed').textContent = (RIDE.maxV * 3.6).toFixed(1);
+  $('rDone').textContent = (done / 1000).toFixed(2);
+  rideSensorRow();
+}
 function rideRender(isOff, offD){
+  if (RIDE.noRoute){ rideMeter(); return; }
   const r = route, S = r.cumScale, tot = r.pts[r.pts.length-1].d, prog = RIDE.prog;
   const remain = Math.max(0, tot - prog) * S;
   $('rRemain').textContent = (remain / 1000).toFixed(1);
   const hRem = remain / 1000 / pref.speed;
   $('rEta').textContent = hmShort(hRem);
-  $('rSpeed').textContent = Math.round(RIDE.speed * 3.6);
-  $('rDone').textContent = (RIDE.done / 1000).toFixed(1);
+  $('rSpeed').textContent = Math.round(curSpeed() * 3.6);
+  $('rDone').textContent = (curDone() / 1000).toFixed(1);
   $('rReroute').hidden = !isOff;
   $('rMain').classList.toggle('r-off', !!isOff);
   // 到着
   if (!RIDE.arrived && remain < 30 && RIDE.idx > r.pts.length * 0.8){
     RIDE.arrived = true;
     say('目的地に到着しました。おつかれさまでした。', 'arr');
-    $('rTurnDist').textContent = 'ゴール！'; $('rTurnTxt').textContent = `${(RIDE.done/1000).toFixed(1)}km ・ ${hm((Date.now() - RIDE.startT) / 3600000)}`;
+    $('rTurnDist').textContent = 'ゴール！'; $('rTurnTxt').textContent = `${(curDone()/1000).toFixed(1)}km ・ ${hm((Date.now() - RIDE.startT) / 3600000)}`;
     $('rArrowPath').setAttribute('d', 'M25 52 L43 70 L76 32'); $('rWarn').hidden = true;
     return;
   }
@@ -2937,6 +3016,157 @@ $('rCompact').onclick = () => {
   $('rCompact').textContent = c ? '▴ 大きく' : '▾ 小さく';
   setRideH();
 };
+
+/* ---------- Bluetoothセンサー（スピード・ケイデンス・心拍・パワー）（v15） ---------- */
+const BTDEF = {
+  csc:{svc:'cycling_speed_and_cadence', chr:'csc_measurement', nm:'スピード・ケイデンス', ic:'🚲'},
+  hr: {svc:'heart_rate', chr:'heart_rate_measurement', nm:'心拍計', ic:'❤️'},
+  pw: {svc:'cycling_power', chr:'cycling_power_measurement', nm:'パワーメーター', ic:'⚡'}
+};
+const SENS = {dev:{csc:null, hr:null, pw:null},
+  v:{speed:null, speedT:0, msgT:0, dist:0, cad:null, cadT:0, cadMsgT:0, hr:null, hrT:0, pw:null, pwT:0},
+  lw:null, lc:null, lcp:null};
+const WHEELS = [['700×23C', 2096], ['700×25C', 2105], ['700×28C', 2136], ['700×30C', 2146], ['700×32C', 2155], ['700×35C', 2168], ['650×23C', 1990], ['20インチ（451）', 1590], ['26×1.95', 2050]];
+function btSupported(){ return !!(navigator.bluetooth && navigator.bluetooth.requestDevice); }
+function btHelpText(){
+  if (isiOS) return 'iPhone・iPadのSafariやChromeは、ウェブページからのBluetooth接続に対応していません。App Storeの無料アプリ「Bluefy – Web BLE Browser」でこのページを開くと接続できます。';
+  if (!window.isSecureContext) return 'Bluetooth接続は https のページでのみ使えます。公開ページ（GitHub Pages）で開いてください。';
+  return 'このブラウザはBluetooth接続に対応していません。AndroidまたはパソコンのChrome・Edgeで開いてください。';
+}
+async function connectSensor(kind){
+  if (!btSupported() || !window.isSecureContext){ toast(btHelpText(), 6000); return; }
+  const d = BTDEF[kind];
+  let dev;
+  try {
+    dev = await navigator.bluetooth.requestDevice({filters:[{services:[d.svc]}], optionalServices:['battery_service']});
+  } catch (e) { if (e.name !== 'NotFoundError' && e.name !== 'AbortError') toast('センサーを選べませんでした：' + e.message, 4000); return; }
+  if (SENS.dev[kind]) disconnectSensor(kind);
+  const S = SENS.dev[kind] = {dev, name:dev.name || d.nm, state:'接続中…', battery:null, manual:false};
+  dev.addEventListener('gattserverdisconnected', () => onSensorLost(kind, S));
+  renderSensors();
+  try { await subscribeSensor(kind, S); toast(`${d.ic} ${S.name} に接続しました`); }
+  catch (e) { S.state = '接続できませんでした'; renderSensors(); toast('センサーに接続できませんでした。センサーを回して（起こして）からもう一度お試しください', 4500); }
+}
+async function subscribeSensor(kind, S){
+  const d = BTDEF[kind];
+  const server = await S.dev.gatt.connect();
+  const svc = await server.getPrimaryService(d.svc);
+  const ch = await svc.getCharacteristic(d.chr);
+  if (!S.listening){ ch.addEventListener('characteristicvaluechanged', ev => onSensorData(kind, ev.target.value)); S.listening = true; }
+  await ch.startNotifications();
+  S.state = '接続済み';
+  if (kind === 'csc') SENS.lw = SENS.lc = null;
+  try { const b = await server.getPrimaryService('battery_service'); const c = await b.getCharacteristic('battery_level'); S.battery = (await c.readValue()).getUint8(0); } catch (e) {}
+  renderSensors();
+}
+async function onSensorLost(kind, S){
+  if (S.manual || SENS.dev[kind] !== S) return;
+  S.state = '再接続中…'; renderSensors();
+  if (RIDE.on) say(`${BTDEF[kind].nm}の接続が切れました`);
+  for (let i = 0; i < 6 && SENS.dev[kind] === S && !S.manual; i++){
+    await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+    try { S.listening = false; await subscribeSensor(kind, S); if (RIDE.on) say('センサーに再接続しました'); return; } catch (e) {}
+  }
+  if (SENS.dev[kind] === S){ S.state = '切断（もう一度「接続」を押してください）'; renderSensors(); }
+}
+function disconnectSensor(kind){
+  const S = SENS.dev[kind]; if (!S) return;
+  S.manual = true; try { S.dev.gatt.disconnect(); } catch (e) {}
+  SENS.dev[kind] = null; renderSensors();
+}
+function onSensorData(kind, dv){
+  const now = Date.now();
+  try {
+    if (kind === 'hr'){
+      const fl = dv.getUint8(0);
+      SENS.v.hr = (fl & 1) ? dv.getUint16(1, true) : dv.getUint8(1); SENS.v.hrT = now;
+    } else if (kind === 'csc'){
+      const fl = dv.getUint8(0); let o = 1;
+      if (fl & 1){ wheelEvent(dv.getUint32(o, true), dv.getUint16(o + 4, true), now); o += 6; }
+      if (fl & 2){ crankEvent('lc', dv.getUint16(o, true), dv.getUint16(o + 2, true), now); o += 4; }
+    } else if (kind === 'pw'){
+      const fl = dv.getUint16(0, true);
+      SENS.v.pw = dv.getInt16(2, true); SENS.v.pwT = now;
+      let o = 4;
+      if (fl & 1) o += 1;          // ペダルバランス
+      if (fl & 4) o += 2;          // 累積トルク
+      if (fl & 16) o += 6;         // ホイール回転
+      if ((fl & 32) && !(SENS.dev.csc && SENS.v.cadMsgT && now - SENS.v.cadMsgT < 3000)) crankEvent('lcp', dv.getUint16(o, true), dv.getUint16(o + 2, true), now);
+    }
+  } catch (e) {}
+  if (!RIDE.on) renderSensorValues();
+}
+function wheelEvent(wr, wt, now){
+  SENS.v.msgT = now;
+  const L = SENS.lw; SENS.lw = {wr, wt};
+  if (!L) return;
+  let dr = wr - L.wr; if (dr < 0) dr += 4294967296;
+  let dt = wt - L.wt; if (dt < 0) dt += 65536;
+  if (dr === 0 || dt === 0){ if (now - SENS.v.speedT > 2500) SENS.v.speed = 0; return; }
+  if (dr > 40) return;                         // 値の飛び（センサーの付け直しなど）は無視
+  const m = dr * (pref.wheelMm || 2105) / 1000, v = m / (dt / 1024);
+  if (v > 30) return;                          // 時速108km超はノイズ
+  SENS.v.speed = v; SENS.v.speedT = now; SENS.v.dist += m;
+}
+function crankEvent(key, cr, ct, now){
+  SENS.v.cadMsgT = key === 'lc' ? now : SENS.v.cadMsgT;
+  const L = SENS[key]; SENS[key] = {cr, ct};
+  if (!L) return;
+  let dr = cr - L.cr; if (dr < 0) dr += 65536;
+  let dt = ct - L.ct; if (dt < 0) dt += 65536;
+  if (dr === 0 || dt === 0){ if (now - SENS.v.cadT > 2500) SENS.v.cad = 0; return; }
+  if (dr > 20) return;
+  const rpm = dr / (dt / 1024) * 60;
+  if (rpm > 220) return;
+  SENS.v.cad = rpm; SENS.v.cadT = now;
+}
+function sensorSpeed(){
+  const now = Date.now();
+  if (!SENS.dev.csc || SENS.dev.csc.state !== '接続済み' || !SENS.v.msgT || now - SENS.v.msgT > 4000) return null;
+  return now - SENS.v.speedT > 2500 ? 0 : SENS.v.speed;   // 回転が止まって2.5秒で0
+}
+function sensVal(kind){
+  const now = Date.now();
+  if (kind === 'cad'){ const on = (SENS.dev.csc || SENS.dev.pw); if (!on) return null; return SENS.v.cad == null || now - SENS.v.cadT > 2500 ? 0 : Math.round(SENS.v.cad); }
+  if (kind === 'hr'){ if (!SENS.dev.hr) return null; return SENS.v.hr == null || now - SENS.v.hrT > 5000 ? '—' : SENS.v.hr; }
+  if (kind === 'pw'){ if (!SENS.dev.pw) return null; return SENS.v.pw == null || now - SENS.v.pwT > 3000 ? 0 : SENS.v.pw; }
+}
+function renderSensors(){
+  const box = $('sensList');
+  box.innerHTML = Object.keys(BTDEF).map(k => {
+    const d = BTDEF[k], S = SENS.dev[k];
+    return `<div class="sens"><span class="ic">${d.ic}</span><div class="nm">${d.nm}<small>${S ? esc(S.name) + ' ・ ' + esc(S.state) + (S.battery != null ? ` ・ 電池${S.battery}%` : '') : '未接続'}</small></div>
+      <b class="val" id="sv_${k}"></b>
+      ${S ? `<button data-dis="${k}">切断</button>` : `<button class="pri" data-con="${k}">接続</button>`}</div>`;
+  }).join('');
+  ['rsCsc', 'rsHr', 'rsPw'].forEach((id, i) => { const k = ['csc', 'hr', 'pw'][i]; const b = $(id); if (b) b.textContent = `${BTDEF[k].ic} ${SENS.dev[k] ? '接続済み' : BTDEF[k].nm}`; });
+  renderSensorValues();
+}
+function renderSensorValues(){
+  const sp = sensorSpeed(), cad = sensVal('cad'), hr = sensVal('hr'), pw = sensVal('pw');
+  const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
+  set('sv_csc', SENS.dev.csc ? `${sp == null ? '—' : (sp * 3.6).toFixed(1)}km/h ・ ${cad == null ? '—' : cad}rpm` : '');
+  set('sv_hr', SENS.dev.hr ? `${hr}bpm` : '');
+  set('sv_pw', SENS.dev.pw ? `${pw}W` : '');
+}
+$('sensList').addEventListener('click', e => {
+  const c = e.target.closest('[data-con]'), d = e.target.closest('[data-dis]');
+  if (c) connectSensor(c.dataset.con);
+  if (d) disconnectSensor(d.dataset.dis);
+});
+['rsCsc', 'rsHr', 'rsPw'].forEach((id, i) => $(id).addEventListener('click', () => connectSensor(['csc', 'hr', 'pw'][i])));
+$('wheelSel').innerHTML = WHEELS.map(w => `<option value="${w[1]}">${w[0]}（周長 ${w[1]}mm）</option>`).join('') + '<option value="custom">その他（周長を入力）</option>';
+function syncWheel(){
+  const v = pref.wheelMm || 2105;
+  const hit = WHEELS.some(w => w[1] === v);
+  $('wheelSel').value = hit ? String(v) : 'custom';
+  $('wheelMm').hidden = hit; $('wheelMm').value = v;
+}
+$('wheelSel').onchange = () => { if ($('wheelSel').value === 'custom'){ $('wheelMm').hidden = false; $('wheelMm').focus(); return; } pref.wheelMm = +$('wheelSel').value; savePref(); syncWheel(); };
+$('wheelMm').onchange = () => { const v = Math.round(+$('wheelMm').value); if (v >= 1000 && v <= 2500){ pref.wheelMm = v; savePref(); } else toast('周長は1000〜2500mmの範囲で入力してください'); syncWheel(); };
+syncWheel();
+$('btHelp').textContent = btSupported() && window.isSecureContext ? '' : btHelpText();
+renderSensors();
 
 /* ---------- 現在地を出発地に（v11） ---------- */
 let meAcc = null;
