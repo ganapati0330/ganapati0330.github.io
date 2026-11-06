@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>フテ猫もじおこし</title>
 <style>
-:root{--bg:#fff8ef;--card:#fff;--ink:#3b2f25;--sub:#8a7564;--acc:#f08a2c;--acc2:#e0602a;--line:#ecdcc9;--ok:#2f9e6b;--ng:#d0443a}
+:root{--bg:#fff8ef;--card:#fff;--ink:#3b2f25;--sub:#8a7564;--acc:#f08a2c;--acc2:#e0602a;--line:#ecdcc9;--ok:#2f9e6b;--ng:#d0443a;--blue:#2f7fd0}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-text-size-adjust:100%}
 body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
@@ -16,8 +16,8 @@ header{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
 header .logo{font-size:30px}
 header h1{font-size:20px;margin:0;flex:1}
 header .ver{font-size:11px;color:var(--sub)}
-.tabs{display:flex;gap:6px;margin-bottom:10px}
-.tab{flex:1;padding:11px 6px;border:2px solid var(--line);background:#fff;border-radius:12px;font-size:15px;font-weight:700;color:var(--sub);cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.tab{padding:9px 4px;border:2px solid var(--line);background:#fff;border-radius:12px;font-size:14px;font-weight:700;color:var(--sub);cursor:pointer;line-height:1.3}
 .tab.on{border-color:var(--acc);color:var(--acc2);background:#fff3e4}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 .hide{display:none!important}
@@ -26,9 +26,9 @@ label{font-size:14px}
 select,input[type=text],input[type=password]{font-size:16px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);max-width:100%}
 .recbox{display:flex;align-items:center;gap:16px}
 .recbtn{width:84px;height:84px;border-radius:50%;border:none;background:var(--acc);color:#fff;font-size:15px;font-weight:800;box-shadow:0 4px 0 var(--acc2);cursor:pointer;flex:none}
-.recbtn.live{background:var(--ng);box-shadow:0 4px 0 #9b2a22;animation:pulse 1.4s infinite}
-@keyframes pulse{50%{transform:scale(1.05)}}
-.stat{font-size:15px;font-weight:700}
+.recbtn.live{background:var(--ng);box-shadow:0 4px 0 #9b2a22}
+.recbtn:disabled{opacity:.45}
+.stat{font-size:15px;font-weight:700;flex:1;min-width:0}
 .stat small{display:block;font-weight:400;color:var(--sub);font-size:13px;margin-top:3px}
 .interim{min-height:1.6em;color:var(--sub);font-size:15px;margin-top:10px;padding:6px 8px;background:#fbf5ee;border-radius:8px}
 .btn{padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer}
@@ -39,14 +39,22 @@ textarea{width:100%;min-height:42vh;font-size:16px;line-height:1.7;padding:10px;
 .note{font-size:12.5px;color:var(--sub);line-height:1.6;margin:6px 0 0}
 .bar{height:10px;background:#f1e4d4;border-radius:6px;overflow:hidden;margin-top:8px}
 .bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.level{height:8px;background:#f1e4d4;border-radius:5px;overflow:hidden;margin-top:10px}
+.level i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s}
 .msg{font-size:14px;margin-top:6px;min-height:1.3em}
 .msg.err{color:var(--ng)}
 .seg{display:flex;gap:6px}
-.seg label{flex:1;border:2px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-weight:700;cursor:pointer;font-size:14px}
+.seg label{flex:1;border:2px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;font-weight:700;cursor:pointer;font-size:13.5px}
 .seg input{display:none}
 .seg label:has(input:checked){border-color:var(--acc);background:#fff3e4;color:var(--acc2)}
 .filename{font-size:14px;word-break:break-all}
 h2{font-size:15px;margin:0 0 6px}
+.recover{border-color:var(--blue);background:#f2f8ff}
+.spk{display:grid;grid-template-columns:max-content 1fr;gap:6px 10px;align-items:center;margin-top:6px}
+.spk b{font-size:14px;white-space:nowrap;max-width:8em;overflow:hidden;text-overflow:ellipsis}
+.spk input{width:100%;min-width:0}
+h2.outh{flex:1 0 auto;margin:0;white-space:nowrap}
+details summary{cursor:pointer;font-weight:700;font-size:15px}
 footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
 </style>
 </head>
@@ -55,8 +63,21 @@ footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
 <header><span class="logo">🐱</span><h1>フテ猫もじおこし</h1><span class="ver" id="ver"></span></header>
 
 <div class="tabs">
-  <button class="tab on" id="tabLive" type="button">🎙 その場で文字に</button>
-  <button class="tab" id="tabFile" type="button">📁 音声ファイルから</button>
+  <button class="tab on" id="tabLive" type="button">🎙<br>その場で文字に</button>
+  <button class="tab" id="tabMeet" type="button">👥<br>会議（話者わけ）</button>
+  <button class="tab" id="tabFile" type="button">📁<br>ファイルから</button>
+</div>
+
+<!-- ===== 前回の録音の復元 ===== -->
+<div class="card recover hide" id="recoverCard">
+  <h2>💾 前回の録音が残っています</h2>
+  <div class="filename" id="recoverInfo"></div>
+  <div class="row">
+    <button class="btn pri" id="recoverGo" type="button">話者わけ文字起こし</button>
+    <button class="btn" id="recoverSave" type="button">録音を保存</button>
+    <button class="btn warn" id="recoverDel" type="button">消す</button>
+  </div>
+  <p class="note">新しく会議の録音を始めると、この録音は消えます。</p>
 </div>
 
 <!-- ===== リアルタイム ===== -->
@@ -76,12 +97,36 @@ footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
       <label><input type="checkbox" id="optKuten" checked> 文末に「。」</label>
       <label><input type="checkbox" id="optRecord"> 同時に録音する</label>
     </div>
-    <p class="note" id="liveNote">画面を消すと聞き取りが止まるので、使っている間は画面をつけたままにします（対応ブラウザでは自動でスリープを防ぎます）。「同時に録音する」はPCのChrome向けです。iPhoneでは聞き取りが止まることがあります。</p>
+    <p class="note">ひとりのメモ向けです。グレーの枠に出た言葉は、話が途切れると確定して下に入ります。画面を消すと止まるので、つけたままにしてください。話者を分けたいときや、聞き逃しなく記録したいときは「会議（話者わけ）」を使います。</p>
     <div class="row hide" id="recResult">
       <span class="filename" id="recInfo"></span>
       <button class="btn" id="recToFile" type="button">この録音をファイル文字起こしへ</button>
       <button class="btn" id="recSave" type="button">録音を保存</button>
     </div>
+  </div>
+</section>
+
+<!-- ===== 会議（録音→話者わけ） ===== -->
+<section id="paneMeet" class="hide">
+  <div class="card">
+    <div class="recbox">
+      <button class="recbtn" id="meetBtn" type="button">録音<br>開始</button>
+      <div class="stat" id="meetStat">待機中<small id="meetSub">録音を止めると、話者ごとに文字起こしします</small></div>
+    </div>
+    <div class="level"><i id="meetLevel"></i></div>
+    <div class="row">
+      <label>人数 <select id="meetSpk">
+        <option value="">自動</option>
+        <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option>
+      </select></label>
+      <label>言語 <select id="meetLang">
+        <option value="ja">日本語</option>
+        <option value="en">英語</option>
+        <option value="">自動</option>
+      </select></label>
+    </div>
+    <p class="note">録音は聞き逃しがありません。止めたあと ElevenLabs（Scribe v2）で「誰が・何を」話したかに分けます（1時間あたり約0.22ドル。キーは下の「🔑 APIキー」で設定）。録音中は画面をつけたままにし、スマホは話す人たちの真ん中に置くと分かれやすくなります。録音は少しずつ端末に保存しているので、途中でページが閉じても復元できます。</p>
+    <div class="msg" id="meetMsg"></div>
   </div>
 </section>
 
@@ -97,25 +142,31 @@ footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
   <div class="card">
     <h2>② 文字起こしの方法</h2>
     <div class="seg">
-      <label><input type="radio" name="eng" value="local" checked>端末の中で<br><small>無料・データは外に出ない</small></label>
-      <label><input type="radio" name="eng" value="api">OpenAI API<br><small>高精度・有料</small></label>
+      <label><input type="radio" name="eng" value="eleven" checked>話者わけ<br><small>ElevenLabs</small></label>
+      <label><input type="radio" name="eng" value="local">端末の中で<br><small>無料・外に出ない</small></label>
+      <label><input type="radio" name="eng" value="api">OpenAI<br><small>高精度・有料</small></label>
     </div>
-    <div id="localOpts">
+    <div id="elevenOpts">
+      <div class="row">
+        <label>人数 <select id="fileSpk">
+          <option value="">自動</option>
+          <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option>
+        </select></label>
+      </div>
+      <p class="note">誰が話したかを「話者A・話者B…」で分けます。音声はElevenLabsに送られます。</p>
+    </div>
+    <div id="localOpts" class="hide">
       <div class="row">
         <label>モデル <select id="model">
           <option value="onnx-community/whisper-tiny">tiny（約40MB・速いが粗い）</option>
           <option value="onnx-community/whisper-base" selected>base（約80MB・スマホ向け）</option>
           <option value="onnx-community/whisper-small">small（約250MB・PC向け）</option>
-          <option value="onnx-community/whisper-large-v3-turbo">large-v3-turbo（約800MB・PC＋GPU向け・高精度）</option>
+          <option value="onnx-community/whisper-large-v3-turbo">large-v3-turbo（約800MB・PC＋GPU向け）</option>
         </select></label>
       </div>
-      <p class="note">初回だけモデルをダウンロードします（Wi-Fi推奨）。2回目からはブラウザに保存されたものを使います。音声はこの端末の中だけで処理されます。</p>
+      <p class="note">初回だけモデルをダウンロードします（Wi-Fi推奨）。音声はこの端末の中だけで処理します。話者わけはできません。</p>
     </div>
     <div id="apiOpts" class="hide">
-      <div class="row">
-        <label>APIキー <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off"></label>
-        <label><input type="checkbox" id="apiKeySave"> この端末に保存</label>
-      </div>
       <div class="row">
         <label>モデル <select id="apiModel">
           <option value="gpt-4o-transcribe">gpt-4o-transcribe（高精度）</option>
@@ -123,7 +174,7 @@ footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
           <option value="whisper-1">whisper-1</option>
         </select></label>
       </div>
-      <p class="note">音声はOpenAIに直接送られます（1ファイル25MBまで）。料金はOpenAIのアカウントにかかります。</p>
+      <p class="note">音声はOpenAIに送られます（1ファイル25MBまで）。話者わけはしません。</p>
     </div>
     <div class="row">
       <label>言語 <select id="fileLang">
@@ -143,10 +194,18 @@ footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
   </div>
 </section>
 
+<!-- ===== 話者の名前 ===== -->
+<div class="card hide" id="spkCard">
+  <h2>🏷 話者の名前</h2>
+  <p class="note" style="margin-top:0">名前を入れて「反映」を押すと、結果の「話者A」などが置き換わります。</p>
+  <div class="spk" id="spkList"></div>
+  <div class="row"><button class="btn pri" id="spkApply" type="button">反映</button></div>
+</div>
+
 <!-- ===== 結果（共通） ===== -->
 <div class="card">
   <div class="row" style="margin-top:0">
-    <h2 style="flex:1;margin:0">📝 文字起こし結果</h2>
+    <h2 class="outh">📝 文字起こし結果</h2>
     <button class="btn" id="copyBtn" type="button">コピー</button>
     <button class="btn" id="saveBtn" type="button">保存</button>
     <button class="btn warn" id="clearBtn" type="button">消す</button>
@@ -154,17 +213,32 @@ footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
   <textarea id="out" placeholder="ここに文字が入ります。あとから自由に直せます。"></textarea>
   <div class="msg" id="outMsg"></div>
 </div>
+
+<!-- ===== APIキー ===== -->
+<details class="card" id="keyCard">
+  <summary>🔑 APIキー</summary>
+  <div class="row">
+    <label>ElevenLabs <input type="password" id="elevenKey" placeholder="sk_..." autocomplete="off"></label>
+  </div>
+  <div class="row">
+    <label>OpenAI <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off"></label>
+  </div>
+  <div class="row"><label><input type="checkbox" id="apiKeySave"> この端末に保存</label></div>
+  <p class="note">ElevenLabsのキーは elevenlabs.io にログイン →「Developers」→「API Keys」で作れます。権限は「Speech to Text」だけで足ります。キーはこの端末にだけ保存され、各サービスに直接送られます。</p>
+</details>
 <footer>© 泉正道 / フテ猫実行委員会</footer>
 </div>
 
 <script>
 'use strict';
-const APP_VER = 'v2';
+const APP_VER = 'v3';
 const LS_TEXT = 'futeMoji.text';
 const LS_KEY = 'futeMoji.apiKey';
+const LS_KEY11 = 'futeMoji.elevenKey';
 const LS_OPT = 'futeMoji.opts';
 const $ = (id) => document.getElementById(id);
 $('ver').textContent = APP_VER;
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 
 /* ---------- 保存まわり ---------- */
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
@@ -187,38 +261,50 @@ function pad(n){ return String(n).padStart(2,'0'); }
 function clock(d){ return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
 function mmss(sec){ sec=Math.max(0,Math.floor(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec/60)%60, s=sec%60; return (h? h+':'+pad(m) : pad(m))+':'+pad(s); }
 function today(){ const d=new Date(); return d.getFullYear()+'/'+pad(d.getMonth()+1)+'/'+pad(d.getDate()); }
+function stamp(){ const d=new Date(); return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes()); }
 function flash(el, text, isErr){ el.textContent = text; el.classList.toggle('err', !!isErr); }
+function mb(n){ return (n/1048576).toFixed(1)+'MB'; }
+/* 日本語の文字のあいだの不要な空白を詰める */
+function jaTight(t){
+  return t.replace(/\s+/g,' ').trim().replace(/(\S) (?=(\S))/g, (m,a,b) => (/[A-Za-z0-9]/.test(a) && /[A-Za-z0-9]/.test(b)) ? m : a);
+}
 
 /* オプション保存 */
+const OPT_IDS = ['lang','optTime','optKuten','optRecord','model','apiModel','fileLang','meetSpk','meetLang','fileSpk'];
+function engine(){ const r=document.querySelector('input[name=eng]:checked'); return r ? r.value : 'eleven'; }
 function saveOpts(){
-  lsSet(LS_OPT, JSON.stringify({lang:$('lang').value, time:$('optTime').checked, kuten:$('optKuten').checked,
-    rec:$('optRecord').checked, model:$('model').value, apiModel:$('apiModel').value, fileLang:$('fileLang').value,
-    eng:engine()}));
+  const o = {eng:engine()};
+  OPT_IDS.forEach(id => { const el=$(id); o[id] = el.type==='checkbox' ? el.checked : el.value; });
+  lsSet(LS_OPT, JSON.stringify(o));
 }
 (function loadOpts(){
   let o=null; try{ o=JSON.parse(lsGet(LS_OPT)||'null'); }catch(e){}
   if(o){
-    if(o.lang) $('lang').value=o.lang;
-    if(typeof o.time==='boolean') $('optTime').checked=o.time;
-    if(typeof o.kuten==='boolean') $('optKuten').checked=o.kuten;
-    if(typeof o.rec==='boolean') $('optRecord').checked=o.rec;
-    if(o.model) $('model').value=o.model;
-    if(o.apiModel) $('apiModel').value=o.apiModel;
-    if(o.fileLang) $('fileLang').value=o.fileLang;
+    OPT_IDS.forEach(id => { if(!(id in o)) return; const el=$(id); if(el.type==='checkbox') el.checked=!!o[id]; else el.value=o[id]; });
     if(o.eng){ const r=document.querySelector('input[name=eng][value="'+o.eng+'"]'); if(r) r.checked=true; }
   }
-  const k=lsGet(LS_KEY); if(k){ $('apiKey').value=k; $('apiKeySave').checked=true; }
+  const k=lsGet(LS_KEY), k11=lsGet(LS_KEY11);
+  if(k) $('apiKey').value=k;
+  if(k11) $('elevenKey').value=k11;
+  if(k || k11) $('apiKeySave').checked=true;
 })();
-['lang','optTime','optKuten','optRecord','model','apiModel','fileLang'].forEach(id => $(id).addEventListener('change', saveOpts));
+OPT_IDS.forEach(id => $(id).addEventListener('change', saveOpts));
+function storeKeys(){
+  const on = $('apiKeySave').checked;
+  lsSet(LS_KEY, on && $('apiKey').value.trim() ? $('apiKey').value.trim() : null);
+  lsSet(LS_KEY11, on && $('elevenKey').value.trim() ? $('elevenKey').value.trim() : null);
+}
+['apiKeySave','apiKey','elevenKey'].forEach(id => $(id).addEventListener('change', storeKeys));
 
 /* ---------- タブ ---------- */
 function showTab(which){
-  $('tabLive').classList.toggle('on', which==='live');
-  $('tabFile').classList.toggle('on', which==='file');
-  $('paneLive').classList.toggle('hide', which!=='live');
-  $('paneFile').classList.toggle('hide', which!=='file');
+  ['Live','Meet','File'].forEach(n => {
+    $('tab'+n).classList.toggle('on', which===n.toLowerCase());
+    $('pane'+n).classList.toggle('hide', which!==n.toLowerCase());
+  });
 }
 $('tabLive').addEventListener('click', () => showTab('live'));
+$('tabMeet').addEventListener('click', () => showTab('meet'));
 $('tabFile').addEventListener('click', () => showTab('file'));
 
 /* ---------- 結果の操作 ---------- */
@@ -230,22 +316,32 @@ function downloadBlob(blob, name){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
 }
-function stamp(){ const d=new Date(); return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes()); }
-$('saveBtn').addEventListener('click', async () => {
-  const name='もじおこし_'+stamp()+'.txt';
-  const blob=new Blob(['﻿'+out.value],{type:'text/plain;charset=utf-8'});
+async function shareOrDownload(blob, name, type){
   try{
-    const f=new File([blob],name,{type:'text/plain'});
-    if(navigator.canShare && navigator.canShare({files:[f]}) && /iPhone|iPad|Android/.test(navigator.userAgent)){ await navigator.share({files:[f], title:name}); return; }
+    const f=new File([blob],name,{type});
+    if(IS_IOS || /Android/.test(navigator.userAgent)){
+      if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:name}); return; }
+    }
   }catch(e){ if(e && e.name==='AbortError') return; }
   downloadBlob(blob,name);
+}
+$('saveBtn').addEventListener('click', () => {
+  shareOrDownload(new Blob(['﻿'+out.value],{type:'text/plain;charset=utf-8'}), 'もじおこし_'+stamp()+'.txt', 'text/plain');
 });
 let clearArmed=0;
 $('clearBtn').addEventListener('click', () => {
-  if(Date.now()-clearArmed<3000){ out.value=''; lsSet(LS_TEXT,''); $('clearBtn').textContent='消す'; clearArmed=0; flash($('outMsg'),'消しました'); return; }
+  if(Date.now()-clearArmed<3000){ out.value=''; lsSet(LS_TEXT,''); $('clearBtn').textContent='消す'; clearArmed=0; flash($('outMsg'),'消しました'); $('spkCard').classList.add('hide'); return; }
   clearArmed=Date.now(); $('clearBtn').textContent='もう一度押すと消去';
   setTimeout(()=>{ if(Date.now()-clearArmed>=3000){ $('clearBtn').textContent='消す'; } }, 3100);
 });
+
+/* ---------- 画面スリープ防止（共通） ---------- */
+let wakeLock = null;
+async function grabWakeLock(){
+  try{ if('wakeLock' in navigator && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', ()=>{ wakeLock=null; }); } }catch(e){}
+}
+function dropWakeLock(){ if(wakeLock && !wantOn && !meetOn){ try{ wakeLock.release(); }catch(e){} wakeLock=null; } }
+document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible' && (wantOn || meetOn)) grabWakeLock(); });
 
 /* =========================================================
    ① リアルタイム文字起こし（Web Speech API）
@@ -255,52 +351,66 @@ let rec = null;          // 現在の SpeechRecognition
 let wantOn = false;      // ユーザーが「聞き取り中」にしているか
 let pendingInterim = ''; // まだ確定していない文
 let lastCommitted = '';
-let liveStart = 0, tickTimer = 0, restartCount = 0;
-let wakeLock = null;
+let liveStart = 0, tickTimer = 0, lastEventAt = 0;
 let mediaRec = null, mediaStream = null, recChunks = [], lastRecording = null;
 
 if(!SR){
   $('recBtn').disabled = true;
-  $('liveStat').innerHTML = 'このブラウザは対応していません<small>iPhoneはSafari、Android・PCはChromeかEdgeで開いてください。「音声ファイルから」は使えます。</small>';
+  $('liveStat').innerHTML = 'このブラウザは対応していません<small>iPhoneはSafari、Android・PCはChromeかEdgeで開いてください。「会議」「ファイルから」は使えます。</small>';
 }
+function setLive(main, sub){ const s=$('liveStat'); if(s.firstChild) s.firstChild.nodeValue = main; if($('liveSub')) $('liveSub').textContent = sub || ''; }
 
-function setLive(main, sub){ $('liveStat').firstChild.nodeValue = main; $('liveSub').textContent = sub || ''; }
-
-function normalize(t){
-  t = t.replace(/\s+/g,' ').trim();
-  if($('lang').value==='ja-JP') t = t.replace(/(\S) (?=\S)/g, (m,a)=> /[A-Za-z0-9]/.test(a) ? m : a); // 日本語の不要な空白を詰める
-  return t;
-}
 function commit(text){
-  text = normalize(text);
+  text = $('lang').value==='ja-JP' ? jaTight(text) : text.replace(/\s+/g,' ').trim();
   if(!text || text===lastCommitted) return;
   lastCommitted = text;
-  if($('optKuten').checked && $('lang').value==='ja-JP' && /[^\x00-\x7f]/.test(text) && !/[。．.!！?？」』）)]$/.test(text)) text += '。';
+  if($('optKuten').checked && $('lang').value==='ja-JP' && /[^\x00-\x7f]/.test(text) && !/[。．.!！?？」』）)、,]$/.test(text)) text += '。';
   appendLine(($('optTime').checked ? '['+clock(new Date())+'] ' : '') + text);
 }
+function showInterim(t){ pendingInterim = t; $('interim').textContent = t; }
 
-/* iPhone/iPad の Safari は「確定」の扱いが Chrome と違い、
-   連続モードだと確定済みの文が後から書き換わる。
-   そこで iOS では「ひと区切りずつ聞いて、終わるたびに確定→すぐ再開」する方式にする。 */
-const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-let lastEventAt = 0;
+/* iPhone/iPad の Safari：連続モードで聞き続け、確定済みの文が後から書き換わっても
+   「すでに書いた長さより先」だけを、言葉が1.2秒止まったら確定する（区切り直しによる取りこぼしを防ぐ） */
+const IOS_STABLE_MS = 1200;
+/* all のうち、確定済み done より後ろの部分を返す（句読点・空白の付け足しは無視して位置を合わせる） */
+function tailAfter(all, done){
+  const skip = /[\s。、．，.,!?！？・「」]/;
+  let i = 0, j = 0;
+  while(j < done.length){
+    if(skip.test(done[j])){ j++; continue; }
+    while(i < all.length && skip.test(all[i])) i++;
+    if(i >= all.length) return '';
+    if(all[i] !== done[j]) return all.length > done.length ? all.slice(done.length) : '';
+    i++; j++;
+  }
+  while(i < all.length && skip.test(all[i])) i++;
+  return all.slice(i);
+}
 
 function makeRec(){
   const r = new SR();
   r.lang = $('lang').value;
-  r.continuous = !IS_IOS;
+  r.continuous = true;
   r.interimResults = true;
   r.maxAlternatives = 1;
-  const done = new Set(); // このセッションで確定済みの結果番号（Chrome用）
+  const done = new Set();   // Chrome用：確定済みの結果番号
+  let sessAll = '', sessDone = '', stableTimer = 0; // iOS用
+  const iosFlush = () => {
+    clearTimeout(stableTimer);
+    if(pendingInterim){ commit(pendingInterim); }
+    sessDone = sessAll;
+    showInterim('');
+  };
   r.onresult = (e) => {
     lastEventAt = Date.now();
     if(IS_IOS){
-      // その区切りの全文を毎回つなぎ直す（書き換えに強い）
-      let all = '', allFinal = true;
-      for(let i=0; i<e.results.length; i++){ all += e.results[i][0].transcript; if(!e.results[i].isFinal) allFinal = false; }
-      pendingInterim = all;
-      $('interim').textContent = all;
-      return; // 確定は onend でまとめて行う
+      let all = '';
+      for(let i=0; i<e.results.length; i++) all += e.results[i][0].transcript;
+      sessAll = all;
+      showInterim(tailAfter(all, sessDone));
+      clearTimeout(stableTimer);
+      stableTimer = setTimeout(() => { if(rec===r) iosFlush(); }, IOS_STABLE_MS);
+      return;
     }
     let interim = '';
     for(let i=e.resultIndex; i<e.results.length; i++){
@@ -308,61 +418,55 @@ function makeRec(){
       if(res.isFinal){ if(!done.has(i)){ done.add(i); commit(res[0].transcript); } }
       else interim += res[0].transcript;
     }
-    pendingInterim = interim;
-    $('interim').textContent = interim;
+    showInterim(interim);
   };
   r.onstart = () => { lastEventAt = Date.now(); };
   r.onerror = (e) => {
     if(e.error==='not-allowed' || e.error==='service-not-allowed'){
       wantOn = false; stopUI();
-      setLive('マイクが使えません','ブラウザの設定でマイクを許可してから、もう一度押してください。');
+      setLive('マイクが使えません', IS_IOS ? '「設定」→「Safari」→「マイク」を許可、また「Siriと音声入力」の音声入力をオンにしてください。' : 'ブラウザの設定でマイクを許可してから、もう一度押してください。');
     }else if(e.error==='network'){
       setLive('通信エラー','インターネットにつながっているか確認してください。自動で再開を試みます。');
     }else if(e.error==='audio-capture'){
-      wantOn = false; stopUI(); setLive('マイクが見つかりません','');
+      wantOn = false; stopUI(); setLive('マイクが見つかりません','ほかのアプリがマイクを使っていないか確認してください。');
     }
-    // no-speech / aborted は onend で自動再開
   };
   r.onend = () => {
-    if(pendingInterim){ commit(pendingInterim); pendingInterim=''; $('interim').textContent=''; }
+    if(IS_IOS) iosFlush();
+    else if(pendingInterim){ commit(pendingInterim); showInterim(''); }
     if(rec !== r) return;
-    if(wantOn){
-      restartCount++;
-      setTimeout(() => { if(wantOn && rec===r) startRec(); }, IS_IOS ? 60 : 250);
-    }
+    if(wantOn) setTimeout(() => { if(wantOn && rec===r) startRec(); }, 50);
   };
+  r.flush = () => { if(IS_IOS) iosFlush(); else if(pendingInterim){ commit(pendingInterim); showInterim(''); } };
   return r;
 }
-/* iOS で無反応のまま固まったときの見張り役（20秒なにも来なければ立て直す） */
-setInterval(() => {
-  if(IS_IOS && wantOn && rec && Date.now()-lastEventAt > 20000){ lastEventAt = Date.now(); try{ rec.abort(); }catch(e){} }
-}, 5000);
-
 function startRec(){
   lastEventAt = Date.now();
   rec = makeRec();
   try{ rec.start(); }catch(e){ setTimeout(()=>{ if(wantOn) startRec(); }, 600); }
 }
+/* 無反応のまま固まったときの見張り役（25秒なにも来なければ立て直す） */
+setInterval(() => {
+  if(wantOn && rec && !pendingInterim && Date.now()-lastEventAt > 25000){ lastEventAt = Date.now(); try{ rec.abort(); }catch(e){} }
+}, 5000);
 
-async function grabWakeLock(){
-  try{ if('wakeLock' in navigator && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', ()=>{ wakeLock=null; }); } }catch(e){}
+function pickMime(){
+  const types=['audio/mp4','audio/webm;codecs=opus','audio/webm'];
+  if(!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+  return types.find(t => MediaRecorder.isTypeSupported(t)) || '';
 }
-document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible' && wantOn) grabWakeLock(); });
-
 async function startMediaRecording(){
   try{
     mediaStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
-    const types=['audio/webm;codecs=opus','audio/mp4','audio/webm'];
-    const mt = types.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+    const mt = pickMime();
     mediaRec = new MediaRecorder(mediaStream, mt ? {mimeType:mt} : undefined);
     recChunks = [];
     mediaRec.ondataavailable = (e) => { if(e.data && e.data.size) recChunks.push(e.data); };
     mediaRec.onstop = () => {
       const type = mediaRec.mimeType || mt || 'audio/webm';
-      const ext = type.includes('mp4') ? 'm4a' : 'webm';
       const blob = new Blob(recChunks, {type});
-      lastRecording = new File([blob], '録音_'+stamp()+'.'+ext, {type});
-      $('recInfo').textContent = '🎧 '+lastRecording.name+'（'+(blob.size/1048576).toFixed(1)+'MB）';
+      lastRecording = new File([blob], '録音_'+stamp()+'.'+(type.includes('mp4') ? 'm4a' : 'webm'), {type});
+      $('recInfo').textContent = '🎧 '+lastRecording.name+'（'+mb(blob.size)+'）';
       $('recResult').classList.remove('hide');
       if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; }
     };
@@ -372,53 +476,289 @@ async function startMediaRecording(){
 
 function startUI(){
   $('recBtn').textContent='とめる'; $('recBtn').classList.add('live');
-  liveStart = Date.now(); restartCount = 0;
+  liveStart = Date.now();
   clearInterval(tickTimer);
-  tickTimer = setInterval(() => setLive('聞き取り中 '+mmss((Date.now()-liveStart)/1000), '話した言葉がそのまま下に入ります'), 500);
-  setLive('聞き取り中 00:00','話した言葉がそのまま下に入ります');
+  const sub = '話した言葉がグレーの枠に出て、区切りで下に入ります';
+  tickTimer = setInterval(() => setLive('聞き取り中 '+mmss((Date.now()-liveStart)/1000), sub), 500);
+  setLive('聞き取り中 00:00', sub);
 }
 function stopUI(){
   clearInterval(tickTimer);
   $('recBtn').textContent='はじめる'; $('recBtn').classList.remove('live');
-  if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock=null; }
+  dropWakeLock();
 }
 
 $('recBtn').addEventListener('click', async () => {
   if(!SR) return;
+  if(meetOn){ flash($('outMsg'),'会議の録音中は使えません',true); return; }
   if(!wantOn){
     wantOn = true; lastCommitted='';
-    if($('optTime').checked || out.value) appendLine('―― '+today()+' '+clock(new Date()).slice(0,5)+' 開始 ――');
+    appendLine('―― '+today()+' '+clock(new Date()).slice(0,5)+' 開始 ――');
     startUI(); grabWakeLock();
     if($('optRecord').checked) await startMediaRecording();
     startRec();
   }else{
     wantOn = false;
     const r = rec;
+    if(r) r.flush();
     try{ r && r.stop(); }catch(e){}
-    if(pendingInterim){ commit(pendingInterim); pendingInterim=''; $('interim').textContent=''; }
     if(mediaRec && mediaRec.state!=='inactive'){ try{ mediaRec.stop(); }catch(e){} }
     stopUI();
     setLive('止めました','もう一度押すと続きから聞き取ります');
   }
 });
-$('recSave').addEventListener('click', () => { if(lastRecording) downloadBlob(lastRecording, lastRecording.name); });
+$('recSave').addEventListener('click', () => { if(lastRecording) shareOrDownload(lastRecording, lastRecording.name, lastRecording.type); });
 $('recToFile').addEventListener('click', () => { if(lastRecording){ setFile(lastRecording); showTab('file'); } });
 
 /* =========================================================
-   ② 音声ファイル文字起こし（Whisper 端末内 / OpenAI API）
+   ② 会議：録音 → ElevenLabs Scribe v2 で話者わけ
+   ========================================================= */
+let meetOn = false, meetRec = null, meetStream = null, meetChunks = [], meetStart = 0, meetTimer = 0, meetBytes = 0;
+let meetAC = null, meetRAF = 0, meetMime = '';
+
+/* --- 録音を少しずつ端末（IndexedDB）に保存して、ページが閉じても復元できるようにする --- */
+const IDB_NAME = 'futeMojiRec';
+function idbOpen(){
+  return new Promise((res, rej) => {
+    if(!window.indexedDB) return rej(new Error('no idb'));
+    const q = indexedDB.open(IDB_NAME, 1);
+    q.onupgradeneeded = () => { q.result.createObjectStore('chunks', {autoIncrement:true}); };
+    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+  });
+}
+async function idbDo(mode, fn){
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('chunks', mode); const st = tx.objectStore('chunks');
+    let result; const r = fn(st); if(r) r.onsuccess = () => { result = r.result; };
+    tx.oncomplete = () => { db.close(); res(result); }; tx.onerror = () => { db.close(); rej(tx.error); };
+  });
+}
+function idbAdd(item){ return idbDo('readwrite', st => st.add(item)).catch(()=>{}); }
+function idbAll(){ return idbDo('readonly', st => st.getAll()).catch(()=>[]); }
+function idbClear(){ return idbDo('readwrite', st => st.clear()).catch(()=>{}); }
+
+function chunksToFile(items){
+  if(!items || !items.length) return null;
+  const type = items[0].type || 'audio/mp4';
+  const blob = new Blob(items.map(x => x.blob), {type});
+  const d = new Date(items[0].t || Date.now());
+  const name = '会議_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes())+'.'+(type.includes('mp4') ? 'm4a' : 'webm');
+  return new File([blob], name, {type});
+}
+
+function setMeet(main, sub){ $('meetStat').firstChild.nodeValue = main; $('meetSub').textContent = sub || ''; }
+
+async function startMeeting(){
+  if(wantOn){ flash($('meetMsg'),'「その場で文字に」を止めてから録音してください',true); return; }
+  flash($('meetMsg'),'');
+  try{
+    meetStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:true,autoGainControl:true}});
+  }catch(e){
+    flash($('meetMsg'), 'マイクが使えません。'+(IS_IOS ? '「設定」→「Safari」→「マイク」を許可してください。' : 'ブラウザでマイクを許可してください。'), true);
+    return;
+  }
+  await idbClear();
+  $('recoverCard').classList.add('hide');
+  meetMime = pickMime();
+  try{ meetRec = new MediaRecorder(meetStream, meetMime ? {mimeType:meetMime} : undefined); }
+  catch(e){ flash($('meetMsg'),'このブラウザは録音に対応していません',true); meetStream.getTracks().forEach(t=>t.stop()); return; }
+  meetChunks = []; meetBytes = 0;
+  const t0 = Date.now();
+  meetRec.ondataavailable = (e) => {
+    if(e.data && e.data.size){
+      meetChunks.push(e.data); meetBytes += e.data.size;
+      idbAdd({t:t0, type: meetRec.mimeType || meetMime, blob: e.data});
+    }
+  };
+  meetRec.onstop = onMeetStop;
+  meetRec.start(5000);
+  meetOn = true; meetStart = Date.now();
+  $('meetBtn').innerHTML='録音<br>停止'; $('meetBtn').classList.add('live');
+  grabWakeLock();
+  clearInterval(meetTimer);
+  meetTimer = setInterval(() => setMeet('録音中 '+mmss((Date.now()-meetStart)/1000), mb(meetBytes)+'・画面はつけたままにしてください'), 500);
+  setMeet('録音中 00:00','画面はつけたままにしてください');
+  /* 音量メーター */
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    meetAC = new AC();
+    const an = meetAC.createAnalyser(); an.fftSize = 512;
+    meetAC.createMediaStreamSource(meetStream).connect(an);
+    const buf = new Float32Array(an.fftSize);
+    const loop = () => {
+      an.getFloatTimeDomainData(buf);
+      let s=0; for(let i=0;i<buf.length;i++) s+=buf[i]*buf[i];
+      $('meetLevel').style.width = Math.min(100, Math.sqrt(s/buf.length)*400)+'%';
+      meetRAF = requestAnimationFrame(loop);
+    };
+    loop();
+  }catch(e){}
+}
+function stopMeeting(){
+  if(!meetRec) return;
+  try{ meetRec.stop(); }catch(e){ onMeetStop(); }
+}
+async function onMeetStop(){
+  meetOn = false;
+  clearInterval(meetTimer); cancelAnimationFrame(meetRAF); $('meetLevel').style.width='0';
+  if(meetAC){ try{ meetAC.close(); }catch(e){} meetAC=null; }
+  if(meetStream){ meetStream.getTracks().forEach(t=>t.stop()); meetStream=null; }
+  $('meetBtn').innerHTML='録音<br>開始'; $('meetBtn').classList.remove('live');
+  dropWakeLock();
+  const dur = (Date.now()-meetStart)/1000;
+  const type = (meetRec && meetRec.mimeType) || meetMime || 'audio/mp4';
+  meetRec = null;
+  if(!meetChunks.length){ setMeet('録音できませんでした',''); return; }
+  const file = chunksToFile(meetChunks.map(b => ({blob:b, type, t:meetStart})));
+  setMeet('録音完了 '+mmss(dur), file.name+'（'+mb(file.size)+'）');
+  await transcribeMeeting(file);
+}
+async function transcribeMeeting(file){
+  if(!$('elevenKey').value.trim()){
+    flash($('meetMsg'),'ElevenLabsのAPIキーを下の「🔑 APIキー」に入れてから、もう一度「話者わけ文字起こし」を押してください。録音は端末に残っています。',true);
+    $('keyCard').open = true;
+    showRecover(file);
+    return;
+  }
+  $('meetBtn').disabled = true;
+  try{
+    await runEleven(file, $('meetLang').value, $('meetSpk').value, (t) => flash($('meetMsg'), t));
+    flash($('meetMsg'),'完了しました。下の結果を確認してください。');
+    await idbClear(); $('recoverCard').classList.add('hide');
+  }catch(e){
+    flash($('meetMsg'),'エラー: '+((e && e.message) || e)+'　録音は端末に残っているので、上の「話者わけ文字起こし」でやり直せます。', true);
+    showRecover(file);
+  }finally{ $('meetBtn').disabled = false; }
+}
+$('meetBtn').addEventListener('click', () => { if(meetOn) stopMeeting(); else startMeeting(); });
+
+let recoverFile = null;
+function showRecover(file){
+  recoverFile = file;
+  $('recoverInfo').textContent = '🎧 '+file.name+'（'+mb(file.size)+'）';
+  $('recoverCard').classList.remove('hide');
+}
+(async function checkLeftover(){
+  const items = await idbAll();
+  const f = chunksToFile(items);
+  if(f && f.size > 0) showRecover(f);
+})();
+$('recoverGo').addEventListener('click', () => { if(recoverFile){ showTab('meet'); transcribeMeeting(recoverFile); } });
+$('recoverSave').addEventListener('click', () => { if(recoverFile) shareOrDownload(recoverFile, recoverFile.name, recoverFile.type); });
+let recoverArmed = 0;
+$('recoverDel').addEventListener('click', async () => {
+  if(Date.now()-recoverArmed < 3000){ await idbClear(); recoverFile=null; $('recoverCard').classList.add('hide'); return; }
+  recoverArmed = Date.now(); $('recoverDel').textContent='もう一度押すと消去';
+  setTimeout(() => { $('recoverDel').textContent='消す'; }, 3100);
+});
+
+/* --- ElevenLabs Scribe v2 --- */
+const SPK_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+let lastSpeakers = [];
+function buildSegments(words, lang){
+  const segs = []; let cur = null; const ids = {};
+  (words || []).forEach(w => {
+    if(w.type === 'audio_event') return;
+    const sid = w.speaker_id || 'speaker_0';
+    if(w.type === 'spacing'){ if(cur) cur.text += w.text; return; }
+    if(!(sid in ids)) ids[sid] = Object.keys(ids).length;
+    const gap = cur ? (w.start - cur.end) : 0;
+    if(!cur || cur.sid !== sid || gap > 3){
+      cur = {sid, start: w.start || 0, end: w.end || 0, text: ''};
+      segs.push(cur);
+    }
+    cur.text += w.text; cur.end = w.end || cur.end;
+  });
+  return segs.map(s => ({
+    label: '話者' + (SPK_LETTERS[ids[s.sid]] || String(ids[s.sid]+1)),
+    start: s.start,
+    text: lang === 'en' ? s.text.replace(/\s+/g,' ').trim() : jaTight(s.text)
+  })).filter(s => s.text);
+}
+let elevenCtrl = null;
+async function runEleven(file, lang, nsp, onStatus){
+  const key = $('elevenKey').value.trim();
+  if(!key) throw new Error('ElevenLabsのAPIキーを入れてください');
+  storeKeys();
+  const fd = new FormData();
+  fd.append('model_id', 'scribe_v2');
+  fd.append('file', file, file.name);
+  fd.append('diarize', 'true');
+  fd.append('tag_audio_events', 'false');
+  fd.append('timestamps_granularity', 'word');
+  if(lang) fd.append('language_code', lang);
+  if(nsp) fd.append('num_speakers', String(nsp));
+  elevenCtrl = new AbortController();
+  const t0 = Date.now();
+  const tick = setInterval(() => onStatus('ElevenLabsで話者わけ文字起こし中… '+mmss((Date.now()-t0)/1000)+'（長い録音は数分かかります）'), 1000);
+  onStatus('ElevenLabsに送信中…（'+mb(file.size)+'）');
+  let r;
+  try{
+    r = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {method:'POST', headers:{'xi-api-key':key}, body:fd, signal:elevenCtrl.signal});
+  }catch(e){
+    clearInterval(tick);
+    if(e && e.name==='AbortError') throw e;
+    throw new Error('ElevenLabsに接続できませんでした（通信を確認してください）');
+  }
+  clearInterval(tick);
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok){
+    const d = j && j.detail; const m = (d && (d.message || (Array.isArray(d) && d[0] && d[0].msg) || d.status)) || (typeof d==='string' ? d : '') || ('HTTP '+r.status);
+    if(r.status===401) throw new Error('APIキーが正しくないか、Speech to Textの権限がありません');
+    throw new Error('ElevenLabsエラー: '+m);
+  }
+  const segs = buildSegments(j.words, lang || (j.language_code||'').slice(0,2));
+  const labels = [...new Set(segs.map(s => s.label))];
+  appendLine('■ '+file.name+'（ElevenLabs Scribe v2・話者'+labels.length+'人）');
+  if(!segs.length && j.text) appendLine(String(j.text).trim());
+  segs.forEach(s => appendLine('['+mmss(s.start)+'] '+s.label+'：'+s.text));
+  lastSpeakers = labels;
+  showSpeakerCard(labels);
+}
+
+/* --- 話者の名前を付け替える --- */
+function showSpeakerCard(labels){
+  const box = $('spkList'); box.innerHTML = '';
+  if(!labels.length){ $('spkCard').classList.add('hide'); return; }
+  labels.forEach(l => {
+    const b = document.createElement('b'); b.textContent = l;
+    const i = document.createElement('input'); i.type='text'; i.placeholder='名前（例：田中さん）'; i.dataset.label = l;
+    box.appendChild(b); box.appendChild(i);
+  });
+  $('spkCard').classList.remove('hide');
+}
+function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+$('spkApply').addEventListener('click', () => {
+  let txt = out.value, n = 0;
+  $('spkList').querySelectorAll('input').forEach(i => {
+    const nm = i.value.trim(); const old = i.dataset.label;
+    if(!nm || nm === old) return;
+    const re = new RegExp('^((?:\\[[^\\]\\n]*\\] )?)'+escRe(old)+'：', 'gm');
+    txt = txt.replace(re, (m, p) => { n++; return p+nm+'：'; });
+    i.dataset.label = nm; i.previousSibling.textContent = nm; i.value = '';
+  });
+  out.value = txt; saveText();
+  flash($('outMsg'), n ? n+'か所の名前を変えました' : '変更はありませんでした');
+});
+
+/* =========================================================
+   ③ 音声ファイル文字起こし（ElevenLabs / Whisper 端末内 / OpenAI API）
    ========================================================= */
 let curFile = null, running = false, cancelReq = false, worker = null, workerModel = '';
 
-function engine(){ const r=document.querySelector('input[name=eng]:checked'); return r ? r.value : 'local'; }
-function syncEngine(){ $('localOpts').classList.toggle('hide', engine()!=='local'); $('apiOpts').classList.toggle('hide', engine()!=='api'); saveOpts(); }
+function syncEngine(){
+  $('elevenOpts').classList.toggle('hide', engine()!=='eleven');
+  $('localOpts').classList.toggle('hide', engine()!=='local');
+  $('apiOpts').classList.toggle('hide', engine()!=='api');
+  saveOpts();
+}
 document.querySelectorAll('input[name=eng]').forEach(r => r.addEventListener('change', syncEngine));
 syncEngine();
-$('apiKeySave').addEventListener('change', () => lsSet(LS_KEY, $('apiKeySave').checked ? $('apiKey').value.trim() : null));
-$('apiKey').addEventListener('change', () => { if($('apiKeySave').checked) lsSet(LS_KEY, $('apiKey').value.trim()); });
 
 function setFile(f){
   curFile = f;
-  $('fileInfo').textContent = f ? '🎧 '+f.name+'（'+(f.size/1048576).toFixed(1)+'MB）' : '';
+  $('fileInfo').textContent = f ? '🎧 '+f.name+'（'+mb(f.size)+'）' : '';
   $('fileGo').disabled = !f || running;
 }
 $('fileIn').addEventListener('change', (e) => setFile(e.target.files[0] || null));
@@ -539,8 +879,7 @@ async function runLocal(file){
     if(cancelReq){ appendLine('（ここで中止）'); return; }
     const [s,e] = chunks[i];
     const seg = pcm.slice(s,e);
-    const pct = 30 + 70*i/chunks.length;
-    setBar(pct);
+    setBar(30 + 70*i/chunks.length);
     const el = (Date.now()-t0)/1000;
     const eta = i ? ' ・残り約'+mmss(el/i*(chunks.length-i)) : '';
     fmsg('文字起こし中… '+mmss(s/16000)+' / '+mmss(dur)+eta);
@@ -551,11 +890,12 @@ async function runLocal(file){
   }
 }
 
+let apiCtrl = null;
 async function runApi(file){
   const key = $('apiKey').value.trim();
-  if(!key) throw new Error('APIキーを入れてください');
-  if(file.size > 25*1048576) throw new Error('25MBを超えるファイルはAPIに送れません。「端末の中で」を使ってください');
-  if($('apiKeySave').checked) lsSet(LS_KEY, key);
+  if(!key) throw new Error('OpenAIのAPIキーを下の「🔑 APIキー」に入れてください');
+  if(file.size > 25*1048576) throw new Error('25MBを超えるファイルはOpenAIに送れません。「話者わけ」か「端末の中で」を使ってください');
+  storeKeys();
   const model = $('apiModel').value;
   fmsg('OpenAIに送信中…'); setBar(20);
   const fd = new FormData();
@@ -563,9 +903,8 @@ async function runApi(file){
   fd.append('model', model);
   fd.append('language', $('fileLang').value);
   fd.append('response_format', 'json');
-  const ctrl = new AbortController();
-  runApi.ctrl = ctrl;
-  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {method:'POST', headers:{Authorization:'Bearer '+key}, body:fd, signal:ctrl.signal});
+  apiCtrl = new AbortController();
+  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {method:'POST', headers:{Authorization:'Bearer '+key}, body:fd, signal:apiCtrl.signal});
   setBar(90);
   const j = await r.json().catch(()=>({}));
   if(!r.ok) throw new Error('APIエラー: '+((j.error && j.error.message) || r.status));
@@ -580,7 +919,14 @@ $('fileGo').addEventListener('click', async () => {
   $('fileGo').disabled = true; $('fileStop').disabled = false;
   fmsg(''); setBar(0);
   try{
-    if(engine()==='api') await runApi(curFile); else await runLocal(curFile);
+    const eng = engine();
+    if(eng==='eleven'){
+      if(!$('elevenKey').value.trim()){ $('keyCard').open = true; throw new Error('ElevenLabsのAPIキーを下の「🔑 APIキー」に入れてください'); }
+      setBar(15);
+      await runEleven(curFile, $('fileLang').value, $('fileSpk').value, (t) => fmsg(t));
+    }
+    else if(eng==='api') await runApi(curFile);
+    else await runLocal(curFile);
     setBar(100); fmsg(cancelReq ? '中止しました' : '完了しました。下の結果を確認してください。');
   }catch(e){
     if(e && e.name==='AbortError') fmsg('中止しました');
@@ -591,7 +937,7 @@ $('fileGo').addEventListener('click', async () => {
 });
 $('fileStop').addEventListener('click', () => {
   cancelReq = true; fmsg('中止しています…');
-  if(runApi.ctrl){ try{ runApi.ctrl.abort(); }catch(e){} }
+  [apiCtrl, elevenCtrl].forEach(c => { if(c){ try{ c.abort(); }catch(e){} } });
 });
 
 /* ---------- Service Worker ---------- */
