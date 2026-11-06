@@ -2499,13 +2499,13 @@ function openResult() {
   var m = modal(html);
   se(P.chests.length || (P.finds || []).length ? 'chest' : 'coin');
   var newAreas = P.clears.map(function (aid) { var nx = AREAS[AREA_BY[aid].index + 1]; return nx ? nx.id : null; }).filter(function (x) { return x && S.areas[x].unlocked && S.cur !== x; });
-  function done(noUnlock) { S.pending = emptyPending(); save(); closeModal(m); resultOpen = false; render(); nameKittens(function () { if (!noUnlock && newAreas.length) unlockModal(newAreas[0]); }); }
+  function done(later) { S.pending = emptyPending(); save(); closeModal(m); resultOpen = false; render(); if (!later) nameKittens(function () { if (newAreas.length) unlockModal(newAreas[0]); }); }
   var rd = m.querySelector('#rsRead');
   if (rd) rd.onclick = function () {
     var list = P.arrivals.slice();
     P.clears.forEach(function (aid) { if (!list.some(function (x) { return x.a === aid && x.e === AREA_BY[aid].events.length - 1; })) list.push({ a: aid, e: AREA_BY[aid].events.length - 1 }); });
     (P.finds || []).forEach(function (f) { if (f.kind === 'event' || f.kind === 'meet') list.push({ pt: f }); });
-    done(true); playTalks(list, function () { if (newAreas.length) unlockModal(newAreas[0]); });
+    done(true); playTalks(list, function () { nameKittens(function () { if (newAreas.length) unlockModal(newAreas[0]); }); });
   };
   m.querySelector('#rsOk').onclick = function () { done(); };
 }
