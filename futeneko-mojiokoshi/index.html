@@ -159,7 +159,7 @@ footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
 
 <script>
 'use strict';
-const APP_VER = 'v1';
+const APP_VER = 'v2';
 const LS_TEXT = 'futeMoji.text';
 const LS_KEY = 'futeMoji.apiKey';
 const LS_OPT = 'futeMoji.opts';
@@ -279,14 +279,29 @@ function commit(text){
   appendLine(($('optTime').checked ? '['+clock(new Date())+'] ' : '') + text);
 }
 
+/* iPhone/iPad の Safari は「確定」の扱いが Chrome と違い、
+   連続モードだと確定済みの文が後から書き換わる。
+   そこで iOS では「ひと区切りずつ聞いて、終わるたびに確定→すぐ再開」する方式にする。 */
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+let lastEventAt = 0;
+
 function makeRec(){
   const r = new SR();
   r.lang = $('lang').value;
-  r.continuous = true;
+  r.continuous = !IS_IOS;
   r.interimResults = true;
   r.maxAlternatives = 1;
-  const done = new Set(); // このセッションで確定済みの結果番号（iOSの二重確定対策）
+  const done = new Set(); // このセッションで確定済みの結果番号（Chrome用）
   r.onresult = (e) => {
+    lastEventAt = Date.now();
+    if(IS_IOS){
+      // その区切りの全文を毎回つなぎ直す（書き換えに強い）
+      let all = '', allFinal = true;
+      for(let i=0; i<e.results.length; i++){ all += e.results[i][0].transcript; if(!e.results[i].isFinal) allFinal = false; }
+      pendingInterim = all;
+      $('interim').textContent = all;
+      return; // 確定は onend でまとめて行う
+    }
     let interim = '';
     for(let i=e.resultIndex; i<e.results.length; i++){
       const res = e.results[i];
@@ -296,6 +311,7 @@ function makeRec(){
     pendingInterim = interim;
     $('interim').textContent = interim;
   };
+  r.onstart = () => { lastEventAt = Date.now(); };
   r.onerror = (e) => {
     if(e.error==='not-allowed' || e.error==='service-not-allowed'){
       wantOn = false; stopUI();
@@ -312,12 +328,18 @@ function makeRec(){
     if(rec !== r) return;
     if(wantOn){
       restartCount++;
-      setTimeout(() => { if(wantOn && rec===r) startRec(); }, 250);
+      setTimeout(() => { if(wantOn && rec===r) startRec(); }, IS_IOS ? 60 : 250);
     }
   };
   return r;
 }
+/* iOS で無反応のまま固まったときの見張り役（20秒なにも来なければ立て直す） */
+setInterval(() => {
+  if(IS_IOS && wantOn && rec && Date.now()-lastEventAt > 20000){ lastEventAt = Date.now(); try{ rec.abort(); }catch(e){} }
+}, 5000);
+
 function startRec(){
+  lastEventAt = Date.now();
   rec = makeRec();
   try{ rec.start(); }catch(e){ setTimeout(()=>{ if(wantOn) startRec(); }, 600); }
 }

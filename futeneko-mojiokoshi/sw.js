@@ -1,5 +1,5 @@
 // フテ猫もじおこし Service Worker（HTMLの APP_VER と番号をそろえる）
-const CACHE = 'futeneko-mojiokoshi-v1';
+const CACHE = 'futeneko-mojiokoshi-v2';
 const FILES = ['./', './index.html'];
 
 self.addEventListener('install', (e) => {
