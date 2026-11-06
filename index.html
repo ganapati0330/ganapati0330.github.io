@@ -23,8 +23,9 @@ header{display:flex;align-items:center;justify-content:center;gap:clamp(6px,2.4v
 .free{font-size:clamp(11px,3.2vw,18px);font-weight:900;font-style:italic;white-space:nowrap;padding-bottom:4px;
   background:linear-gradient(var(--orange),var(--orange)) 0 100%/100% 3px no-repeat;border-radius:2px}
 .hero{display:block;width:100%;aspect-ratio:913/323;object-fit:cover;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 4px}
-.tabs button{font:inherit;font-weight:900;font-size:clamp(14px,4.2vw,18px);color:#fff;background:transparent;border:2px solid var(--line);border-radius:999px;padding:9px 0;cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:16px 0 4px}
+.tabs button{font:inherit;font-weight:900;font-size:clamp(11.5px,3.4vw,18px);letter-spacing:-.02em;white-space:nowrap;color:#fff;background:transparent;border:2px solid var(--line);border-radius:999px;padding:9px 0;cursor:pointer}
+.grid>.ttl{grid-column:1/-1;margin:22px 0 2px}
 .tabs button.on{background:linear-gradient(#ff9a3c,var(--orange2));border-color:#ffb877;box-shadow:0 3px 0 #9c3f05}
 .ttl{display:flex;align-items:center;gap:10px;margin:16px 0 12px;font-size:clamp(17px,5vw,22px);font-weight:900;white-space:nowrap}
 .ttl::before,.ttl::after{content:"";flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--orange))}
@@ -79,7 +80,7 @@ nav button.on::after{content:"";position:absolute;left:18%;right:18%;bottom:0;he
 </header>
 <img class="hero" src="portal-img/hero.webp" alt="フテ猫・クロネコさん・チャッピーちゃん・あかりちゃんがゲームであそんでいる">
 <div class="tabs" id="tabs">
-  <button data-c="all" class="on">すべて</button><button data-c="vs">たいせん</button><button data-c="adv">ぼうけん</button><button data-c="brain">あたま</button>
+  <button data-c="all" class="on">すべて</button><button data-c="vs">たいせん</button><button data-c="adv">ぼうけん</button><button data-c="brain">あたま</button><button data-c="other">おとうさん</button>
 </div>
 <div class="ttl"><svg fill="#f5821f"><use href="#paw"/></svg><span id="ttlText">あそぶゲームを えらぼう</span><svg fill="#f5821f"><use href="#paw"/></svg></div>
 <main class="grid" id="list"></main>
@@ -94,7 +95,7 @@ nav button.on::after{content:"";position:absolute;left:18%;right:18%;bottom:0;he
   <h3>あそびかた</h3>
   <ul>
     <li>あそびたい ゲームの カードを タッチすると はじまるよ。</li>
-    <li>うえの ボタンで「たいせん」「ぼうけん」「あたま」に わけて さがせるよ。</li>
+    <li>うえの ボタンで「たいせん」「ぼうけん」「あたま」に わけて さがせるよ。「おとうさん」は お父さんの趣味の 道具だよ。</li>
     <li>カードの ♡ を タッチすると「おきにいり」に はいるよ。したの「おきにいり」で すぐ みつかる！</li>
     <li>ぜんぶ むりょう。スマホでも パソコンでも あそべるよ。</li>
   </ul>
@@ -140,8 +141,9 @@ var GAMES=[
  ['futeneko-english-adventure','えいごアドベンチャー','フテ猫と チャッピーの えいご','🌏',0,'brain','chap'],
  ['chizu-kigou','地図記号バトル！','ちずきごうを おぼえよう','🗾',0,'brain','fute'],
  ['futeneko-daytrade-dojo','フテ猫のデイトレ道場','かぶの しくみを たいけん','📈',0,'brain','kuro'],
- ['cycle-route','サイクルルートプランナー','おとうさんの しゅみ：ロードバイクの ルートづくり','🚴',0,'other','fute'],
- ['futeneko-health','フテ猫ヘルスノート','おとうさんの しゅみ：歩数・すいみん・心拍の きろく','⌚',1,'other','fute']
+ ['cycle-route','サイクルルートプランナー','ロードバイクの ルートマップづくり','🚴',0,'other','fute'],
+ ['futeneko-health','フテ猫ヘルスノート','歩数・すいみん・心拍の きろく','⌚',1,'other','fute'],
+ ['futeneko-mojiokoshi','フテ猫もじおこし','はなした ことばや 録音を 文字に','🎙️',1,'other','fute']
 ];
 // イラストがある作品（portal-img/フォルダ名.webp）
 var ART={'futeneko-trump':1,'futeneko-fighter':1,'futeneko-daisenryaku':1,'futeneko-othello':1,'futeneko-shogi':1,'fute-tennis':1,'futeneko-fishing':1,'futeneko-runner':1,'futeneko-td':1,'futeneko-tsunagi':1,'futeneko-walk':1,'sansu-battle':1,'futeneko-pitatto':1,'futeneko-otsukai':1,'futeneko-world':1,'futeneko-rensa':1,'hokkaido-sugoroku':1,'iwata-sugoroku':1};
@@ -190,12 +192,20 @@ function render(){
     if(favOnly)return !!favs[g[0]];
     return cat==='all'||g[5]===cat;
   });
-  document.getElementById('ttlText').textContent=favOnly?'おきにいりの ゲーム':'あそぶゲームを えらぼう';
+  document.getElementById('ttlText').textContent=favOnly?'おきにいりの ゲーム':(cat==='other'?'お父さんの趣味':'あそぶゲームを えらぼう');
   if(!list.length){
     var e=document.createElement('div');e.className='empty';
     e.innerHTML='まだ おきにいりが ないよ。<br>カードの ♡ を タッチしてね！';root.appendChild(e);return;
   }
-  list.forEach(function(g){root.appendChild(card(g));});
+  // 「すべて」では お父さんの趣味を いちばん下に まとめる
+  var split=!favOnly&&cat==='all';
+  list.forEach(function(g){if(!split||g[5]!=='other')root.appendChild(card(g));});
+  if(split){
+    var h=document.createElement('div');h.className='ttl';
+    h.innerHTML='<svg fill="#f5821f"><use href="#paw"/></svg><span>お父さんの趣味</span><svg fill="#f5821f"><use href="#paw"/></svg>';
+    root.appendChild(h);
+    list.forEach(function(g){if(g[5]==='other')root.appendChild(card(g));});
+  }
   fitNames();
 }
 // ながい なまえは 1行に おさまるまで 文字を 小さくする

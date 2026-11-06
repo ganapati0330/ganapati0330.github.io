@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6a04d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>フテ猫もじおこし</title>
+<style>
+:root{--bg:#fff8ef;--card:#fff;--ink:#3b2f25;--sub:#8a7564;--acc:#f08a2c;--acc2:#e0602a;--line:#ecdcc9;--ok:#2f9e6b;--ng:#d0443a}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-text-size-adjust:100%}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 40px}
+header{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+header .logo{font-size:30px}
+header h1{font-size:20px;margin:0;flex:1}
+header .ver{font-size:11px;color:var(--sub)}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;padding:11px 6px;border:2px solid var(--line);background:#fff;border-radius:12px;font-size:15px;font-weight:700;color:var(--sub);cursor:pointer}
+.tab.on{border-color:var(--acc);color:var(--acc2);background:#fff3e4}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.hide{display:none!important}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:8px 0}
+label{font-size:14px}
+select,input[type=text],input[type=password]{font-size:16px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);max-width:100%}
+.recbox{display:flex;align-items:center;gap:16px}
+.recbtn{width:84px;height:84px;border-radius:50%;border:none;background:var(--acc);color:#fff;font-size:15px;font-weight:800;box-shadow:0 4px 0 var(--acc2);cursor:pointer;flex:none}
+.recbtn.live{background:var(--ng);box-shadow:0 4px 0 #9b2a22;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{transform:scale(1.05)}}
+.stat{font-size:15px;font-weight:700}
+.stat small{display:block;font-weight:400;color:var(--sub);font-size:13px;margin-top:3px}
+.interim{min-height:1.6em;color:var(--sub);font-size:15px;margin-top:10px;padding:6px 8px;background:#fbf5ee;border-radius:8px}
+.btn{padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.warn{color:var(--ng)}
+.btn:disabled{opacity:.45;cursor:default}
+textarea{width:100%;min-height:42vh;font-size:16px;line-height:1.7;padding:10px;border:1px solid var(--line);border-radius:10px;resize:vertical;background:#fffdf9;color:var(--ink);font-family:inherit}
+.note{font-size:12.5px;color:var(--sub);line-height:1.6;margin:6px 0 0}
+.bar{height:10px;background:#f1e4d4;border-radius:6px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.msg{font-size:14px;margin-top:6px;min-height:1.3em}
+.msg.err{color:var(--ng)}
+.seg{display:flex;gap:6px}
+.seg label{flex:1;border:2px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-weight:700;cursor:pointer;font-size:14px}
+.seg input{display:none}
+.seg label:has(input:checked){border-color:var(--acc);background:#fff3e4;color:var(--acc2)}
+.filename{font-size:14px;word-break:break-all}
+h2{font-size:15px;margin:0 0 6px}
+footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><span class="logo">🐱</span><h1>フテ猫もじおこし</h1><span class="ver" id="ver"></span></header>
+
+<div class="tabs">
+  <button class="tab on" id="tabLive" type="button">🎙 その場で文字に</button>
+  <button class="tab" id="tabFile" type="button">📁 音声ファイルから</button>
+</div>
+
+<!-- ===== リアルタイム ===== -->
+<section id="paneLive">
+  <div class="card">
+    <div class="recbox">
+      <button class="recbtn" id="recBtn" type="button">はじめる</button>
+      <div class="stat" id="liveStat">待機中<small id="liveSub">ボタンを押すと聞き取りを始めます</small></div>
+    </div>
+    <div class="interim" id="interim"></div>
+    <div class="row">
+      <label>言語 <select id="lang">
+        <option value="ja-JP">日本語</option>
+        <option value="en-US">英語</option>
+      </select></label>
+      <label><input type="checkbox" id="optTime" checked> 時刻を付ける</label>
+      <label><input type="checkbox" id="optKuten" checked> 文末に「。」</label>
+      <label><input type="checkbox" id="optRecord"> 同時に録音する</label>
+    </div>
+    <p class="note" id="liveNote">画面を消すと聞き取りが止まるので、使っている間は画面をつけたままにします（対応ブラウザでは自動でスリープを防ぎます）。「同時に録音する」はPCのChrome向けです。iPhoneでは聞き取りが止まることがあります。</p>
+    <div class="row hide" id="recResult">
+      <span class="filename" id="recInfo"></span>
+      <button class="btn" id="recToFile" type="button">この録音をファイル文字起こしへ</button>
+      <button class="btn" id="recSave" type="button">録音を保存</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ファイル ===== -->
+<section id="paneFile" class="hide">
+  <div class="card">
+    <h2>① 音声ファイルをえらぶ</h2>
+    <div class="row">
+      <input type="file" id="fileIn" accept="audio/*,video/*,.m4a,.mp3,.wav,.aac,.ogg,.webm,.mp4">
+    </div>
+    <div class="filename" id="fileInfo"></div>
+  </div>
+  <div class="card">
+    <h2>② 文字起こしの方法</h2>
+    <div class="seg">
+      <label><input type="radio" name="eng" value="local" checked>端末の中で<br><small>無料・データは外に出ない</small></label>
+      <label><input type="radio" name="eng" value="api">OpenAI API<br><small>高精度・有料</small></label>
+    </div>
+    <div id="localOpts">
+      <div class="row">
+        <label>モデル <select id="model">
+          <option value="onnx-community/whisper-tiny">tiny（約40MB・速いが粗い）</option>
+          <option value="onnx-community/whisper-base" selected>base（約80MB・スマホ向け）</option>
+          <option value="onnx-community/whisper-small">small（約250MB・PC向け）</option>
+          <option value="onnx-community/whisper-large-v3-turbo">large-v3-turbo（約800MB・PC＋GPU向け・高精度）</option>
+        </select></label>
+      </div>
+      <p class="note">初回だけモデルをダウンロードします（Wi-Fi推奨）。2回目からはブラウザに保存されたものを使います。音声はこの端末の中だけで処理されます。</p>
+    </div>
+    <div id="apiOpts" class="hide">
+      <div class="row">
+        <label>APIキー <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off"></label>
+        <label><input type="checkbox" id="apiKeySave"> この端末に保存</label>
+      </div>
+      <div class="row">
+        <label>モデル <select id="apiModel">
+          <option value="gpt-4o-transcribe">gpt-4o-transcribe（高精度）</option>
+          <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe（安い）</option>
+          <option value="whisper-1">whisper-1</option>
+        </select></label>
+      </div>
+      <p class="note">音声はOpenAIに直接送られます（1ファイル25MBまで）。料金はOpenAIのアカウントにかかります。</p>
+    </div>
+    <div class="row">
+      <label>言語 <select id="fileLang">
+        <option value="ja">日本語</option>
+        <option value="en">英語</option>
+      </select></label>
+    </div>
+  </div>
+  <div class="card">
+    <h2>③ 実行</h2>
+    <div class="row">
+      <button class="btn pri" id="fileGo" type="button" disabled>文字起こし開始</button>
+      <button class="btn" id="fileStop" type="button" disabled>中止</button>
+    </div>
+    <div class="bar"><i id="fileBar"></i></div>
+    <div class="msg" id="fileMsg"></div>
+  </div>
+</section>
+
+<!-- ===== 結果（共通） ===== -->
+<div class="card">
+  <div class="row" style="margin-top:0">
+    <h2 style="flex:1;margin:0">📝 文字起こし結果</h2>
+    <button class="btn" id="copyBtn" type="button">コピー</button>
+    <button class="btn" id="saveBtn" type="button">保存</button>
+    <button class="btn warn" id="clearBtn" type="button">消す</button>
+  </div>
+  <textarea id="out" placeholder="ここに文字が入ります。あとから自由に直せます。"></textarea>
+  <div class="msg" id="outMsg"></div>
+</div>
+<footer>© 泉正道 / フテ猫実行委員会</footer>
+</div>
+
+<script>
+'use strict';
+const APP_VER = 'v1';
+const LS_TEXT = 'futeMoji.text';
+const LS_KEY = 'futeMoji.apiKey';
+const LS_OPT = 'futeMoji.opts';
+const $ = (id) => document.getElementById(id);
+$('ver').textContent = APP_VER;
+
+/* ---------- 保存まわり ---------- */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} }
+
+const out = $('out');
+out.value = lsGet(LS_TEXT) || '';
+let saveTimer = 0;
+function saveText(){ clearTimeout(saveTimer); saveTimer = setTimeout(() => lsSet(LS_TEXT, out.value), 300); }
+out.addEventListener('input', saveText);
+
+function appendLine(line){
+  const nearBottom = out.scrollHeight - out.scrollTop - out.clientHeight < 60;
+  if(out.value && !out.value.endsWith('\n')) out.value += '\n';
+  out.value += line + '\n';
+  if(nearBottom) out.scrollTop = out.scrollHeight;
+  saveText();
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function clock(d){ return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+function mmss(sec){ sec=Math.max(0,Math.floor(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec/60)%60, s=sec%60; return (h? h+':'+pad(m) : pad(m))+':'+pad(s); }
+function today(){ const d=new Date(); return d.getFullYear()+'/'+pad(d.getMonth()+1)+'/'+pad(d.getDate()); }
+function flash(el, text, isErr){ el.textContent = text; el.classList.toggle('err', !!isErr); }
+
+/* オプション保存 */
+function saveOpts(){
+  lsSet(LS_OPT, JSON.stringify({lang:$('lang').value, time:$('optTime').checked, kuten:$('optKuten').checked,
+    rec:$('optRecord').checked, model:$('model').value, apiModel:$('apiModel').value, fileLang:$('fileLang').value,
+    eng:engine()}));
+}
+(function loadOpts(){
+  let o=null; try{ o=JSON.parse(lsGet(LS_OPT)||'null'); }catch(e){}
+  if(o){
+    if(o.lang) $('lang').value=o.lang;
+    if(typeof o.time==='boolean') $('optTime').checked=o.time;
+    if(typeof o.kuten==='boolean') $('optKuten').checked=o.kuten;
+    if(typeof o.rec==='boolean') $('optRecord').checked=o.rec;
+    if(o.model) $('model').value=o.model;
+    if(o.apiModel) $('apiModel').value=o.apiModel;
+    if(o.fileLang) $('fileLang').value=o.fileLang;
+    if(o.eng){ const r=document.querySelector('input[name=eng][value="'+o.eng+'"]'); if(r) r.checked=true; }
+  }
+  const k=lsGet(LS_KEY); if(k){ $('apiKey').value=k; $('apiKeySave').checked=true; }
+})();
+['lang','optTime','optKuten','optRecord','model','apiModel','fileLang'].forEach(id => $(id).addEventListener('change', saveOpts));
+
+/* ---------- タブ ---------- */
+function showTab(which){
+  $('tabLive').classList.toggle('on', which==='live');
+  $('tabFile').classList.toggle('on', which==='file');
+  $('paneLive').classList.toggle('hide', which!=='live');
+  $('paneFile').classList.toggle('hide', which!=='file');
+}
+$('tabLive').addEventListener('click', () => showTab('live'));
+$('tabFile').addEventListener('click', () => showTab('file'));
+
+/* ---------- 結果の操作 ---------- */
+$('copyBtn').addEventListener('click', async () => {
+  try{ await navigator.clipboard.writeText(out.value); flash($('outMsg'),'コピーしました'); }
+  catch(e){ out.select(); try{ document.execCommand('copy'); flash($('outMsg'),'コピーしました'); }catch(e2){ flash($('outMsg'),'コピーできませんでした',true); } }
+});
+function downloadBlob(blob, name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+}
+function stamp(){ const d=new Date(); return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'_'+pad(d.getHours())+pad(d.getMinutes()); }
+$('saveBtn').addEventListener('click', async () => {
+  const name='もじおこし_'+stamp()+'.txt';
+  const blob=new Blob(['﻿'+out.value],{type:'text/plain;charset=utf-8'});
+  try{
+    const f=new File([blob],name,{type:'text/plain'});
+    if(navigator.canShare && navigator.canShare({files:[f]}) && /iPhone|iPad|Android/.test(navigator.userAgent)){ await navigator.share({files:[f], title:name}); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  downloadBlob(blob,name);
+});
+let clearArmed=0;
+$('clearBtn').addEventListener('click', () => {
+  if(Date.now()-clearArmed<3000){ out.value=''; lsSet(LS_TEXT,''); $('clearBtn').textContent='消す'; clearArmed=0; flash($('outMsg'),'消しました'); return; }
+  clearArmed=Date.now(); $('clearBtn').textContent='もう一度押すと消去';
+  setTimeout(()=>{ if(Date.now()-clearArmed>=3000){ $('clearBtn').textContent='消す'; } }, 3100);
+});
+
+/* =========================================================
+   ① リアルタイム文字起こし（Web Speech API）
+   ========================================================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;          // 現在の SpeechRecognition
+let wantOn = false;      // ユーザーが「聞き取り中」にしているか
+let pendingInterim = ''; // まだ確定していない文
+let lastCommitted = '';
+let liveStart = 0, tickTimer = 0, restartCount = 0;
+let wakeLock = null;
+let mediaRec = null, mediaStream = null, recChunks = [], lastRecording = null;
+
+if(!SR){
+  $('recBtn').disabled = true;
+  $('liveStat').innerHTML = 'このブラウザは対応していません<small>iPhoneはSafari、Android・PCはChromeかEdgeで開いてください。「音声ファイルから」は使えます。</small>';
+}
+
+function setLive(main, sub){ $('liveStat').firstChild.nodeValue = main; $('liveSub').textContent = sub || ''; }
+
+function normalize(t){
+  t = t.replace(/\s+/g,' ').trim();
+  if($('lang').value==='ja-JP') t = t.replace(/(\S) (?=\S)/g, (m,a)=> /[A-Za-z0-9]/.test(a) ? m : a); // 日本語の不要な空白を詰める
+  return t;
+}
+function commit(text){
+  text = normalize(text);
+  if(!text || text===lastCommitted) return;
+  lastCommitted = text;
+  if($('optKuten').checked && $('lang').value==='ja-JP' && /[^\x00-\x7f]/.test(text) && !/[。．.!！?？」』）)]$/.test(text)) text += '。';
+  appendLine(($('optTime').checked ? '['+clock(new Date())+'] ' : '') + text);
+}
+
+function makeRec(){
+  const r = new SR();
+  r.lang = $('lang').value;
+  r.continuous = true;
+  r.interimResults = true;
+  r.maxAlternatives = 1;
+  const done = new Set(); // このセッションで確定済みの結果番号（iOSの二重確定対策）
+  r.onresult = (e) => {
+    let interim = '';
+    for(let i=e.resultIndex; i<e.results.length; i++){
+      const res = e.results[i];
+      if(res.isFinal){ if(!done.has(i)){ done.add(i); commit(res[0].transcript); } }
+      else interim += res[0].transcript;
+    }
+    pendingInterim = interim;
+    $('interim').textContent = interim;
+  };
+  r.onerror = (e) => {
+    if(e.error==='not-allowed' || e.error==='service-not-allowed'){
+      wantOn = false; stopUI();
+      setLive('マイクが使えません','ブラウザの設定でマイクを許可してから、もう一度押してください。');
+    }else if(e.error==='network'){
+      setLive('通信エラー','インターネットにつながっているか確認してください。自動で再開を試みます。');
+    }else if(e.error==='audio-capture'){
+      wantOn = false; stopUI(); setLive('マイクが見つかりません','');
+    }
+    // no-speech / aborted は onend で自動再開
+  };
+  r.onend = () => {
+    if(pendingInterim){ commit(pendingInterim); pendingInterim=''; $('interim').textContent=''; }
+    if(rec !== r) return;
+    if(wantOn){
+      restartCount++;
+      setTimeout(() => { if(wantOn && rec===r) startRec(); }, 250);
+    }
+  };
+  return r;
+}
+function startRec(){
+  rec = makeRec();
+  try{ rec.start(); }catch(e){ setTimeout(()=>{ if(wantOn) startRec(); }, 600); }
+}
+
+async function grabWakeLock(){
+  try{ if('wakeLock' in navigator && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', ()=>{ wakeLock=null; }); } }catch(e){}
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible' && wantOn) grabWakeLock(); });
+
+async function startMediaRecording(){
+  try{
+    mediaStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    const types=['audio/webm;codecs=opus','audio/mp4','audio/webm'];
+    const mt = types.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+    mediaRec = new MediaRecorder(mediaStream, mt ? {mimeType:mt} : undefined);
+    recChunks = [];
+    mediaRec.ondataavailable = (e) => { if(e.data && e.data.size) recChunks.push(e.data); };
+    mediaRec.onstop = () => {
+      const type = mediaRec.mimeType || mt || 'audio/webm';
+      const ext = type.includes('mp4') ? 'm4a' : 'webm';
+      const blob = new Blob(recChunks, {type});
+      lastRecording = new File([blob], '録音_'+stamp()+'.'+ext, {type});
+      $('recInfo').textContent = '🎧 '+lastRecording.name+'（'+(blob.size/1048576).toFixed(1)+'MB）';
+      $('recResult').classList.remove('hide');
+      if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; }
+    };
+    mediaRec.start(1000);
+  }catch(e){ mediaRec=null; flash($('outMsg'),'録音を開始できませんでした（聞き取りは続けます）',true); }
+}
+
+function startUI(){
+  $('recBtn').textContent='とめる'; $('recBtn').classList.add('live');
+  liveStart = Date.now(); restartCount = 0;
+  clearInterval(tickTimer);
+  tickTimer = setInterval(() => setLive('聞き取り中 '+mmss((Date.now()-liveStart)/1000), '話した言葉がそのまま下に入ります'), 500);
+  setLive('聞き取り中 00:00','話した言葉がそのまま下に入ります');
+}
+function stopUI(){
+  clearInterval(tickTimer);
+  $('recBtn').textContent='はじめる'; $('recBtn').classList.remove('live');
+  if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock=null; }
+}
+
+$('recBtn').addEventListener('click', async () => {
+  if(!SR) return;
+  if(!wantOn){
+    wantOn = true; lastCommitted='';
+    if($('optTime').checked || out.value) appendLine('―― '+today()+' '+clock(new Date()).slice(0,5)+' 開始 ――');
+    startUI(); grabWakeLock();
+    if($('optRecord').checked) await startMediaRecording();
+    startRec();
+  }else{
+    wantOn = false;
+    const r = rec;
+    try{ r && r.stop(); }catch(e){}
+    if(pendingInterim){ commit(pendingInterim); pendingInterim=''; $('interim').textContent=''; }
+    if(mediaRec && mediaRec.state!=='inactive'){ try{ mediaRec.stop(); }catch(e){} }
+    stopUI();
+    setLive('止めました','もう一度押すと続きから聞き取ります');
+  }
+});
+$('recSave').addEventListener('click', () => { if(lastRecording) downloadBlob(lastRecording, lastRecording.name); });
+$('recToFile').addEventListener('click', () => { if(lastRecording){ setFile(lastRecording); showTab('file'); } });
+
+/* =========================================================
+   ② 音声ファイル文字起こし（Whisper 端末内 / OpenAI API）
+   ========================================================= */
+let curFile = null, running = false, cancelReq = false, worker = null, workerModel = '';
+
+function engine(){ const r=document.querySelector('input[name=eng]:checked'); return r ? r.value : 'local'; }
+function syncEngine(){ $('localOpts').classList.toggle('hide', engine()!=='local'); $('apiOpts').classList.toggle('hide', engine()!=='api'); saveOpts(); }
+document.querySelectorAll('input[name=eng]').forEach(r => r.addEventListener('change', syncEngine));
+syncEngine();
+$('apiKeySave').addEventListener('change', () => lsSet(LS_KEY, $('apiKeySave').checked ? $('apiKey').value.trim() : null));
+$('apiKey').addEventListener('change', () => { if($('apiKeySave').checked) lsSet(LS_KEY, $('apiKey').value.trim()); });
+
+function setFile(f){
+  curFile = f;
+  $('fileInfo').textContent = f ? '🎧 '+f.name+'（'+(f.size/1048576).toFixed(1)+'MB）' : '';
+  $('fileGo').disabled = !f || running;
+}
+$('fileIn').addEventListener('change', (e) => setFile(e.target.files[0] || null));
+
+function setBar(p){ $('fileBar').style.width = Math.max(0,Math.min(100,p))+'%'; }
+function fmsg(t,err){ flash($('fileMsg'), t, err); }
+
+async function decodeTo16k(file){
+  const buf = await file.arrayBuffer();
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ac = new AC();
+  let audio;
+  try{
+    audio = await new Promise((res, rej) => { const p = ac.decodeAudioData(buf, res, rej); if(p && p.then) p.then(res, rej); });
+  }finally{ try{ ac.close(); }catch(e){} }
+  const sr = 16000;
+  const len = Math.ceil(audio.duration * sr);
+  const off = new OfflineAudioContext(1, len, sr);
+  const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start();
+  const rendered = await off.startRendering();
+  return rendered.getChannelData(0); // モノラル16kHz
+}
+
+/* 静かなところで区切って30秒以内のかたまりにする */
+function splitChunks(x, sr){
+  const maxLen = 30*sr, minLen = 20*sr, frame = Math.floor(sr*0.05), res = [];
+  let s = 0;
+  while(s < x.length){
+    if(x.length - s <= maxLen){ res.push([s, x.length]); break; }
+    let best = s+maxLen, bestE = Infinity;
+    for(let p=s+minLen; p+frame<=s+maxLen; p+=frame){
+      let e=0; for(let k=p;k<p+frame;k++) e+=x[k]*x[k];
+      if(e<bestE){ bestE=e; best=p+(frame>>1); }
+    }
+    res.push([s,best]); s=best;
+  }
+  return res;
+}
+function rms(x){ let e=0; for(let i=0;i<x.length;i++) e+=x[i]*x[i]; return Math.sqrt(e/Math.max(1,x.length)); }
+
+const WORKER_SRC = `
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+env.allowLocalModels = false;
+let asr = null, cur = '';
+async function load(model, device){
+  const dtype = device==='webgpu' ? {encoder_model:'fp32', decoder_model_merged:'q4'} : 'q8';
+  return pipeline('automatic-speech-recognition', model, { device, dtype,
+    progress_callback: (p) => self.postMessage({type:'load', p}) });
+}
+self.onmessage = async (e) => {
+  const d = e.data;
+  try{
+    if(d.type==='load'){
+      if(!asr || cur!==d.model){
+        try{ asr = await load(d.model, d.device); }
+        catch(err){ if(d.device==='webgpu'){ self.postMessage({type:'info', msg:'GPUが使えないため通常モードで読み込みます'}); asr = await load(d.model,'wasm'); } else throw err; }
+        cur = d.model;
+      }
+      self.postMessage({type:'ready'});
+    }else if(d.type==='run'){
+      const o = await asr(d.audio, {language:d.lang, task:'transcribe'});
+      self.postMessage({type:'text', id:d.id, text:(o && o.text) || ''});
+    }
+  }catch(err){ self.postMessage({type:'error', msg:String((err && err.message) || err)}); }
+};`;
+
+function getWorker(){
+  if(!worker){
+    const url = URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'}));
+    worker = new Worker(url, {type:'module'});
+    workerModel = '';
+  }
+  return worker;
+}
+function workerCall(msg, onMsg){
+  return new Promise((resolve, reject) => {
+    const w = getWorker();
+    const h = (e) => {
+      const d = e.data;
+      if(d.type==='error'){ w.removeEventListener('message',h); w.removeEventListener('error',he); reject(new Error(d.msg)); }
+      else if(onMsg && onMsg(d)){ w.removeEventListener('message',h); w.removeEventListener('error',he); resolve(d); }
+    };
+    const he = (e) => { w.removeEventListener('message',h); w.removeEventListener('error',he); worker=null; reject(new Error(e.message || 'Workerの読み込みに失敗しました（通信を確認してください）')); };
+    w.addEventListener('message', h); w.addEventListener('error', he);
+    w.postMessage(msg, msg.audio ? [msg.audio.buffer] : []);
+  });
+}
+async function pickDevice(){
+  try{ if(navigator.gpu){ const a = await navigator.gpu.requestAdapter(); if(a) return 'webgpu'; } }catch(e){}
+  return 'wasm';
+}
+const HALLU = /^(ご視聴ありがとうございました|ご清聴ありがとうございました|チャンネル登録よろしくお願いします)[。！!]*$/;
+
+async function runLocal(file){
+  const model = $('model').value;
+  const lang = $('fileLang').value==='ja' ? 'japanese' : 'english';
+  fmsg('音声を読み込み中…'); setBar(2);
+  const pcm = await decodeTo16k(file);
+  const dur = pcm.length/16000;
+  if(workerModel !== model){
+    const device = await pickDevice();
+    fmsg('モデルを準備中…（初回はダウンロードに時間がかかります）');
+    const files = {};
+    await workerCall({type:'load', model, device}, (d) => {
+      if(d.type==='load' && d.p && d.p.status==='progress' && d.p.total){
+        files[d.p.file] = [d.p.loaded, d.p.total];
+        let a=0,b=0; for(const k in files){ a+=files[k][0]; b+=files[k][1]; }
+        setBar(2 + 28*a/b); fmsg('モデルをダウンロード中… '+(a/1048576).toFixed(0)+' / '+(b/1048576).toFixed(0)+' MB');
+      }else if(d.type==='info'){ fmsg(d.msg); }
+      return d.type==='ready';
+    });
+    workerModel = model;
+  }
+  const chunks = splitChunks(pcm, 16000);
+  appendLine('■ '+file.name+'（'+mmss(dur)+'・端末内 '+model.split('/')[1]+'）');
+  const t0 = Date.now();
+  for(let i=0;i<chunks.length;i++){
+    if(cancelReq){ appendLine('（ここで中止）'); return; }
+    const [s,e] = chunks[i];
+    const seg = pcm.slice(s,e);
+    const pct = 30 + 70*i/chunks.length;
+    setBar(pct);
+    const el = (Date.now()-t0)/1000;
+    const eta = i ? ' ・残り約'+mmss(el/i*(chunks.length-i)) : '';
+    fmsg('文字起こし中… '+mmss(s/16000)+' / '+mmss(dur)+eta);
+    if(rms(seg) < 0.004) continue; // ほぼ無音は飛ばす
+    const d = await workerCall({type:'run', id:i, audio:seg, lang}, (m) => m.type==='text' && m.id===i);
+    const text = String(d.text||'').trim();
+    if(text && !HALLU.test(text)) appendLine('['+mmss(s/16000)+'] '+text);
+  }
+}
+
+async function runApi(file){
+  const key = $('apiKey').value.trim();
+  if(!key) throw new Error('APIキーを入れてください');
+  if(file.size > 25*1048576) throw new Error('25MBを超えるファイルはAPIに送れません。「端末の中で」を使ってください');
+  if($('apiKeySave').checked) lsSet(LS_KEY, key);
+  const model = $('apiModel').value;
+  fmsg('OpenAIに送信中…'); setBar(20);
+  const fd = new FormData();
+  fd.append('file', file, file.name);
+  fd.append('model', model);
+  fd.append('language', $('fileLang').value);
+  fd.append('response_format', 'json');
+  const ctrl = new AbortController();
+  runApi.ctrl = ctrl;
+  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {method:'POST', headers:{Authorization:'Bearer '+key}, body:fd, signal:ctrl.signal});
+  setBar(90);
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error('APIエラー: '+((j.error && j.error.message) || r.status));
+  appendLine('■ '+file.name+'（OpenAI '+model+'）');
+  const text = String(j.text||'').trim();
+  appendLine(text.replace(/([。！？])\s*/g, '$1\n').trim());
+}
+
+$('fileGo').addEventListener('click', async () => {
+  if(!curFile || running) return;
+  running = true; cancelReq = false;
+  $('fileGo').disabled = true; $('fileStop').disabled = false;
+  fmsg(''); setBar(0);
+  try{
+    if(engine()==='api') await runApi(curFile); else await runLocal(curFile);
+    setBar(100); fmsg(cancelReq ? '中止しました' : '完了しました。下の結果を確認してください。');
+  }catch(e){
+    if(e && e.name==='AbortError') fmsg('中止しました');
+    else fmsg('エラー: '+((e && e.message) || e), true);
+  }finally{
+    running = false; $('fileStop').disabled = true; $('fileGo').disabled = !curFile;
+  }
+});
+$('fileStop').addEventListener('click', () => {
+  cancelReq = true; fmsg('中止しています…');
+  if(runApi.ctrl){ try{ runApi.ctrl.abort(); }catch(e){} }
+});
+
+/* ---------- Service Worker ---------- */
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
