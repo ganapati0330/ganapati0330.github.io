@@ -143,6 +143,26 @@ body.narrow .netcols{grid-template-columns:1fr}
 .netstat{margin:12px 0 4px;font-weight:800;font-size:15px;line-height:1.9}
 .netstat .who{display:inline-block;color:#fff;background:var(--band);padding:0 8px;margin-right:6px;font-size:12px}
 .netstat .who.p2{background:var(--stamp)}
+.duo{display:flex;gap:18px;align-items:center;justify-content:center;background:#fffaf0;border:3px solid var(--ink);border-radius:10px;padding:10px 14px}
+.duo .qr{flex:none;display:flex;margin:0;background:#fff}
+.duo .how{flex:1;min-width:0;text-align:left}
+.solo{background:#fffaf0;border:3px solid var(--ink);border-radius:10px;padding:14px;text-align:center;max-width:520px;margin:0 auto}
+.num{font-weight:900;font-size:15px;line-height:1.45;margin:4px 0 6px;display:flex;gap:8px;align-items:flex-start;text-align:left}
+.num b{flex:none;width:26px;height:26px;border-radius:50%;background:var(--band);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+.tk.big{display:block;width:100%;font-size:17px;padding:12px 10px;margin:4px 0 8px}
+.row.sm{margin:2px 0 10px;gap:8px;justify-content:flex-start}
+.row.sm .tk{font-size:13px;padding:5px 10px}
+.hidecode{position:absolute;left:-9999px;width:10px;height:10px;opacity:0}
+.pastebox{font-size:12px;margin-top:2px}
+.pastebox summary{cursor:pointer;color:#555;font-weight:700}
+.pastebox textarea{width:100%;height:44px;font-size:11px;margin:6px 0;-webkit-user-select:text;user-select:text}
+.pastebox .tk{font-size:13px;padding:5px 10px}
+#scNet.connecting .netleft{display:none}
+#scNet.lobby .netcols{grid-template-columns:1fr;max-width:560px;margin:0 auto}
+#scNet.lobby .netright{display:none}
+#scNet.connecting .netcols{grid-template-columns:1fr}
+#scNet.connecting .h2{margin:0 0 6px;font-size:20px}
+#scNet.connecting .row{margin-top:8px}
 .step{background:#fffaf0;border:2px solid var(--ink);border-radius:8px;padding:10px 12px;margin-bottom:10px}
 .step h3{margin:0 0 6px;font-size:15px}
 .step .qr{display:flex;justify-content:center;margin:4px 0}
@@ -221,7 +241,7 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
       <button class="hot js-help" id="helpBtn" aria-label="あそびかた" style="left:63.756%;top:75.452%;width:25.000%;height:12.327%"></button>
       <button class="hot js-sound" id="soundBtn" aria-label="おと" style="left:79.904%;top:88.842%;width:18.660%;height:8.289%"></button>
       <span class="soundst" aria-hidden="true" style="left:89.713%;top:90.967%;width:4.306%;height:4.038%">オン</span>
-      <div class="artver">v10　© 泉正道 / フテ猫実行委員会</div>
+      <div class="artver">v11　© 泉正道 / フテ猫実行委員会</div>
     </div>
     <div class="inner">
       <div class="mast"><h1>フテ猫ファイター</h1><div class="bandline">そのまえに、いっしょうぶ！</div></div>
@@ -239,7 +259,7 @@ body.narrow .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
       </div>
       <div id="rotHint">スマホを よこむきに して あそんでね</div>
     </div>
-    <div class="ver">v10　© 泉正道 / フテ猫実行委員会</div>
+    <div class="ver">v11　© 泉正道 / フテ猫実行委員会</div>
   </section>
 
   <!-- help -->
@@ -944,7 +964,7 @@ var Logic = (function () {
 <script>
 (function () {
 'use strict';
-var VERSION = '10';
+var VERSION = '11';
 var L = Logic, W = L.W, H = L.H, FLOOR = L.FLOOR;
 var cv = document.getElementById('cv');
 var ctx = cv.getContext('2d');
@@ -2427,7 +2447,7 @@ function qrCanvas(text, avail) {
   var q = qrcode(0, 'M');
   q.addData(text); q.make();
   var n = q.getModuleCount(), quiet = 4, total = n + quiet * 2;
-  var room = Math.max(150, Math.min(avail || 260, 300));
+  var room = Math.max(140, Math.min(avail || 260, 320));
   var mod = Math.max(2, Math.floor(room / total));
   var pr = Math.max(1, Math.min(3, Math.round(window.devicePixelRatio || 1)));
   var css = total * mod;
@@ -2597,28 +2617,47 @@ function netOnSnapshot(o) {
 
 /* ---------- 画面（へや・ロビー） ---------- */
 function shareLink(code, kind) { return location.origin + location.pathname + '#' + kind + '=' + encodeURIComponent(code); }
-function stepQR(title, code, kind, hint) {
-  return '<div class="step"><h3>' + title + '</h3>' +
-    '<div class="qr" data-code="' + encodeURIComponent(code) + '"></div>' +
-    '<div class="row"><button class="tk" data-share="' + encodeURIComponent(shareLink(code, kind)) + '">リンクを おくる</button>' +
+/* Connection steps are shown one at a time in a single panel that fits the screen without scrolling:
+   the QR on the left, what to do next (and the button for it) on the right. */
+function pasteBox() {
+  return '<details class="pastebox"><summary>QRが よめないときは コードで つなぐ</summary>' +
+    '<textarea id="paste" placeholder="あいての コードや リンクを ここに はりつけてね" aria-label="あいての コード"></textarea>' +
+    '<button class="tk ghost" data-paste>はりつけた コードで つなぐ</button></details>';
+}
+function shareRow(code, kind) {
+  return '<div class="row sm"><button class="tk ghost" data-share="' + encodeURIComponent(shareLink(code, kind)) + '">リンクを おくる</button>' +
     '<button class="tk ghost" data-copy="' + encodeURIComponent(code) + '">コードを コピー</button></div>' +
-    '<textarea readonly id="myCode" aria-label="じぶんの コード">' + code + '</textarea>' +
-    (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>';
+    '<textarea readonly id="myCode" class="hidecode" aria-hidden="true" tabindex="-1">' + code + '</textarea>';
 }
-function stepScan(title, hint) {
-  return '<div class="step"><h3>' + title + '</h3>' +
-    '<div class="row"><button class="tk main" data-scan>カメラで よみとる</button></div>' +
-    '<textarea id="paste" placeholder="ここに コードや リンクを はりつけても OK" aria-label="あいての コード"></textarea>' +
-    '<div class="row"><button class="tk ghost" data-paste>はりつけた コードで つなぐ</button></div>' +
-    (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>';
+function hostPanel(code) {
+  return '<div class="duo"><div class="qr" data-code="' + encodeURIComponent(code) + '"></div><div class="how">' +
+    '<div class="num"><b>1</b>この QRを あいてに カメラで よみとってもらってね</div>' + shareRow(code, 'j') +
+    '<div class="num"><b>2</b>あいての がめんに QRが でたら、こんどは それを よみとってね</div>' +
+    '<button class="tk main big" data-scan>カメラで あいての QRを よみとる</button>' + pasteBox() + '</div></div>';
 }
-function stepWait(text) { return '<div class="step"><p class="hint"><span class="spin"></span>' + text + '</p></div>'; }
+function guestScanPanel() {
+  return '<div class="solo"><div class="num"><b>1</b>へやを つくった人の がめんの QRを よみとってね</div>' +
+    '<button class="tk main big" data-scan>カメラで よみとる</button>' + pasteBox() + '</div>';
+}
+function guestAnswerPanel(code) {
+  return '<div class="duo"><div class="qr" data-code="' + encodeURIComponent(code) + '"></div><div class="how">' +
+    '<div class="num"><b>2</b>こんどは この QRを へやを つくった人に よみとってもらってね</div>' +
+    '<p class="hint"><span class="spin"></span>つながるのを まっています…</p>' +
+    '<p class="hint">はなれている ときは リンクを おくっても OK</p>' + shareRow(code, 'a') + '</div></div>';
+}
+function stepWait(text) { return '<div class="solo"><p class="hint"><span class="spin"></span>' + text + '</p></div>'; }
+function logicalSize() {
+  return view.rot ? { w: window.innerHeight, h: window.innerWidth } : { w: window.innerWidth, h: window.innerHeight };
+}
 function setConn(html) {
   var box = document.getElementById('connSteps');
   box.innerHTML = html;
+  document.getElementById('scNet').classList.toggle('connecting', !!html && !NET.connected);
   var qs = box.querySelectorAll('.qr[data-code]');
+  var sz = logicalSize();
+  var avail = Math.min(sz.h - 120, sz.w * 0.44, 320);
   for (var i = 0; i < qs.length; i++) {
-    try { qs[i].appendChild(qrCanvas(decodeURIComponent(qs[i].getAttribute('data-code')), 240)); }
+    try { qs[i].appendChild(qrCanvas(decodeURIComponent(qs[i].getAttribute('data-code')), avail)); }
     catch (e) { qs[i].textContent = 'QRを つくれませんでした。コードを コピーして おくってね。'; }
   }
 }
@@ -2646,6 +2685,7 @@ function renderNetPick() {
 function renderLobby() {
   var lob = document.getElementById('netLobby');
   lob.style.display = NET.connected ? '' : 'none';
+  document.getElementById('scNet').classList.toggle('lobby', NET.connected);
   document.getElementById('netRoles').style.display = (NET.connected || NET.role) ? 'none' : '';
   if (!NET.connected) return;
   setConn('');
@@ -2678,8 +2718,7 @@ function beginHost() {
   PEER.createOffer().then(function (code) {
     if (NET.role !== 'host') return;
     NET.stage = 'host-wait-answer';
-    setConn(stepQR('① この QRを あいてに よみとってもらう', code, 'j', 'LINEなどで リンクを おくっても OK') +
-            stepScan('② あいてに でた QRを よみとる', 'よみとると すぐに つながるよ'));
+    setConn(hostPanel(code));
   }, function (e) {
     setConn('<div class="step"><p class="hint">つなぐ じゅんびに しっぱいしました。' + ((e && e.message) || '') + '</p></div>');
   });
@@ -2687,7 +2726,7 @@ function beginHost() {
 function beginGuest() {
   NET.role = 'guest'; NET.side = 1; NET.stage = 'guest-wait-offer';
   renderLobby();
-  setConn(stepScan('① へやを つくった人の QRを よみとる'));
+  setConn(guestScanPanel());
 }
 function handleCode(raw) {
   var code = codeFromText(raw);
@@ -2696,8 +2735,8 @@ function handleCode(raw) {
     setConn(stepWait('へんじを つくっています…'));
     PEER.acceptOffer(code).then(function (ans) {
       NET.stage = 'guest-wait-open';
-      setConn(stepQR('② この QRを へやを つくった人に よみとってもらう', ans, 'a', 'つながるまで まってね'));
-    }, function (e) { toast((e && e.message) || 'コードが よみとれませんでした'); setConn(stepScan('① へやを つくった人の QRを よみとる')); });
+      setConn(guestAnswerPanel(ans));
+    }, function (e) { toast((e && e.message) || 'コードが よみとれませんでした'); setConn(guestScanPanel()); });
   } else if (NET.stage === 'host-wait-answer') {
     PEER.acceptAnswer(code).then(function () { NET.stage = 'host-wait-open'; setConn(stepWait('つないでいます…')); },
       function (e) { toast((e && e.message) || 'コードが よみとれませんでした'); });
