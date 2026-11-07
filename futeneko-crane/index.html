@@ -161,7 +161,7 @@ h1{font-size:26px;color:#ffd75e;text-shadow:0 2px 0 #7a3a00;margin:6px 0 2px}
 </div>
 <script>
 'use strict';
-const VERSION='1.1';
+const VERSION='1.2';
 document.getElementById('verTxt').textContent=VERSION;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -169,7 +169,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 
 /* ===== せかいの せってい ===== */
-const W=360, TOP=300, DEPTHPX=150, HOLE_W=92, HOLE_Z=0.42, HOME={x:46,z:0.2};
+const W=360, TOP=300, DEPTHPX=150, HOLE_Z=0.42, HOME={x:46,z:0.2};let HOLE_W=92;
 const ZS=z=>1-0.38*z;
 const G=1300;
 
@@ -218,12 +218,12 @@ const PLUSH_S=['fute_gold','kuro_platinum','chap_pink'];
 
 /* ===== だい ===== */
 const MACH={
- beginner:{name:'しょしんしゃ台',em:'🧸',cost:10,stars:1,arm:1.75,time:35,type:'plush',n:6,pool:()=>Math.random()<.15?pick(PLUSH_R):pick(PLUSH_N),ds:'アームが つよい！ はじめては ここ'},
- plush:{name:'ぬいぐるみ台',em:'🐱',cost:30,stars:2,arm:1.25,time:28,type:'plush',n:7,pool:()=>Math.random()<.3?pick(PLUSH_R):pick(PLUSH_N),ds:'まんなかを ねらって もちあげよう'},
- bridge:{name:'橋わたし台',em:'📦',cost:50,stars:3,arm:.95,time:28,type:'bridge',ds:'2本の ぼうの うえの はこを すこしずつ ずらして おとす'},
- mystery:{name:'ミステリー台',em:'🎁',cost:40,stars:2,arm:1.3,time:28,type:'mystery',n:8,ds:'カプセルの なかみは おたのしみ！ かぐや アイテム'},
- giant:{name:'巨大景品台',em:'🏆',cost:100,stars:4,arm:1.5,time:30,type:'giant',ds:'でっかい！ なんかいも ひっぱって あなに おとそう'},
- hard:{name:'激ムズ台',em:'👑',cost:150,stars:5,arm:.9,time:25,type:'plush',n:5,pool:()=>Math.random()<.4?pick(PLUSH_S):pick(PLUSH_R),ds:'金のフテ猫が ねむる… アームは よわい'}
+ beginner:{name:'しょしんしゃ台',em:'🧸',cost:10,stars:1,arm:1.55,time:30,type:'plush',n:6,pool:()=>Math.random()<.15?pick(PLUSH_R):pick(PLUSH_N),ds:'アームが つよめ。光る景品を ねらおう'},
+ plush:{name:'ぬいぐるみ台',em:'🐱',cost:30,stars:2,arm:1.28,time:22,type:'plush',n:7,pool:()=>Math.random()<.3?pick(PLUSH_R):pick(PLUSH_N),ds:'まんなかを ねらって もちあげよう'},
+ bridge:{name:'橋わたし台',em:'📦',cost:50,stars:3,arm:.6,time:22,type:'bridge',ds:'2本の ぼうの うえの はこを すこしずつ ずらして おとす'},
+ mystery:{name:'ミステリー台',em:'🎁',cost:40,stars:2,arm:1.1,time:22,type:'mystery',n:8,ds:'カプセルの なかみは おたのしみ！ かぐや アイテム'},
+ giant:{name:'巨大景品台',em:'🏆',cost:100,stars:4,arm:1.0,time:25,type:'giant',ds:'でっかい！ なんかいも ひっぱって あなに おとそう'},
+ hard:{name:'激ムズ台',em:'👑',cost:150,stars:5,arm:.78,time:20,type:'plush',n:5,pool:()=>Math.random()<.4?pick(PLUSH_S):pick(PLUSH_R),ds:'金のフテ猫が ねむる… アームは よわい'}
 };
 const MORDER=['beginner','plush','bridge','mystery','giant','hard'];
 
@@ -315,9 +315,9 @@ function stepPrize(p,dt){
  if(p.shape==='ball'){
   const vx=p.x-p.px,vy=p.y-p.py;p.px=p.x;p.py=p.y;p.x+=vx*.995;p.y+=vy*.995-G*dt*dt;
   // ゆか
-  if(p.y<p.r&&!(hole&&p.x<HOLE_W)){p.y=p.r;const nvx=(p.x-p.px)*(1-fl*.5);p.px=p.x-nvx;p.py=p.y+Math.abs(p.y-p.py)*.3;p.landed=true;}
+  if(p.y<p.r&&!(hole&&(floorHole||p.x<HOLE_W))){p.y=p.r;const nvx=(p.x-p.px)*(1-fl*.5);p.px=p.x-nvx;p.py=p.y+Math.abs(p.y-p.py)*.3;p.landed=true;}
   if(p.x<p.r&&!hole){p.x=p.r;p.px=p.x+(p.x-p.px)*-.4;}
-  if(p.x<-20)p.x=-20;
+  if(p.x<-60)p.x=-60;
   if(p.x>W-p.r){p.x=W-p.r;p.px=p.x+(p.x-p.px)*-.4;}
   if(bars)bars.forEach(b=>collideCircle(p,b.x,b.y,b.r+p.r,fl));
   if(hole&&!floorHole)collideCircle(p,HOLE_W,-2,p.r+2,fl);
@@ -327,10 +327,10 @@ function stepPrize(p,dt){
   for(let it=0;it<8;it++){
    p.cons.forEach(c=>{const a=p.pt[c[0]],b=p.pt[c[1]];const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;const f=(d-c[2])/d*.5;a.x+=dx*f;a.y+=dy*f;b.x-=dx*f;b.y-=dy*f;});
    p.pt.forEach(q=>{
-    if(q.y<0&&!(hole&&q.x<HOLE_W)){q.y=0;const vx=q.x-q.px;q.px=q.x-vx*(1-fl*.5);q.py=q.y+Math.abs(q.y-q.py)*.2;p.landed=true;}
+    if(q.y<0&&!(hole&&(floorHole||q.x<HOLE_W))){q.y=0;const vx=q.x-q.px;q.px=q.x-vx*(1-fl*.5);q.py=q.y+Math.abs(q.y-q.py)*.2;p.landed=true;}
     if(q.x<0&&!hole){q.x=0;q.px=q.x+(q.x-q.px)*-.3;}
     if(q.x>W){q.x=W;q.px=q.x+(q.x-q.px)*-.3;}
-    if(q.x<-30)q.x=-30;
+    if(q.x<-60)q.x=-60;
    });
    if(bars)bars.forEach(b=>{for(let i=0;i<4;i++)edgeCircle(p.pt[i],p.pt[(i+1)%4],b.x,b.y,b.r,fl);});
    if(hole&&!floorHole)for(let i=0;i<4;i++)edgeCircle(p.pt[i],p.pt[(i+1)%4],HOLE_W,-3,4,fl);
@@ -362,9 +362,9 @@ function topAt(x,z,r){ // クレーンの ぶつかる たかさ
 }
 
 /* ===== クレーン ===== */
-const claw={x:HOME.x,z:HOME.z,y:TOP,open:1,st:'idle',t:0,hold:null,mode:'none',slipT:0,grabPt:null,vx:0,vz:0,quality:0,offset:0};
+const claw={x:HOME.x,z:HOME.z,y:TOP,open:1,st:'idle',t:0,hold:null,mode:'none',slipT:0,grabPt:null,g0:null,vx:0,vz:0,quality:0,offset:0};
 let machine=null,mk='',playing=false,timeLeft=0,input={l:0,r:0,b:0,f:0},hint=null,hintT=0;
-let lastResult=null;
+let lastResult=null,lastPlayEnd=-1e9;
 function spawnPlush(n){
  for(let i=0;i<n;i++){const id=machine.pool();let x,z,ok=false,tries=0;
   while(!ok&&tries++<30){x=rnd(HOLE_W+60,W-38);z=rnd(.08,.92);ok=prizes.every(p=>{const c=center(p);return Math.abs(c.x-x)>50||Math.abs(p.z-z)>.3;});}
@@ -372,7 +372,7 @@ function spawnPlush(n){
  }
 }
 function setupMachine(k){
- mk=k;machine=MACH[k];prizes=[];bars=null;floorHole=(machine.type==='bridge');claw.x=HOME.x;claw.z=HOME.z;claw.y=TOP;claw.open=1;claw.st='idle';claw.hold=null;
+ mk=k;machine=MACH[k];prizes=[];bars=null;floorHole=(machine.type==='bridge');HOLE_W=machine.type==='giant'?150:92;HOME.x=HOLE_W/2;claw.x=HOME.x;claw.z=HOME.z;claw.y=TOP;claw.open=1;claw.st='idle';claw.hold=null;
  if(machine.type==='plush')spawnPlush(machine.n);
  else if(machine.type==='bridge'){bars=[{x:146,y:92,r:7},{x:242,y:92,r:7}];const p=makePrize(Math.random()<.5?'box_fute':'box_kuro',194+rnd(-6,6),rnd(.3,.6),100);p.z=clamp(p.z,.15,.38);prizes.push(p);}
  else if(machine.type==='giant'){const p=makePrize(pick(['giant_fute','giant_kuro','giant_chap']),W-110,rnd(.15,.35),0);prizes.push(p);}
@@ -404,22 +404,22 @@ function updHud(){$('hCoin').textContent=S.coins;$('hPrize').textContent=Object.
 function tryGrab(){
  // つかめる 景品を さがす
  let best=null,bo=0;
- prizes.forEach(p=>{if(p.held||Math.abs(p.z-claw.z)>.2)return;const c=center(p);const hw=p.shape==='ball'?p.r:p.w*.5;const top=p.shape==='ball'?c.y+p.r:Math.max(...p.pt.map(q=>q.y));
-  const reach=hw+10;if(Math.abs(c.x-claw.x)<reach&&claw.y<top+8&&claw.y>c.y-hw*.3){const sc=1-Math.abs(c.x-claw.x)/reach-Math.abs(top-claw.y)/40;if(!best||sc>bo){best=p;bo=sc;}}});
+ prizes.forEach(p=>{if(p.held||Math.abs(p.z-claw.z)>.15)return;const c=center(p);const hw=p.shape==='ball'?p.r:p.w*.5;const top=p.shape==='ball'?c.y+p.r:Math.max(...p.pt.map(q=>q.y));
+  const reach=hw+2;if(Math.abs(c.x-claw.x)<reach&&claw.y<top+8&&claw.y>c.y-hw*.3){const sc=1-Math.abs(c.x-claw.x)/reach-Math.abs(top-claw.y)/40;if(!best||sc>bo){best=p;bo=sc;}}});
  if(!best){claw.mode='none';return;}
  const c=center(best);const hw=best.shape==='ball'?best.r:best.w*.5;
  const off=clamp((claw.x-c.x)/hw,-1.2,1.2);          // かたより（-1〜1）
  const comx=best.shape==='ball'?0:best.com;           // 重心の かたより
  const eff=Math.abs(off-comx);                        // 重心からの ずれ
- const zoff=Math.abs(best.z-claw.z)/.2;
- let grip=machine.arm*(1-.55*eff)*(1-.3*zoff)*rnd(.9,1.1)*(best.shape==='ball'?1.1:1);
+ const zoff=Math.abs(best.z-claw.z)/.15;
+ let grip=machine.arm*(1-.65*eff)*(1-.4*zoff)*rnd(.8,1.15)*(best.shape==='ball'?1.05:1);
  if(best.shape==='box'&&best.w>100)grip*=1.15;
  const f=grip/best.wt;
  claw.hold=best;best.held=true;claw.offset=off;claw.quality=f;
- if(f>=1&&Math.abs(off)<.85){claw.mode='carry';claw.slipT=0;}
- else if(f>.22){claw.mode='corner';claw.slipT=f*2.0+rnd(-.15,.25);
+ if(f>=1&&Math.abs(off)<.7){claw.mode='carry';claw.slipT=0;}
+ else if((machine.arm*(best.shape==='box'&&best.w>100?1.15:1)*(1-.25*eff)*(1-.4*zoff)/best.wt)>.15){claw.mode='corner';const fc=machine.arm*(best.shape==='box'&&best.w>100?1.15:1)*(1-.25*eff)*(1-.4*zoff)*rnd(.9,1.1)/best.wt;claw.quality=fc;claw.slipT=Math.min(1.8,fc*3.0)+rnd(-.1,.2);
   // いちばん ちかい かど
-  if(best.shape==='box'){let bi=0,bd=1e9;best.pt.forEach((q,i)=>{const d=Math.hypot(q.x-claw.x,q.y-claw.y);if(d<bd){bd=d;bi=i;}});claw.grabPt=bi;}
+  if(best.shape==='box'){let bi=0,bd=1e9;best.pt.forEach((q,i)=>{const d=Math.hypot(q.x-claw.x,q.y-claw.y);if(d<bd){bd=d;bi=i;}});claw.grabPt=bi;const q=best.pt[bi];claw.g0={qx:q.x-claw.x,qy:q.y,cy:claw.y};}
   else{claw.mode='carry';claw.slipT=0;claw.quality=Math.max(f,.9);}
  }else{claw.mode='none';best.held=false;claw.hold=null;say('L','フテ猫','びくとも せえへん！ おもすぎや！');return;}
  SFX.grab();
@@ -427,7 +427,7 @@ function tryGrab(){
  else say('R2','クロネコ',pick(['かどを つかんだ。うごくか？','もちあがらない… だが ずれるぞ。','てこの げんりだ。']));
 }
 function releasePrize(reason){
- const p=claw.hold;if(!p)return;p.held=false;claw.hold=null;
+ const p=claw.hold;if(!p)return;if(window.__dbg)window.__dbg.push(reason+' '+claw.st+' q'+claw.quality.toFixed(2)+' off'+claw.offset.toFixed(2)+' slipT'+claw.slipT.toFixed(2)+' '+claw.mode);p.held=false;claw.hold=null;
  const vx=claw.vx,vy=0;
  if(p.shape==='ball'){p.px=p.x-vx*.016;p.py=p.y;}
  else p.pt.forEach(q=>{q.px=q.x-vx*.016;q.py=q.y;});
@@ -438,9 +438,9 @@ function releasePrize(reason){
   const c2=center(p);const dir=c2.x>HOLE_W+30?'ひだり':'てまえ';if(!near)setTimeout(()=>say('R','チャッピー','つぎは もうすこし '+dir+'に うごかすと いいかも！'),1600);}
 }
 function updateClaw(dt){
- const spd=150;const oldx=claw.x,oldz=claw.z;
+ const spd=165;const oldx=claw.x,oldz=claw.z;
  if(claw.st==='move'){
-  if(input.l)claw.x-=spd*dt;if(input.r)claw.x+=spd*dt;if(input.b)claw.z+=.75*dt;if(input.f)claw.z-=.75*dt;
+  if(input.l)claw.x-=spd*dt;if(input.r)claw.x+=spd*dt;if(input.b)claw.z+=.85*dt;if(input.f)claw.z-=.85*dt;
   claw.x=clamp(claw.x,20,W-20);claw.z=clamp(claw.z,.06,.94);
   timeLeft-=dt;if(timeLeft<=0){timeLeft=0;doGrab();}
   $('timerFill').style.width=(timeLeft/machine.time*100)+'%';
@@ -452,7 +452,7 @@ function updateClaw(dt){
   claw.t+=dt;claw.open=Math.max(0,1-claw.t/.4);
   if(claw.t>=.45){tryGrab();claw.st='up';claw.t=0;}
  }else if(claw.st==='up'){
-  const sp=claw.hold?(claw.mode==='corner'?110:130):170;claw.y+=sp*dt;
+  const sp=claw.hold?(claw.mode==='corner'?150:130):170;claw.y+=sp*dt;
   if(claw.y>=TOP){claw.y=TOP;claw.st='travel';}
  }else if(claw.st==='travel'){
   const dx=HOME.x-claw.x,dz=HOME.z-claw.z;const d=Math.hypot(dx,dz*300);
@@ -464,7 +464,7 @@ function updateClaw(dt){
   if(claw.t>1.1){claw.st='wait';claw.t=0;}
  }else if(claw.st==='wait'){
   claw.t+=dt;const anyMoving=prizes.some(p=>{if(p.shape==='ball')return Math.hypot(p.x-p.px,p.y-p.py)>.6;return p.pt.some(q=>Math.hypot(q.x-q.px,q.y-q.py)>.6);});
-  if(claw.t>1.8||(claw.t>.7&&!anyMoving)){claw.st='idle';endPlay();}
+  if(claw.t>3||(claw.t>.7&&!anyMoving)){claw.st='idle';endPlay();}
  }
  claw.vx=(claw.x-oldx)/dt;claw.vz=(claw.z-oldz)/dt;
  // もちあげ中
@@ -476,19 +476,20 @@ function updateClaw(dt){
    else{const cx=claw.x-Math.sin(tilt)*p.h*.25,cy=claw.y-p.h*.5-4;setBox(p,cx,cy,tilt);}
    p.z=claw.z;
    if(claw.st==='up'||claw.st==='travel'){
-    const ps=Math.max(0,1.25-claw.quality)*.9+Math.abs(claw.offset)*.3+(p.shape==='ball'?.05:0)+(machine.type==='hard'?.15:0);
+    const ps=Math.max(0,1.3-claw.quality)*.8+Math.abs(claw.offset)*.4+(p.shape==='ball'?.08:0)+(machine.type==='hard'?.25:0)+(claw.st==='travel'?.06:0);
     if(Math.random()<ps*dt)releasePrize('slip');
    }
   }else if(claw.mode==='corner'){
-   const q=p.pt[claw.grabPt];q.x=claw.x;q.y=claw.y-4;q.px=q.x;q.py=q.y;p.z=claw.z;
-   // ほかの かどは 物理で ついてくる
-   p.held=false;stepPrize(p,dt);p.held=true;q.x=claw.x;q.y=claw.y-4;q.px=q.x;q.py=q.y;
+   // かどは アームの力のぶんだけ ついてくる（よこは ひっぱられる）
+   const q=p.pt[claw.grabPt];const ty=claw.g0.qy+(claw.y-claw.g0.cy)*Math.min(1,claw.quality),tx=claw.x+claw.g0.qx*.5;
+   q.x=tx;q.y=ty;q.px=q.x;q.py=q.y;p.z=claw.z;
+   p.held=false;stepPrize(p,dt);p.held=true;q.x=tx;q.y=ty;q.px=q.x;q.py=q.y;
    if(claw.st==='up'||claw.st==='travel'){claw.slipT-=dt;if(claw.slipT<=0)releasePrize('slip');}
   }
  }
 }
 function endPlay(){
- showPad(false);input={l:0,r:0,b:0,f:0};
+ lastPlayEnd=performance.now();showPad(false);input={l:0,r:0,b:0,f:0};
  if(!lastResult){SFX.miss();say('L','フテ猫',pick(['なにも とれへんかったな。','つぎや つぎ！','もっと よう みて ねらえ！']));}
  lastResult=null;refill();save();updHud();
 }
@@ -509,7 +510,7 @@ function acquire(p){
 function physics(dt){
  const sub=2,h=dt/sub;
  for(let s=0;s<sub;s++){prizes.forEach(p=>stepPrize(p,h));pairCollide();}
- for(const p of prizes.slice()){const c=center(p);if(c.y<-70){if(claw.st==='idle'||claw.st==='move'){ // あそんでいないときに おちたら もどす
+ for(const p of prizes.slice()){const c=center(p);if(c.y<-70){if((claw.st==='idle'||claw.st==='move')&&performance.now()-lastPlayEnd>4000){ // あそんでいないときに おちたら もどす
    prizes.splice(prizes.indexOf(p),1);prizes.push(makePrize(p.id,rnd(HOLE_W+80,W-50),rnd(.5,.9),150));}else acquire(p);}else if(c.y<-600)prizes.splice(prizes.indexOf(p),1);}
 }
 
@@ -578,14 +579,14 @@ function drawPrize(p){
  if(!p.held){g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(X,sy(0,p.z)+2,radius(p)*s*1.1,radius(p)*s*.3,0,0,7);g.fill();}
  g.save();g.translate(X,Y);g.rotate(-a);g.scale(s,s);
  if(p.shape==='ball'){
-  if(machine&&claw.st==='move'&&Math.abs(p.z-claw.z)<=.2){g.shadowColor='rgba(80,255,140,.9)';g.shadowBlur=18;}
+  if(mk==='beginner'&&claw.st==='move'&&Math.abs(p.z-claw.z)<=.15){g.shadowColor='rgba(80,255,140,.9)';g.shadowBlur=18;}
   g.fillStyle=p.col;g.beginPath();g.arc(0,0,p.r,0,7);g.fill();g.shadowBlur=0;
   g.fillStyle='rgba(255,255,255,.85)';g.beginPath();g.arc(0,0,p.r,Math.PI,0);g.fill();
   g.fillStyle='rgba(255,255,255,.5)';g.beginPath();g.arc(-p.r*.35,-p.r*.4,p.r*.25,0,7);g.fill();
   g.fillStyle='#444';g.font='900 14px sans-serif';g.textAlign='center';g.fillText('?',0,-6);
  }else{
   const im=IMG[p.d.img];
-  if(machine&&claw.st==='move'&&Math.abs(p.z-claw.z)<=.2){g.shadowColor='rgba(80,255,140,.9)';g.shadowBlur=18;}
+  if(mk==='beginner'&&claw.st==='move'&&Math.abs(p.z-claw.z)<=.15){g.shadowColor='rgba(80,255,140,.9)';g.shadowBlur=18;}
   if(hint===p){g.strokeStyle='#ffd75e';g.lineWidth=4;g.setLineDash([8,6]);g.lineDashOffset=-performance.now()/40;g.strokeRect(-p.w/2-6,-p.h/2-6,p.w+12,p.h+12);g.setLineDash([]);}
   if(im){g.drawImage(im,-p.w/2,-p.h/2,p.w,p.h);}
   else{const isBox=p.d.id.startsWith('box_');g.fillStyle=isBox?(p.d.id==='box_fute'?'#ffb74d':'#7986cb'):'#ff8a65';roundRect(g,-p.w/2,-p.h/2,p.w,p.h,10);g.fill();g.strokeStyle='rgba(0,0,0,.25)';g.lineWidth=3;g.stroke();
@@ -595,11 +596,11 @@ function drawPrize(p){
  g.restore();
  if(hint===p&&p.shape==='ball'){g.strokeStyle='#ffd75e';g.lineWidth=4;g.setLineDash([8,6]);g.beginPath();g.arc(X,Y,(p.r+8)*s,0,7);g.stroke();g.setLineDash([]);}
 }
-function alignedPrize(){let r=null;prizes.forEach(p=>{if(p.held||Math.abs(p.z-claw.z)>.2)return;const c=center(p);const hw=p.shape==='ball'?p.r:p.w*.5;if(Math.abs(c.x-claw.x)<hw+10)r=p;});return r;}
+function alignedPrize(){if(mk!=='beginner')return null;let r=null;prizes.forEach(p=>{if(p.held||Math.abs(p.z-claw.z)>.15)return;const c=center(p);const hw=p.shape==='ball'?p.r:p.w*.5;if(Math.abs(c.x-claw.x)<hw+2)r=p;});return r;}
 function drawTarget(){
  if(!machine)return;const g=ctx,s=ZS(claw.z);const X=sx(claw.x,claw.z),FY=sy(0,claw.z);const ok=!!alignedPrize();
  // おなじ おくゆき の おび
- g.fillStyle=ok?'rgba(80,220,120,.22)':'rgba(255,215,94,.18)';g.beginPath();g.moveTo(sx(0,clamp(claw.z-.2,0,1)),sy(0,clamp(claw.z-.2,0,1)));g.lineTo(sx(W,clamp(claw.z-.2,0,1)),sy(0,clamp(claw.z-.2,0,1)));g.lineTo(sx(W,clamp(claw.z+.2,0,1)),sy(0,clamp(claw.z+.2,0,1)));g.lineTo(sx(0,clamp(claw.z+.2,0,1)),sy(0,clamp(claw.z+.2,0,1)));g.closePath();g.fill();
+ if(mk==='beginner'){g.fillStyle=ok?'rgba(80,220,120,.22)':'rgba(255,215,94,.18)';g.beginPath();g.moveTo(sx(0,clamp(claw.z-.2,0,1)),sy(0,clamp(claw.z-.2,0,1)));g.lineTo(sx(W,clamp(claw.z-.2,0,1)),sy(0,clamp(claw.z-.2,0,1)));g.lineTo(sx(W,clamp(claw.z+.2,0,1)),sy(0,clamp(claw.z+.2,0,1)));g.lineTo(sx(0,clamp(claw.z+.2,0,1)),sy(0,clamp(claw.z+.2,0,1)));g.closePath();g.fill();}
  // まと
  g.strokeStyle=ok?'#2fd27a':'#ffd75e';g.lineWidth=3;g.beginPath();g.ellipse(X,FY,22*s,8*s,0,0,7);g.stroke();g.beginPath();g.ellipse(X,FY,9*s,3.5*s,0,0,7);g.stroke();
  g.beginPath();g.moveTo(X-30*s,FY);g.lineTo(X+30*s,FY);g.moveTo(X,FY-12*s);g.lineTo(X,FY+12*s);g.stroke();
