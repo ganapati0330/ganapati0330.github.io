@@ -689,6 +689,8 @@ button{cursor:pointer}
 .rin{display:flex;gap:6px;align-items:center}
 .rin input{flex:1;min-width:0;border:0;border-radius:8px;padding:9px 10px;font-size:16px;color:#0f172a}
 .rin input::placeholder{color:#94a3b8;font-size:13px}
+.rin #btnGoalSame{background:#334155;flex:none;width:38px}
+.rin #btnGoalSame.on{background:#16a34a}
 .rin .herebtn{background:#334155;padding:0 9px;font-size:16px}
 .rin button{border:0;border-radius:8px;background:#f97316;color:#fff;padding:0 11px;height:38px;font-weight:700;flex:none}
 #results{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#fff;color:#0f172a;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-height:50vh;overflow:auto;z-index:5;display:none}
@@ -904,7 +906,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
     <h1>🚴 サイクルルートプランナー <small id="ver"></small></h1>
     <div class="search">
       <div class="rin"><span class="badge b-s">S</span><input id="qS" type="search" placeholder="出発地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button class="herebtn" id="btnHereS" title="現在地を出発地に">📍</button><button id="btnSearchS">検索</button></div>
-      <div class="rin"><span class="badge b-g">G</span><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button class="herebtn" id="btnHereG" title="現在地を目的地に">📍</button><button id="btnSearchG">検索</button></div>
+      <div class="rin"><span class="badge b-g">G</span><button class="herebtn" id="btnGoalSame" title="ゴールを出発地と同じにする">🔁</button><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button class="herebtn" id="btnHereG" title="現在地を目的地に">📍</button><button id="btnSearchG">検索</button></div>
       <div id="results"></div>
     </div>
     <div class="mini" id="mini"><span id="miniTxt">出発地と目的地を決めるか、下の「距離を指定してコースを提案」を使ってください</span><button id="btnRide" class="ridebtn">🚴 走行</button><button id="btnMini">詳細 ▴</button></div>
@@ -938,14 +940,15 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
     <details class="card" data-k="wp" open>
       <summary><h2>📍 地点</h2></summary>
       <div id="wpList"></div>
-      <p class="hint" id="wpHint">出発地は現在地が自動で入ります（位置情報を許可した場合）。地図をタップするか上の欄で検索して目的地を決めます。ルートの線をタップすると経由地を差し込めます。地点はドラッグで動かせます。</p>
+      <p class="hint" id="wpHint">出発地は現在地が自動で入ります（位置情報を許可した場合）。ゴールは最初は出発地と同じで、地図をタップした場所へ行って戻るルートになります。ゴールを変えたいときは、目的地の欄で検索するか🔁を押します。ルートの線をタップすると経由地を差し込めます。地点はドラッグで動かせます。</p>
       <div class="btnrow">
         <button class="btn" id="btnUndo">↶ 元に戻す</button>
         <button class="btn" id="btnReverse">⇅ 逆向き</button>
         <button class="btn" id="btnLoop">↻ 出発地へ戻る</button>
         <button class="btn" id="btnClear">✕ 全消去</button>
       </div>
-      <label class="row" style="font-size:12px;margin-top:8px"><input type="checkbox" id="autoHere"> 開いたとき・全消去したときに、現在地を出発地にする</label>
+      <label class="row" style="font-size:12px;margin-top:8px"><input type="checkbox" id="sameGoal"> 最初からゴールを出発地と同じにする（行って戻るルート）</label>
+      <label class="row" style="font-size:12px;margin-top:4px"><input type="checkbox" id="autoHere"> 開いたとき・全消去したときに、現在地を出発地にする</label>
     </details>
 
     <details class="card" data-k="pref" open>
@@ -1114,7 +1117,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v18';
+const VERSION = 'v19';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -1161,9 +1164,10 @@ const store = {
 /* ---------- state ---------- */
 let wps = [];             // {lat,lng,name}
 let pendingGoal = null;   // goal chosen before a start exists
+let goalSame = true;      // ゴール＝出発地（最後の点 ret が出発地に戻る）
 let undoStack = [];
 let route = null;         // parsed route
-let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist', loopStop:'none', autoHere:true, wheelMm:2105, loopMode:'sight'}, store.get(LS_PREF, {}));
+let pref = Object.assign({profile:'fastbike', speed:24, color:'road', layer:'gsipale', poiA:true, poiP:true, poiS:false, loopKm:30, loopShape:'loop', loopSort:'dist', loopStop:'none', autoHere:true, wheelMm:2105, loopMode:'sight', sameGoal:true}, store.get(LS_PREF, {}));
 let alt = 0;
 let hashAlt = 0;
 let reqSeq = 0, abortCtl = null, routeTimer = null;
@@ -1192,7 +1196,9 @@ map.on('click', e => {
   if (Date.now() - lastPopupClose < 400) return;          // tap was used to close a popup
   if ($('results').classList.contains('show')){ closeResults(); return; }
   pushUndo();
-  wps.push({lat:e.latlng.lat, lng:e.latlng.lng, name:''});
+  const P = {lat:e.latlng.lat, lng:e.latlng.lng, name:''};
+  if (goalSame && wps.length >= 2 && wps[wps.length-1].ret) wps.splice(wps.length - 1, 0, P);   // 行き先を「戻る」の手前に足す
+  else wps.push(P);
   onWpsChanged();
 });
 
@@ -1220,7 +1226,7 @@ function wpKind(i){ return i === 0 ? 's' : (i === wps.length-1 ? 'g' : 'v'); }
 function wpName(w, i){ return w.name || (w.tmp ? `${w.tmp}（地名を確認中…）` : '') || `${i===0?'出発地':(i===wps.length-1?'目的地':'経由地')}（${w.lat.toFixed(4)}, ${w.lng.toFixed(4)}）`; }
 
 function pushUndo(){
-  undoStack.push(JSON.stringify({wps, pg:pendingGoal}));
+  undoStack.push(JSON.stringify({wps, pg:pendingGoal, gs:goalSame}));
   if (undoStack.length > 60) undoStack.shift();
 }
 
@@ -1278,9 +1284,9 @@ function renderWpList(){
   $('wpHint').style.display = wps.length >= 2 ? 'none' : '';
   box.innerHTML = wps.map((w, i) => `<div class="wp">
       <span class="badge b-${wpKind(i)}">${wpLabel(i)}</span>
-      <span class="nm" data-i="${i}" data-act="go">${esc(wpName(w,i))}</span>
-      <button data-i="${i}" data-act="up" ${i===0?'disabled':''} aria-label="上へ">▲</button>
-      <button data-i="${i}" data-act="dn" ${i===wps.length-1?'disabled':''} aria-label="下へ">▼</button>
+      <span class="nm" data-i="${i}" data-act="go">${w.ret ? '🔁 出発地に戻る' : esc(wpName(w,i))}</span>
+      <button data-i="${i}" data-act="up" ${i===0||w.ret?'disabled':''} aria-label="上へ">▲</button>
+      <button data-i="${i}" data-act="dn" ${i===wps.length-1||(wps[i+1]&&wps[i+1].ret)?'disabled':''} aria-label="下へ">▼</button>
       <button data-i="${i}" data-act="del" aria-label="削除">✕</button>
     </div>`).join('');
 }
@@ -1289,14 +1295,24 @@ $('wpList').addEventListener('click', e => {
   const i = +t.dataset.i, act = t.dataset.act;
   if (act === 'go'){ map.setView([wps[i].lat, wps[i].lng], Math.max(map.getZoom(), 15)); sheet('min'); return; }
   pushUndo();
+  if (act === 'del' && wps[i].ret){ goalSame = false; wps.pop(); onWpsChanged(); toast('ゴールを出発地以外にしました（最後の地点がゴールになります）'); return; }
   if (act === 'del') wps.splice(i, 1);
   if (act === 'up' && i > 0) [wps[i-1], wps[i]] = [wps[i], wps[i-1]];
   if (act === 'dn' && i < wps.length-1) [wps[i+1], wps[i]] = [wps[i], wps[i+1]];
   onWpsChanged();
 });
 
+/* ゴール＝出発地のときは、最後に「出発地に戻る」点（ret）を必ず置く */
+function enforceGoal(){
+  if (wps.length && wps[0].ret){ wps[0] = Object.assign({}, wps[0]); delete wps[0].ret; }
+  wps = wps.filter((w, i) => i === 0 || !w.ret);
+  if (!goalSame) return;
+  while (wps.length >= 2){ const L = wps[wps.length-1]; if (L === wps[0] || hav(L, wps[0]) < 30) wps.pop(); else break; }
+  if (wps.length >= 2) wps.push({lat:wps[0].lat, lng:wps[0].lng, name:wps[0].name, ret:true});
+}
 function onWpsChanged(opts){
   if (pendingGoal && wps.length === 1){ wps.push(pendingGoal); pendingGoal = null; }
+  enforceGoal(); renderGoalBtn();
   wps.forEach(needName); needName(pendingGoal); syncInputs();
   alt = 0; clearCands();
   renderMarkers(); renderWpList(); updateHash(); updateButtons();
@@ -1313,7 +1329,7 @@ function updateButtons(){
   $('btnSave').disabled = !has; $('btnGpx').disabled = !has; $('btnShare').disabled = wps.length < 2;
 }
 
-$('btnUndo').onclick = () => { if (!undoStack.length) return; const u = JSON.parse(undoStack.pop()); wps = u.wps; pendingGoal = u.pg; onWpsChanged({immediate:true}); };
+$('btnUndo').onclick = () => { if (!undoStack.length) return; const u = JSON.parse(undoStack.pop()); wps = u.wps; pendingGoal = u.pg; if (u.gs != null) goalSame = u.gs; onWpsChanged({immediate:true}); };
 $('btnReverse').onclick = () => { pushUndo(); wps.reverse(); onWpsChanged({immediate:true}); };
 $('btnLoop').onclick = () => {
   if (wps.length < 2) return;
@@ -1321,7 +1337,7 @@ $('btnLoop').onclick = () => {
   if (hav(s, g) < 30){ toast('すでに出発地に戻るルートです'); return; }
   pushUndo(); wps.push({lat:s.lat, lng:s.lng, name:s.name}); onWpsChanged({immediate:true});
 };
-$('btnClear').onclick = () => { if (!wps.length && !pendingGoal) return; pushUndo(); wps = []; pendingGoal = null; nogos = []; renderNogos(); onWpsChanged({immediate:true}); if (pref.autoHere !== false) hereAsStart(false); };
+$('btnClear').onclick = () => { if (!wps.length && !pendingGoal) return; pushUndo(); wps = []; pendingGoal = null; goalSame = pref.sameGoal !== false; nogos = []; renderNogos(); onWpsChanged({immediate:true}); if (pref.autoHere !== false) hereAsStart(false); };
 
 /* ---------- routing ---------- */
 function setStatus(msg, cls){ const s = $('status'); s.className = cls || ''; s.textContent = msg || ''; }
@@ -1765,7 +1781,8 @@ function inputLabel(w){ return w ? (w.name || PICKED) : ''; }
 function syncInputs(){
   const s0 = wps[0] || null, g0 = wps.length >= 2 ? wps[wps.length-1] : pendingGoal;
   if (document.activeElement !== $('qS')) $('qS').value = inputLabel(s0);
-  if (document.activeElement !== $('qG')) $('qG').value = inputLabel(g0);
+  if (document.activeElement !== $('qG')) $('qG').value = goalSame ? '' : inputLabel(g0);
+  $('qG').placeholder = goalSame ? 'ゴール＝出発地（変えるときだけ入力）' : '目的地：地名・駅・住所 または 地図をタップ';
 }
 function closeResults(){ $('results').classList.remove('show'); }
 let searchResults = [], searchKey = 'S';
@@ -1833,14 +1850,17 @@ function setEndpoint(key, w){
     if (wps.length) wps[0] = w; else wps.push(w);
     if (loop) wps[wps.length-1] = w;
   }
-  else if (wps.length >= 2) wps[wps.length-1] = w;
-  else if (wps.length === 1) wps.push(w);
-  else pendingGoal = w;
+  else {
+    goalSame = false;                               // ゴールを別の場所に変更
+    if (wps.length >= 2) wps[wps.length-1] = w;
+    else if (wps.length === 1) wps.push(w);
+    else pendingGoal = w;
+  }
   onWpsChanged({immediate:true});
   if (wps.length >= 2) setTimeout(fitRoute, 60);
   else map.setView([w.lat, w.lng], Math.max(map.getZoom(), 14));
   if (!wps.length || (key === 'G' && wps.length < 2)) toast('出発地も入力するか、地図をタップしてください', 3000);
-  else if (wps.length < 2) toast('次は目的地を入力するか、地図をタップしてください', 3000);
+  else if (wps.length < 2) toast(goalSame ? '地図をタップすると、そこへ行って出発地に戻るルートになります' : '次は目的地を入力するか、地図をタップしてください', 3500);
 }
 $('results').addEventListener('click', e => {
   const t = e.target.closest('.res[data-i]'); if (!t) return;
@@ -2297,6 +2317,7 @@ function selectCand(i){
   if (c.profile !== pref.profile){ pref.profile = c.profile; $('profile').value = c.profile; showProfDesc(); savePref(); }
   alt = c.alt;
   nogos = (c.nogos || []).slice(); renderNogos();
+  if (c.kind !== 'ab') goalSame = true; renderGoalBtn();
   clearTimeout(routeTimer); if (abortCtl) abortCtl.abort(); reqSeq++;
   wps.forEach(needName); syncInputs(); renderMarkers(); renderWpList(); updateHash();
   applyRoute(c.route);
@@ -3365,6 +3386,26 @@ syncWheel();
 $('btHelp').textContent = btSupported() && window.isSecureContext ? '' : btHelpText();
 renderSensors();
 
+/* ---------- ゴール＝出発地の切り替え（v19） ---------- */
+function renderGoalBtn(){ const b = $('btnGoalSame'); b.classList.toggle('on', goalSame); b.title = goalSame ? 'ゴール＝出発地（押すと別の場所をゴールにできます）' : '押すとゴールを出発地と同じにします'; }
+$('btnGoalSame').onclick = () => {
+  pushUndo();
+  if (goalSame){
+    goalSame = false;
+    if (wps.length && wps[wps.length-1].ret) wps.pop();      // 最後の行き先がゴールになる
+    onWpsChanged({immediate:true});
+    toast(wps.length >= 2 ? '最後の地点をゴールにしました。目的地の欄で別の場所も選べます' : '目的地の欄で検索するか、地図をタップしてゴールを決めてください', 3500);
+    $('qG').focus();
+  } else {
+    goalSame = true;                                          // 今のゴールは「行き先」になり、出発地に戻る
+    onWpsChanged({immediate:true});
+    toast('ゴールを出発地と同じにしました（行って戻るルート）', 3000);
+  }
+};
+$('sameGoal').checked = pref.sameGoal !== false;
+$('sameGoal').addEventListener('change', () => { pref.sameGoal = $('sameGoal').checked; savePref(); });
+goalSame = pref.sameGoal !== false;
+
 /* ---------- 現在地を出発地に（v11） ---------- */
 let meAcc = null;
 function showMe(ll, acc){
@@ -3416,7 +3457,7 @@ async function hereAsStart(loud){
       onWpsChanged({immediate:true});
       if (!pendingGoal) map.setView(f.ll, f.acc > 1500 ? 13 : Math.max(map.getZoom(), 15));
       const adv = accAdvice(f.acc);
-      toast(`現在地を出発地（S）にしました（誤差${accText(f.acc)}）。` + (adv || '地図をタップすると目的地になります'), adv ? 6000 : 3500);
+      toast(`現在地を出発地（S）にしました（誤差${accText(f.acc)}）。` + (adv || (goalSame ? '地図をタップした場所へ行って戻るルートになります' : '地図をタップすると目的地になります')), adv ? 6000 : 3500);
       res(true);
     }, f => {
       showMe(f.ll, f.acc);
@@ -3589,6 +3630,7 @@ function loadHash(){
   const list = q.r.split(';').map(s => s.split(',').map(Number)).filter(a => a.length === 2 && isFinite(a[0]) && isFinite(a[1]) && Math.abs(a[0]) <= 90 && Math.abs(a[1]) <= 180);
   if (!list.length) return false;
   wps = list.slice(0, 50).map(a => ({lat:a[0], lng:a[1], name:''}));
+  goalSame = wps.length < 2 ? pref.sameGoal !== false : (wps.length >= 3 && hav(wps[0], wps[wps.length-1]) < 30);
   if (q.p && PROFILES.some(p => p.id === q.p)){ pref.profile = q.p; $('profile').value = q.p; showProfDesc(); }
   if (q.n) nogos = q.n.split(';').map(x => x.split(',').map(Number)).filter(a => a.length === 3 && a.every(isFinite)).slice(0, 30).map(a => ({lat:a[0], lng:a[1], r:a[2]}));
   hashAlt = Math.min(3, Math.max(0, +q.a || 0));
