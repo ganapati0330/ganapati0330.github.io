@@ -857,6 +857,13 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 .rs-on{font-size:11px;color:#16a34a;font-weight:700}
 .cand .sights{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px}
 .cand .sights b{background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:2px 6px;font-weight:700}
+#pickBanner{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:2100;display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:700;border-radius:999px;padding:8px 8px 8px 16px;box-shadow:0 4px 14px rgba(0,0,0,.3);max-width:calc(100vw - 140px)}
+#pickBanner[hidden]{display:none}
+#pickBanner.s{background:#16a34a}#pickBanner.g{background:#dc2626}
+#pickBanner button{border:0;background:rgba(255,255,255,.25);color:#fff;border-radius:50%;width:28px;height:28px;flex:none}
+@media (min-width:761px){#pickBanner{left:calc(380px + (100vw - 380px)/2)}}
+.rin.picking input{box-shadow:0 0 0 3px #fb923c}
+.rin .badge{cursor:pointer}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
 .pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -1107,6 +1114,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
   </div>
 </div>
 <div id="rBlock" hidden><span>走行中は操作できません（停車すると操作できます）</span></div>
+<div id="pickBanner" hidden><span id="pickTxt"></span><button id="pickClose" aria-label="やめる">✕</button></div>
 <div id="toast"></div>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -1117,7 +1125,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v19';
+const VERSION = 'v20';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -1194,10 +1202,18 @@ map.on('popupclose', () => { lastPopupClose = Date.now(); });
 map.on('click', e => {
   if (document.body.classList.contains('riding')) return;
   if (Date.now() - lastPopupClose < 400) return;          // tap was used to close a popup
-  if ($('results').classList.contains('show')){ closeResults(); return; }
+  if ($('results').classList.contains('show')){ closeResults(); if (!pickMode) return; }
+  if (pickMode){
+    const k = pickMode; setPick(null);
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    setEndpoint(k, {lat:e.latlng.lat, lng:e.latlng.lng, name:''});
+    toast(k === 'S' ? '出発地をここにしました' : '目的地（ゴール）をここにしました');
+    return;
+  }
   pushUndo();
   const P = {lat:e.latlng.lat, lng:e.latlng.lng, name:''};
-  if (goalSame && wps.length >= 2 && wps[wps.length-1].ret) wps.splice(wps.length - 1, 0, P);   // 行き先を「戻る」の手前に足す
+  // ゴールが決まっているときは、ゴールを変えずに手前へ経由地として足す（ゴールを変えるのは目的地の欄を選んでから）
+  if (wps.length >= 2) wps.splice(wps.length - 1, 0, P);
   else wps.push(P);
   onWpsChanged();
 });
@@ -1862,18 +1878,33 @@ function setEndpoint(key, w){
   if (!wps.length || (key === 'G' && wps.length < 2)) toast('出発地も入力するか、地図をタップしてください', 3000);
   else if (wps.length < 2) toast(goalSame ? '地図をタップすると、そこへ行って出発地に戻るルートになります' : '次は目的地を入力するか、地図をタップしてください', 3500);
 }
+/* 欄を選んでから地図をタップすると、その場所を出発地／目的地にする（v20） */
+let pickMode = null;
+function setPick(k){
+  pickMode = k;
+  ['S', 'G'].forEach(x => $('q' + x).closest('.rin').classList.toggle('picking', x === k));
+  const b = $('pickBanner');
+  if (!k){ b.hidden = true; return; }
+  $('pickTxt').textContent = k === 'S' ? '地図をタップして【出発地】を選んでください' : '地図をタップして【目的地（ゴール）】を選んでください';
+  b.className = k === 'S' ? 's' : 'g'; b.hidden = false;
+  $('toast').classList.remove('show'); clearTimeout(toast._t);
+}
+$('pickClose').onclick = () => setPick(null);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && pickMode) setPick(null); });
 $('results').addEventListener('click', e => {
   const t = e.target.closest('.res[data-i]'); if (!t) return;
   const r = searchResults[+t.dataset.i];
   closeResults(); document.activeElement && document.activeElement.blur();
-  sheet('min');
+  sheet('min'); setPick(null);
   setEndpoint(searchKey, {lat:r.lat, lng:r.lng, name:r.name});
 });
 ['S','G'].forEach(k => {
   const inp = $('q' + k);
   $('btnSearch' + k).onclick = () => doSearch(k);
   inp.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); doSearch(k); } });
-  inp.addEventListener('focus', () => { if (inp.value === PICKED) inp.value = ''; else inp.select(); sheet('max'); });
+  inp.addEventListener('focus', () => { if (inp.value === PICKED) inp.value = ''; else inp.select(); setPick(k); });
+  inp.addEventListener('input', () => { if (inp.value.trim()) sheet('max'); });
+  inp.closest('.rin').querySelector('.badge').addEventListener('click', () => setPick(k));
   inp.addEventListener('blur', () => setTimeout(() => { if (!$('results').classList.contains('show')) syncInputs(); }, 150));
 });
 
@@ -3505,8 +3536,8 @@ function setHereAs(key){
   }, () => toast('現在地を取得できませんでした（位置情報の許可を確認してください）', 3500));
 }
 $('btnLocate').onclick = () => setHereAs('S');
-$('btnHereS').onclick = () => { closeResults(); setHereAs('S'); };
-$('btnHereG').onclick = () => { closeResults(); setHereAs('G'); };
+$('btnHereS').onclick = () => { closeResults(); setPick(null); setHereAs('S'); };
+$('btnHereG').onclick = () => { closeResults(); setPick(null); setHereAs('G'); };
 
 /* ---------- profile & layer selects ---------- */
 $('profile').innerHTML = PROFILES.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
