@@ -879,6 +879,9 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 .gbtns button{flex:1;border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:11px;font-size:15px;font-weight:700}
 .gbtns button.pri{background:#f97316;border-color:#f97316;color:#fff}
 .gfoot{font-size:11px;color:#94a3b8;margin:8px 0 0;text-align:center}
+.lconf{margin-top:8px;background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:9px 10px}
+.lconf p{margin:0 0 4px;font-size:13px;font-weight:700;color:#9a3412}
+.lconf .hint{font-weight:400}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
 .pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -952,6 +955,15 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
       <div class="btnrow"><button class="btn pri" id="btnLoopGen" style="flex:1">🔄 コースを提案する</button></div>
       <div id="loopStatus" class="hint" style="margin-top:6px"></div>
       <button class="btn" id="loopSkip" hidden style="margin-top:6px">⏭ 観光地を待たずに方角で作る</button>
+      <div id="loopConfirm" class="lconf" hidden>
+        <p id="loopConfirmTxt"></p>
+        <p class="hint">出発地（S）はそのまま使い、そこから出発地に戻るコースを提案します。</p>
+        <div class="btnrow">
+          <button class="btn pri" id="lcSave">💾 保存してから提案</button>
+          <button class="btn dark" id="lcGo">置き換えて提案</button>
+          <button class="btn" id="lcNo">やめる</button>
+        </div>
+      </div>
     </details>
 
     <details class="card" data-k="cand" id="cardCand" open hidden>
@@ -1175,7 +1187,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v21';
+const VERSION = 'v22';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -2854,8 +2866,24 @@ function setGenBtn(running){
   b.textContent = running ? '■ 作成を中止' : '🔄 コースを提案する';
   b.classList.toggle('pri', !running); b.classList.toggle('dark', running);
 }
+let loopConfirmed = false, hadRouteBefore = false;
+function routeSummary(){
+  const a = wps[0], g = wps[wps.length-1];
+  const nm = w => w.ret ? '出発地' : (w.name || '地点');
+  return `${nm(a)}${wps.length > 2 ? ` → 経由${wps.length - 2 - (g.ret ? 0 : 0)}か所` : ''} → ${g.ret ? '出発地に戻る' : nm(g)}（${route ? fmtKm(route.dist) + 'km' : ''}）`;
+}
 async function genLoops(){
   if (loopCtl){ loopCtl.abort(); return; }                 // 作成中に押すと中止
+  // 自分で作ったルートがあるときは、置き換える前に確認する（提案したコースどうしの作り直しは確認しない）
+  const ownRoute = route && wps.length >= 2 && !(cands.length && candMode === 'loop' && candSel >= 0);
+  if (ownRoute && !loopConfirmed){
+    $('loopConfirmTxt').textContent = `今のルート「${routeSummary()}」は、提案するコースに置き換わります。`;
+    $('loopConfirm').hidden = false;
+    $('loopConfirm').scrollIntoView({block:'nearest', behavior:'smooth'});
+    return;
+  }
+  hadRouteBefore = ownRoute;
+  loopConfirmed = false; $('loopConfirm').hidden = true;
   if (!wps.length){
     loopStatus('現在地を取得しています…');
     if (!(await hereAsStart(false))){ toast('出発地（S）を決めてください。現在地が取れない場合は、上の欄で検索するか地図をタップします', 4000); loopStatus('出発地（S）を決めてから押してください', true); return; }
@@ -2987,7 +3015,8 @@ async function genLoops(){
   cands = list; candMode = 'loop';
   const allSev = list.every(c => c.st.severe > 0);
   loopStatus(sightNote + (cancelled ? `中止しました。できた${list.length}コースを表示しています` : `${list.length}つのコースを提案しました${stopMsg}`)
-    + (allSev ? '。※すべてのコースに通行規制の区間があります（候補欄で確認できます）' : '。下の「ルート候補の比較」から選べます。'));
+    + (allSev ? '。※すべてのコースに通行規制の区間があります（候補欄で確認できます）' : '。下の「ルート候補の比較」から選べます。')
+    + (hadRouteBefore ? '　元のルートは「地点」カードの「↶ 元に戻す」で戻せます。' : ''));
   selectCand(0);
   list.forEach(c => c.wps.forEach(needName));     // 他の候補の目印にも地名を付ける
   setTimeout(fitRoute, 50);
@@ -2995,6 +3024,9 @@ async function genLoops(){
 }
 $('btnLoopGen').onclick = genLoops;
 $('loopSkip').onclick = () => { if (sightSkip) sightSkip(); };
+$('lcGo').onclick = () => { loopConfirmed = true; genLoops(); };
+$('lcSave').onclick = () => { $('btnSave').click(); $('routeName').value = ''; loopConfirmed = true; genLoops(); };
+$('lcNo').onclick = () => { $('loopConfirm').hidden = true; };
 function wireSeg(id, key, cb){
   document.querySelectorAll(`#${id} button`).forEach(b => {
     b.classList.toggle('on', String(pref[key]) === b.dataset.v);
