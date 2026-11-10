@@ -68,7 +68,14 @@ button{font-family:inherit;cursor:pointer;}
 #endTurnBtn{background:linear-gradient(#ffcf5a,#e8941e);color:#3a2000;}
 #endTurnBtn:disabled{opacity:.4;}
 #bottom{position:absolute;left:0;right:0;bottom:0;z-index:5;background:rgba(40,25,15,.9);color:#fff;padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
-#logLine{font-size:13px;color:#ffe8b0;min-height:18px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#logLine{font-size:12px;color:#ffe8b0;min-height:18px;margin-bottom:4px;cursor:pointer;background:rgba(255,255,255,.07);border-radius:8px;padding:3px 8px;position:relative;}
+#logLine::after{content:'📜 ぜんぶ';position:absolute;right:6px;top:3px;font-size:11px;color:#ffd98a;}
+.lg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:56px;line-height:1.5;}
+.lg .lt{display:inline-block;min-width:26px;color:#aaa;font-size:10px;}
+.lg.me{color:#bcd4ff;}.lg.cpu{color:#ffc0b0;}.lg.sys{color:#ffe8b0;}
+#logFull{text-align:left;font-size:13px;max-height:60vh;overflow-y:auto;background:#2b1d14;border-radius:10px;padding:8px;touch-action:pan-y;}
+#logFull .lg{white-space:normal;padding-right:0;border-bottom:1px solid rgba(255,255,255,.08);padding:3px 0;}
+.act.undo{background:#e8841e;}
 #infoBox{font-size:13px;min-height:44px;}
 #infoBox .irow{display:flex;align-items:center;gap:8px;}
 #infoBox .irow .uic{width:26px;height:26px;font-size:14px;}
@@ -163,24 +170,42 @@ button{font-family:inherit;cursor:pointer;}
   <div class="row"><button class="act" id="againBtn">もういちど</button><button class="act sub" id="toSetupBtn">さくせん</button><button class="act sub" id="toTitleBtn">タイトル</button></div>
 </div></div>
 
+<div class="modal" id="logBox"><div class="card">
+  <h2 style="font-size:22px;color:#7a3a1a">たたかいの きろく</h2>
+  <p style="font-size:12px;color:#888;margin:0 0 6px">あたらしい じゅん</p>
+  <div id="logFull"></div>
+  <button class="close" id="logClose">とじる</button>
+</div></div>
+
+<div class="modal" id="confirmBox"><div class="card">
+  <h2 style="font-size:22px;color:#7a3a1a">ターンを おわる？</h2>
+  <p id="confirmMsg" style="font-size:15px;color:#555"></p>
+  <div class="row"><button class="act" id="confirmYes">おわる</button><button class="act sub" id="confirmNo">もどる</button></div>
+</div></div>
+
 <div class="modal" id="helpBox"><div class="card help">
   <h2 style="text-align:center;font-size:24px;color:#7a3a1a">あそびかた</h2>
   <h3>もくてき</h3>
   <ul><li><b>せめる</b>：てきの <b>ほんまる</b>（しろの まんなか）に へいを のせるか、てきの <b>大将</b>を たおせば かち。</li>
-      <li><b>まもる</b>：<b>15ターン</b> まもりきるか、せめての 大将を たおせば かち。</li></ul>
+      <li><b>まもる</b>：<b>15ターン</b> まもりきるか、せめての 大将を たおせば かち。</li>
+      <li>ひきわけは ありません。15ターン たって ほんまるが ぶじなら、まもりての かち。</li></ul>
   <h3>そうさ</h3>
   <ul><li>じぶんの へい（あお）を タッチ → あおい マスに うごける。</li>
       <li>あかく ひかった てきを タッチで <b>こうげき</b>。オレンジの かべを タッチで <b>かべこわし</b>。</li>
-      <li>「まつ」で その へいの ばんは おわり。ぜんいん うごいたら「ターンおわり」。</li>
+      <li>うごいた あとでも、こうげきする まえなら「↩ もどす」で やりなおせる。</li>
+      <li>「まつ」で その へいの ばんは おわり。まだ うごいていない へいには きいろい ●。</li>
+      <li>したの きろくを タッチすると、たたかいの きろくが ぜんぶ みられる。</li>
       <li>ちずは ドラッグで うごかせる。2ほんゆびで かくだい・しゅくしょう。⤢ で ぜんたい ひょうじ。</li></ul>
   <h3>へいしゅ</h3>
   <ul><li><b>足軽</b>：うごき・こうげき・まもり ぜんぶ ふつう。騎馬に よわい。鉄砲には つよい。</li>
       <li><b>騎馬</b>：はやくて つよくて かたい エリート。足軽・鉄砲に とつげき！ 山に はいれない。川は にがて。</li>
       <li><b>鉄砲</b>：こうげき さいきょう。2マス はなれて うつ。でも おそくて やわらかく、足軽・騎馬に よわい。うごいた ターンは うてない。</li>
-      <li><b>弓</b>：いちばん とおくまで とどく（1〜3マス）。うごいてから うてる。うごき・こうげきは ふつう、まもりは よわい。</li>
+      <li><b>弓</b>：いちばん とおくまで とどく（1〜3マス。3マス さきは いりょく よわめ）。うごいてから うてる。もんや かべにも すこし ダメージ。まもりは よわい。</li>
       <li><b>工作</b>：おそくて こうげきは よわいが、まもりは かたい。じょうへき・もんを おおきく こわす（6）／なおす（+4）。川に はしを かけられる。</li>
       <li><b>忍者</b>：かべや 山を のりこえ、もんを あけられる。こうげきは つよいが まもりは よわい。てきの となりに いくまで みえない！</li>
-      <li><b>大将</b>：となりの みかたの こうげき UP。やられたら まけ。</li></ul>
+      <li><b>大将</b>：よろいが かたく ダメージを うけにくい。となりの みかたの こうげき UP。やられたら まけ。</li></ul>
+  <h3>かべ・もんへの ダメージ</h3>
+  <ul><li>工作 6／鉄砲 3／足軽・騎馬・大将 2／弓・忍者 1。じょうへきは 10、もんは 8 で こわれる。</li></ul>
   <h3>ちけい</h3>
   <ul><li>もり・おか・やま・ほんまる：まもりが つよくなる。かわ：まもりが よわくなる。</li>
       <li>じょうへきの うえの へいは とても かたい。かべは こわせば とおれる。</li></ul>
@@ -193,7 +218,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v1.3';
+var VERSION = 'v1.4';
 var TURN_LIMIT = 15;
 
 // ---- 兵種 ----
@@ -212,7 +237,7 @@ var UNIT_TYPES = {
   ninja:    { id:'ninja', name:'忍者', kana:'にんじゃ', ch:'忍', atk:6, def:2, mov:4, rmin:1, rmax:1, cost:4,
     desc:'かべや 山を のりこえ、もんを あけられる。こうげきは つよいが まもりは よわい。てきの となりに いくまで みつからない。' },
   taisho:   { id:'taisho', name:'大将', kana:'たいしょう', ch:'将', atk:6, def:6, mov:4, rmin:1, rmax:1, cost:0,
-    desc:'ぐんの リーダー。となりの みかたが つよくなる。やられたら まけ！' }
+    desc:'ぐんの リーダー。よろいが かたい。となりの みかたが つよくなる。やられたら まけ！' }
 };
 var BUY_ORDER = ['ashigaru','yumi','kiba','teppo','kosaku','ninja'];
 
@@ -221,7 +246,7 @@ var BONUS = {
   kiba:   { ashigaru:1.3, teppo:1.5, yumi:1.3, kosaku:1.2 },
   ashigaru:{ teppo:1.3 },
   yumi:   { kosaku:1.2 },
-  ninja:  { taisho:1.5, teppo:1.3 }
+  ninja:  { taisho:1.3, teppo:1.3 }
 };
 
 // ---- 地形 ----
@@ -234,10 +259,10 @@ var TERRAIN = {
   'm': { id:'mount', name:'やま',   def:0.65 },
   'r': { id:'river', name:'かわ',   def:1.3 },
   'b': { id:'bridge',name:'はし',   def:1.1 },
-  'W': { id:'wall',  name:'じょうへき', def:0.5 },
+  'W': { id:'wall',  name:'じょうへき', def:0.6 },
   'G': { id:'gate',  name:'もん',   def:0.7 },
   'C': { id:'court', name:'じょうない', def:0.85 },
-  'K': { id:'keep',  name:'ほんまる', def:0.6 }
+  'K': { id:'keep',  name:'ほんまる', def:0.65 }
 };
 var WALL_HP = 10, GATE_HP = 8;
 
@@ -453,13 +478,17 @@ function generalAdjacent(G, u) {
   }
   return false;
 }
+var DMG_SCALE = 1.4, FAR_SHOT = 0.55, TAISHO_GUARD = 0.75;
 function estimateDamage(G, a, aC, aR, d) {
   var base = a.atk * (a.hp / 10);
   var bonus = (BONUS[a.type] && BONUS[a.type][d.type]) || 1;
   var t = tileAt(G, d.c, d.r);
   var terr = defMod(G, d, t);
   var gen = generalAdjacent(G, a) ? 1.2 : 1;
-  var dmg = base * (1 - d.def * 0.07) * bonus * terr * gen;
+  var dist = hexDist(aC, aR, d.c, d.r);
+  var fall = dist >= 3 ? FAR_SHOT : 1;
+  if (d.type === 'taisho') fall *= TAISHO_GUARD;
+  var dmg = base * (1 - d.def * 0.07) * bonus * terr * gen * fall * DMG_SCALE;
   return Math.max(dmg, 0.5);
 }
 function rollDamage(est) {
@@ -494,10 +523,10 @@ function doAttack(G, a, d) {
 function wallDamage(u) {
   switch (u.type) {
     case 'kosaku': return 6;
-    case 'teppo': return 2;
-    case 'yumi': return 0;
+    case 'teppo': return 3;
+    case 'yumi': return 1;
     case 'ninja': return 1;
-    default: return 1;
+    default: return 2;
   }
 }
 function canHitWallFrom(G, u, c, r, t, moved) {
@@ -727,7 +756,7 @@ function aiPlan(G, u) {
     // 位置の価値
     var dk = field[k]; if (dk === undefined) dk = 99;
     if (side === 'atk') {
-      if (u.type === 'taisho') score += -dk * 0.6 - 2; // 大将は慎重
+      if (u.type === 'taisho') score += -dk * 0.25 - 2; // 大将は後方で指揮
       else score += -dk * 1.6;
     } else {
       // 防衛：城内・城壁にいることが大事、大将は本丸
@@ -741,7 +770,7 @@ function aiPlan(G, u) {
     }
     var tmpU = { type: u.type, def: u.def, hp: u.hp };
     var thr = threatAt(G, side, c, r, tmpU);
-    score += -thr * (u.type === 'taisho' ? 1.2 : 0.45);
+    score += -thr * (u.type === 'taisho' ? 3 : 0.45);
     score += (1 - defMod(G, u, t)) * 4;
 
     // 行動候補
@@ -976,8 +1005,9 @@ function startGame() {
   if (setup.difficulty === 'hard') { cpuArmy.ashigaru += 1; cpuArmy.yumi += 1; }
   G = newGame({ mapIndex: setup.mapIndex, playerSide: setup.side, playerChar: setup.playerChar, cpuChar: setup.cpuChar,
                 playerArmy: setup.army, cpuArmy: cpuArmy, difficulty: setup.difficulty });
-  sel = null; reach = null; targets = []; anim = []; phase = 'idle'; hoverInfo = null;
+  sel = null; reach = null; targets = []; anim = []; phase = 'idle'; hoverInfo = null; LOG = [];
   show('gameScreen');
+  logMsg('かっせん はじまり！ ' + (G.playerSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + TURN_LIMIT + 'ターン）', 'sys');
   resize(); fitCamera();
   updateHud();
   if (G.side !== G.playerSide) setTimeout(cpuTurn, 600);
@@ -1129,6 +1159,8 @@ function drawUnit(u, x, y) {
     ctx.fillStyle = '#fff'; ctx.font = 'bold ' + Math.round(rad * 1.15) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(UNIT_TYPES[u.type].ch, x, y + 1);
   }
+  // 未行動マーク
+  if (u.side === G.playerSide && G.side === G.playerSide && !u.acted) { ctx.globalAlpha = 1; ctx.fillStyle = '#ffe24a'; ctx.beginPath(); ctx.arc(x - rad * 0.8, y - rad * 0.8, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#7a5a00'; ctx.lineWidth = 1.5; ctx.stroke(); }
   // 兵数
   ctx.globalAlpha = 1;
   ctx.beginPath(); ctx.arc(x + rad * 0.8, y + rad * 0.8, 9, 0, Math.PI * 2); ctx.fillStyle = u.hp <= 3 ? '#e85040' : '#222'; ctx.fill();
@@ -1143,7 +1175,7 @@ function render() {
   for (var r = 0; r < G.map.h; r++) for (var c = 0; c < G.map.w; c++) drawTile(G.map.tiles[r][c]);
   // ハイライト
   if (reach && sel && phase === 'idle') {
-    for (var k in reach) { if (k === '__from') continue; var p = k.split(',').map(Number); var hc = hexCenter(p[0], p[1]); hexPath(hc[0], hc[1], R - 2); ctx.fillStyle = 'rgba(60,120,255,0.35)'; ctx.fill(); }
+    for (var k in reach) { if (k === '__from') continue; var p = k.split(',').map(Number); var hc = hexCenter(p[0], p[1]); hexPath(hc[0], hc[1], R - 3); ctx.fillStyle = 'rgba(40,110,255,0.42)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2.5; ctx.stroke(); }
   }
   targets.forEach(function (t) {
     var pos = t.unit ? [t.unit.c, t.unit.r] : [t.tile.c, t.tile.r]; var hc = hexCenter(pos[0], pos[1]);
@@ -1218,7 +1250,24 @@ function banner(text, ms) {
   var b = $('banner'); b.textContent = text; b.classList.add('on');
   clearTimeout(banner.tm); banner.tm = setTimeout(function () { b.classList.remove('on'); }, ms || 1200);
 }
-function logMsg(s) { $('logLine').textContent = s; }
+var LOG = [];
+function logMsg(s, who) {
+  if (!G) return;
+  var side = who || (G.side === G.playerSide ? 'me' : 'cpu');
+  LOG.push({ turn: G.turn, side: side, text: s });
+  if (LOG.length > 300) LOG.shift();
+  renderLog();
+}
+function logHtml(e) { return '<div class="lg ' + e.side + '"><span class="lt">T' + e.turn + '</span>' + e.text + '</div>'; }
+function renderLog() {
+  var box = $('logLine'), last = LOG.slice(-3);
+  box.innerHTML = last.length ? last.map(logHtml).join('') : '<div class="lg sys">ここに たたかいの きろくが でます</div>';
+}
+function openLog() {
+  var b = $('logFull');
+  b.innerHTML = LOG.length ? LOG.slice().reverse().map(logHtml).join('') : '<p>まだ きろくは ありません</p>';
+  $('logBox').classList.add('on');
+}
 
 // ---- プレイヤー操作 ----
 function computeTargets(u, moved) {
@@ -1245,11 +1294,18 @@ function showActions() {
   var labels = { attack: '⚔ こうげき：あかい てきを タッチ', wall: '🔨 かべを こわす：オレンジを タッチ', open: '🚪 もんを あける：みどりを タッチ', repair: '🔧 なおす：みどりを タッチ', close: '🚪 もんを しめる：みどりを タッチ', bridge: '🌉 はしを かける：みどりを タッチ' };
   Object.keys(kinds).forEach(function (k) { var s = document.createElement('span'); s.className = 'actlbl'; s.textContent = labels[k]; bar.appendChild(s); });
   var w = document.createElement('button'); w.className = 'act'; w.textContent = '⏸ まつ'; w.onclick = function () { SFX.tap(); finishUnit(); }; bar.appendChild(w);
+  if (phase === 'moved' && undoPos && undoPos.unit === sel) { var ub = document.createElement('button'); ub.className = 'act undo'; ub.textContent = '↩ もどす'; ub.onclick = function () { SFX.tap(); undoMove(); }; bar.appendChild(ub); }
   if (phase === 'idle') { var c = document.createElement('button'); c.className = 'act sub'; c.textContent = 'やめる'; c.onclick = function () { SFX.tap(); deselect(); }; bar.appendChild(c); }
   bar.classList.add('on');
 }
+var undoPos = null;
+function undoMove() {
+  if (!undoPos || !sel || undoPos.unit !== sel || phase !== 'moved') return;
+  var u = sel; u.c = undoPos.c; u.r = undoPos.r; u.moved = false; undoPos = null;
+  selectUnit(u);
+}
 function hideActions() { $('actBar').classList.remove('on'); $('actBar').innerHTML = ''; }
-function deselect() { sel = null; reach = null; targets = []; phase = 'idle'; hideActions(); updateInfo(); }
+function deselect() { undoPos = null; sel = null; reach = null; targets = []; phase = 'idle'; hideActions(); updateInfo(); }
 function selectUnit(u) {
   sel = u; reach = reachable(G, u); phase = 'idle';
   targets = computeTargets(u, false);
@@ -1300,10 +1356,10 @@ function onTapHex(c, r) {
   }
   if (sel && phase === 'idle' && reach && reach[key(c, r)] && !(c === sel.c && r === sel.r)) {
     // 移動
-    var path = pathTo(reach, c, r); var mv = sel;
+    var path = pathTo(reach, c, r); var mv = sel; var from0 = [sel.c, sel.r];
     SFX.move(); hideActions(); targets = []; reach = null; phase = 'anim';
     moveAnim = { unit: mv, path: path, t: 0, cb: function () {
-      mv.c = c; mv.r = r; mv.moved = true;
+      mv.c = c; mv.r = r; mv.moved = true; undoPos = { unit: mv, c: from0[0], r: from0[1] };
       phase = 'moved'; targets = computeTargets(mv, true);
       // 本丸に乗ったら即勝利チェック（攻撃側）
       if (mv.side === 'atk' && tileAt(G, c, r).ch === 'K') { mv.acted = true; deselect(); updateHud(); checkVictory(G); gameOver(); return; }
@@ -1329,6 +1385,7 @@ function playerEndTurn() {
   endTurn(G);
   if (G.over) return gameOver();
   updateHud(); SFX.turn(); banner('あいての ばん', 900);
+  logMsg('―― あいての ばん ――', 'sys');
   setTimeout(cpuTurn, 700);
 }
 
@@ -1346,6 +1403,7 @@ function cpuTurn() {
       endTurn(G);
       if (G.over) return gameOver();
       phase = 'idle'; updateHud(); SFX.turn(); banner('あなたの ばん', 900);
+      logMsg('―― ターン ' + G.turn + '　あなたの ばん ――', 'sys');
       return;
     }
     var u = order[i++];
@@ -1361,7 +1419,7 @@ function cpuTurn() {
         if (ev.kind === 'attack') {
           (u.type === 'teppo' ? SFX.gun : u.type === 'yumi' ? SFX.arrow : SFX.hit)();
           floatText(ev.target.c, ev.target.r, '-' + ev.res.dmg, '#ff7070', true);
-          var m = unitName(u) + ' が ' + unitName(ev.target) + ' を こうげき！ ' + ev.res.dmg + ' ダメージ';
+          var m = 'てきの ' + unitName(u) + ' が みかたの ' + unitName(ev.target) + ' を こうげき！ ' + ev.res.dmg + ' ダメージ';
           if (ev.res.killed) { m += '　やられた…'; setTimeout(SFX.kill, 200); }
           else if (ev.res.counter) { m += '　はんげき ' + ev.res.counter; setTimeout(function () { floatText(u.c, u.r, '-' + ev.res.counter, '#ffd24a'); SFX.hit(); }, 350); if (ev.res.counterKilled) m += '　たおした！'; }
           logMsg(m);
@@ -1453,7 +1511,17 @@ window.addEventListener('load', function () {
   ['easy', 'normal', 'hard'].forEach(function (d) { $('dif_' + d).onclick = function () { SFX.tap(); setup.difficulty = d; renderSetup(); }; });
   $('goBtn').onclick = function () { SFX.tap(); startGame(); };
   $('backBtn').onclick = function () { SFX.tap(); show('title'); };
-  $('endTurnBtn').onclick = function () { SFX.tap(); playerEndTurn(); };
+  $('endTurnBtn').onclick = function () {
+    SFX.tap();
+    if (!G || G.over || G.side !== G.playerSide || phase === 'cpu' || phase === 'anim' || moveAnim) return;
+    var left = unitsOf(G, G.playerSide).filter(function (x) { return !x.acted && x !== sel; }).length + (sel && !sel.acted ? 1 : 0);
+    if (left > 0) { $('confirmMsg').textContent = 'まだ うごいていない へいが ' + left + 'たい います。ターンを おわりますか？'; $('confirmBox').classList.add('on'); }
+    else playerEndTurn();
+  };
+  $('confirmYes').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); playerEndTurn(); };
+  $('confirmNo').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); };
+  $('logLine').onclick = function () { SFX.tap(); openLog(); };
+  $('logClose').onclick = function () { SFX.tap(); $('logBox').classList.remove('on'); };
   $('fitBtn').onclick = function () { SFX.tap(); fitCamera(); };
   $('quitBtn').onclick = function () { SFX.tap(); if (confirm('タイトルに もどりますか？')) { G = null; show('title'); } };
   $('againBtn').onclick = function () { SFX.tap(); $('resultBox').classList.remove('on'); startGame(); };
