@@ -202,8 +202,9 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>二の丸城</b>：かべが 2じゅう。<b>海城</b>：うみに かこまれ まえからしか せめられない（忍者は およげる）。<b>大城</b>：ほり＋2じゅうの かべの きょだいな しろ。</li>
       <li>しろの まわりの もり・おか・かわは まいかい かわる。「🎲 べつの ちず」で えらびなおせる。</li></ul>
   <h3>そうさ</h3>
-  <ul><li>じぶんの へい（あお）を タッチ → あおい マスに うごける。</li>
-      <li>あかく ひかった てきを タッチで <b>こうげき</b>。オレンジの かべを タッチで <b>かべこわし</b>。</li>
+  <ul><li><b>クリックだけで あそべる！</b> じぶんの へい（あお）を クリック → あおい マスを クリックで いどう。</li>
+      <li>あかい てき・オレンジの かべを クリックすると、ちょうど いい ばしょへ うごいて そのまま <b>こうげき</b>（てんせんの わくは うごいてから こうげき）。</li>
+      <li>えらんだ へいを もう一度 クリック → その場で まつ。うごいた あとに ほかの ばしょを クリック → まつ。</li>
       <li>うごいた あとでも、こうげきする まえなら「↩ もどす」で やりなおせる。</li>
       <li>「まつ」で その へいの ばんは おわり。まだ うごいていない へいには きいろい ●。</li>
       <li>したの きろくを タッチすると、たたかいの きろくが ぜんぶ みられる。</li>
@@ -230,7 +231,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v1.5';
+var VERSION = 'v1.6';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1420,8 +1421,9 @@ function render() {
   targets.forEach(function (t) {
     var pos = t.unit ? [t.unit.c, t.unit.r] : [t.tile.c, t.tile.r]; var hc = hexCenter(pos[0], pos[1]);
     hexPath(hc[0], hc[1], R - 2);
-    ctx.fillStyle = t.kind === 'attack' ? 'rgba(255,60,60,0.4)' : t.kind === 'wall' ? 'rgba(255,150,40,0.45)' : 'rgba(80,230,120,0.45)'; ctx.fill();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = t.kind === 'attack' ? 'rgba(255,60,60,0.42)' : t.kind === 'wall' ? 'rgba(255,150,40,0.45)' : 'rgba(80,230,120,0.45)'; ctx.fill();
+    if (t.from) ctx.setLineDash([7, 5]);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke(); ctx.setLineDash([]);
   });
   // ユニット
   G.units.forEach(function (u) {
@@ -1481,8 +1483,8 @@ function updateInfo() {
   var html = '<div class="irow"><span class="uic ' + (mine ? 'blue' : 'red') + '">' + T.ch + '</span><b>' + unitName(u) + '</b><span class="tag">' + (mine ? 'みかた' : 'てき') + '</span></div>';
   html += '<div class="stats">兵 <b>' + u.hp + '</b>／攻 ' + u.atk + '／守 ' + u.def + '／移 ' + u.mov + '／射 ' + (u.rmin === u.rmax ? u.rmin : u.rmin + '〜' + u.rmax) + '　地形：' + TERRAIN[t.ch].name + (t.ch === 'W' && !t.broken ? '（まもり UP）' : '') + '</div>';
   if (mine && sel === u && G.side === G.playerSide) {
-    if (phase === 'idle') html += '<p class="hint">あおい マスに うごける。あかい てきを タッチで こうげき。</p>';
-    else if (phase === 'moved') html += '<p class="hint">こうげき・そのほかの こうどうを えらぶか「まつ」。</p>';
+    if (phase === 'idle') html += '<p class="hint">あお＝いどう。あか・オレンジ＝クリック1かいで いどう＋こうげき（てんせんは うごいてから）。もう一度 じぶんを クリックで その場で まつ。</p>';
+    else if (phase === 'moved') html += '<p class="hint">あかい てきを クリックで こうげき。ほかの ばしょを クリックすると「まつ」。</p>';
   }
   box.innerHTML = html;
 }
@@ -1528,10 +1530,37 @@ function computeTargets(u, moved) {
   if (u.type === 'kosaku') neighbors(u.c, u.r).forEach(function (p) { var rt = tileAt(G, p[0], p[1]); if (canBuildBridgeFrom(G, u, u.c, u.r, rt)) list.push({ kind: 'bridge', tile: rt }); });
   return list;
 }
+// その兵が「うごいてから」できる行動を あつめる（クリック1回で 移動＋行動）
+function targetsFrom(u, c, r, moved) {
+  var oc = u.c, orr = u.r; u.c = c; u.r = r;
+  var list = computeTargets(u, moved);
+  u.c = oc; u.r = orr;
+  return list;
+}
+function tgKey(t) { return t.kind + ':' + (t.unit ? 'u' + t.unit.id : t.tile.c + ',' + t.tile.r); }
+function computeAllTargets(u) {
+  var best = {};
+  function consider(t, c, r, here) {
+    var k = tgKey(t), pos = t.unit ? [t.unit.c, t.unit.r] : [t.tile.c, t.tile.r];
+    var tile = tileAt(G, c, r), sc = here ? 3 : 0;
+    sc += (1 - defMod(G, u, tile)) * 4;
+    if (t.unit) { var d = hexDist(c, r, pos[0], pos[1]); if (!(d >= t.unit.rmin && d <= t.unit.rmax)) sc += 4; }
+    sc -= (reach[key(c, r)] ? reach[key(c, r)].cost : 0) * 0.1;
+    if (!best[k] || sc > best[k].sc) best[k] = { kind: t.kind, unit: t.unit, tile: t.tile, from: here ? null : [c, r], sc: sc };
+  }
+  computeTargets(u, false).forEach(function (t) { consider(t, u.c, u.r, true); });
+  for (var k in reach) {
+    if (k === '__from') continue;
+    var p = k.split(',').map(Number);
+    if (p[0] === u.c && p[1] === u.r) continue;
+    targetsFrom(u, p[0], p[1], true).forEach(function (t) { consider(t, p[0], p[1], false); });
+  }
+  return Object.keys(best).map(function (k) { return best[k]; });
+}
 function showActions() {
   var bar = $('actBar'); bar.innerHTML = '';
   var kinds = {}; targets.forEach(function (t) { kinds[t.kind] = 1; });
-  var labels = { attack: '⚔ こうげき：あかい てきを タッチ', wall: '🔨 かべを こわす：オレンジを タッチ', open: '🚪 もんを あける：みどりを タッチ', repair: '🔧 なおす：みどりを タッチ', close: '🚪 もんを しめる：みどりを タッチ', bridge: '🌉 はしを かける：みどりを タッチ' };
+  var labels = { attack: '⚔ あかい てきを クリックで こうげき', wall: '🔨 オレンジで かべこわし', open: '🚪 みどりで もんを あける', repair: '🔧 みどりで なおす', close: '🚪 みどりで もんを しめる', bridge: '🌉 みどりで はしを かける' };
   Object.keys(kinds).forEach(function (k) { var s = document.createElement('span'); s.className = 'actlbl'; s.textContent = labels[k]; bar.appendChild(s); });
   var w = document.createElement('button'); w.className = 'act'; w.textContent = '⏸ まつ'; w.onclick = function () { SFX.tap(); finishUnit(); }; bar.appendChild(w);
   if (phase === 'moved' && undoPos && undoPos.unit === sel) { var ub = document.createElement('button'); ub.className = 'act undo'; ub.textContent = '↩ もどす'; ub.onclick = function () { SFX.tap(); undoMove(); }; bar.appendChild(ub); }
@@ -1548,7 +1577,7 @@ function hideActions() { $('actBar').classList.remove('on'); $('actBar').innerHT
 function deselect() { undoPos = null; sel = null; reach = null; targets = []; phase = 'idle'; hideActions(); updateInfo(); }
 function selectUnit(u) {
   sel = u; reach = reachable(G, u); phase = 'idle';
-  targets = computeTargets(u, false);
+  targets = computeAllTargets(u);
   showActions(); updateInfo();
 }
 function finishUnit() {
@@ -1563,6 +1592,15 @@ function afterPlayerAction() {
 }
 function performTarget(t) {
   var u = sel; if (!u) return;
+  if (t.from && !(t.from[0] === u.c && t.from[1] === u.r)) {
+    var path = pathTo(reach, t.from[0], t.from[1]);
+    SFX.move(); hideActions(); targets = []; reach = null; phase = 'anim';
+    moveAnim = { unit: u, path: path, t: 0, cb: function () {
+      u.c = t.from[0]; u.r = t.from[1]; u.moved = true; undoPos = null;
+      t.from = null; phase = 'moved'; performTarget(t);
+    } };
+    return;
+  }
   phase = 'anim'; hideActions();
   if (t.kind === 'attack') {
     var e = t.unit; var res = doAttack(G, u, e);
@@ -1607,9 +1645,18 @@ function onTapHex(c, r) {
     } };
     return;
   }
-  if (phase === 'moved') { // 移動後は別のマスをタップしても何もしない（まつ or 行動）
-    if (u && u !== sel) { hoverInfo = u; updateInfo(); }
+  if (phase === 'moved') {
+    // 移動したあと：ほかの場所を クリック ＝ その兵は「まつ」
+    var cur = sel; cur.acted = true; deselect(); updateHud();
+    if (checkVictory(G)) return gameOver();
+    if (u && u.side === G.playerSide && !u.acted && u !== cur) { SFX.tap(); selectUnit(u); return; }
+    if (u && u !== cur) { hoverInfo = u; updateInfo(); }
+    afterPlayerAction();
     return;
+  }
+  if (sel && phase === 'idle' && u === sel) {
+    // えらんだ兵を もう一度 クリック ＝ その場で まつ
+    SFX.tap(); finishUnit(); return;
   }
   if (u && u.side === G.playerSide) {
     if (u.acted) { hoverInfo = u; updateInfo(); banner('この へいは もう うごいた', 800); return; }
@@ -1755,7 +1802,7 @@ window.addEventListener('load', function () {
   $('endTurnBtn').onclick = function () {
     SFX.tap();
     if (!G || G.over || G.side !== G.playerSide || phase === 'cpu' || phase === 'anim' || moveAnim) return;
-    var left = unitsOf(G, G.playerSide).filter(function (x) { return !x.acted && x !== sel; }).length + (sel && !sel.acted ? 1 : 0);
+    var left = unitsOf(G, G.playerSide).filter(function (x) { return !x.acted && !x.moved; }).length;
     if (left > 0) { $('confirmMsg').textContent = 'まだ うごいていない へいが ' + left + 'たい います。ターンを おわりますか？'; $('confirmBox').classList.add('on'); }
     else playerEndTurn();
   };
