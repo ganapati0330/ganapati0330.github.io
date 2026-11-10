@@ -783,6 +783,9 @@ details.card[open]>summary h2::before{transform:rotate(90deg)}
 .cand .diff{font-size:11.5px;color:#0369a1;margin-top:3px;font-weight:700}
 .nogo .diff{flex-basis:100%;color:#0369a1;font-weight:700}
 .nogo{flex-wrap:wrap}
+.wgrp{font-size:12px;font-weight:800;margin:8px 0 2px;padding:3px 8px;border-radius:6px}
+.wgrp.sev{background:#fee2e2;color:#991b1b}.wgrp.cau{background:#ffedd5;color:#9a3412}
+.winfo{margin-top:8px}.winfo summary{font-size:12px;color:#475569;cursor:pointer;padding:4px 0}
 .warn .adv{color:#b45309;display:block;font-size:11px}
 .nogo{display:flex;align-items:center;gap:6px;background:#fef2f2;border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px;color:#991b1b}
 .nogo button{margin-left:auto;border:0;background:#fff;border-radius:6px;padding:3px 8px;font-size:12px}
@@ -864,6 +867,18 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 @media (min-width:761px){#pickBanner{left:calc(380px + (100vw - 380px)/2)}}
 .rin.picking input{box-shadow:0 0 0 3px #fb923c}
 .rin .badge{cursor:pointer}
+#btnGuide{border:0;background:rgba(255,255,255,.15);color:#fff;border-radius:50%;width:26px;height:26px;font-size:13px;padding:0;flex:none}
+#guide{position:fixed;inset:0;z-index:3400;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+#guide[hidden]{display:none}
+.gbox{background:#fff;border-radius:16px;max-width:460px;width:100%;padding:18px 18px 12px;box-shadow:0 10px 40px rgba(0,0,0,.35);max-height:90vh;overflow:auto}
+.gnum{font-size:12px;color:#f97316;font-weight:800}
+.gbox h3{margin:4px 0 8px;font-size:17px}
+.gbox ul{margin:0;padding-left:20px;font-size:14px;line-height:1.65;color:#334155}
+.gbox .g-on{background:#16a34a;color:#fff;border-radius:5px;padding:0 4px}
+.gbtns{display:flex;gap:8px;margin-top:14px}
+.gbtns button{flex:1;border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:11px;font-size:15px;font-weight:700}
+.gbtns button.pri{background:#f97316;border-color:#f97316;color:#fff}
+.gfoot{font-size:11px;color:#94a3b8;margin:8px 0 0;text-align:center}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;border-radius:999px;padding:6px 10px;font-size:13px;cursor:pointer}
 .pk{width:18px;height:18px;border-radius:4px;background:#1d4ed8;color:#fff;font:800 11px/18px sans-serif;text-align:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -910,7 +925,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <div id="panel">
   <button id="sheetHandle" aria-label="パネルの大きさを切り替え"></button>
   <div class="phead">
-    <h1>🚴 サイクルルートプランナー <small id="ver"></small></h1>
+    <h1>🚴 サイクルルートプランナー <button id="btnGuide" title="使い方">❓</button><small id="ver"></small></h1>
     <div class="search">
       <div class="rin"><span class="badge b-s">S</span><input id="qS" type="search" placeholder="出発地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button class="herebtn" id="btnHereS" title="現在地を出発地に">📍</button><button id="btnSearchS">検索</button></div>
       <div class="rin"><span class="badge b-g">G</span><button class="herebtn" id="btnGoalSame" title="ゴールを出発地と同じにする">🔁</button><input id="qG" type="search" placeholder="目的地：地名・駅・住所 または 地図をタップ" autocomplete="off" enterkeyhint="search"><button class="herebtn" id="btnHereG" title="現在地を目的地に">📍</button><button id="btnSearchG">検索</button></div>
@@ -936,6 +951,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
       <div class="seg" id="loopStop"><button data-v="none">なし</button><button data-v="view">🌄 景色・観光</button><button data-v="cafe">☕ カフェ・食事</button><button data-v="michi">🛣️ 道の駅</button></div>
       <div class="btnrow"><button class="btn pri" id="btnLoopGen" style="flex:1">🔄 コースを提案する</button></div>
       <div id="loopStatus" class="hint" style="margin-top:6px"></div>
+      <button class="btn" id="loopSkip" hidden style="margin-top:6px">⏭ 観光地を待たずに方角で作る</button>
     </details>
 
     <details class="card" data-k="cand" id="cardCand" open hidden>
@@ -1115,6 +1131,40 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 </div>
 <div id="rBlock" hidden><span>走行中は操作できません（停車すると操作できます）</span></div>
 <div id="pickBanner" hidden><span id="pickTxt"></span><button id="pickClose" aria-label="やめる">✕</button></div>
+<div id="guide" hidden>
+  <div class="gbox">
+    <div class="gstep" data-s="1">
+      <div class="gnum">1 / 3　ルートを作る</div>
+      <h3>📍 出発地は現在地、地図をタップで行き先</h3>
+      <ul>
+        <li>出発地（<b>S</b>）には現在地が自動で入ります。</li>
+        <li>地図をタップすると、そこへ行って<b>出発地に戻る</b>ルートになります。目的地の欄の <b class="g-on">🔁</b> が緑のときは「ゴール＝出発地」です。</li>
+        <li>出発地やゴールを変えたいときは、<b>その欄を押してから地図をタップ</b>します。地名を入力して検索もできます。</li>
+      </ul>
+    </div>
+    <div class="gstep" data-s="2" hidden>
+      <div class="gnum">2 / 3　道の選び方</div>
+      <h3>🛣️ 「ルートの好み」で道の選び方が変わります</h3>
+      <ul>
+        <li><b>速さ優先</b>：舗装路中心で、遠回りや曲がり角が少ない道。</li>
+        <li><b>交通量少なめ・静かな道</b>：国道などの幹線道路を避けます（少し遠回り）。</li>
+        <li><b>安全優先</b>：自転車道や車の少ない道を最優先（距離は長め）。</li>
+        <li><b>⚖️ 候補を比較する</b> を押すと、違うルートを並べて距離・登り・幹線道路の割合を比べられます。</li>
+      </ul>
+    </div>
+    <div class="gstep" data-s="3" hidden>
+      <div class="gnum">3 / 3　おすすめの使い方</div>
+      <h3>🔄 距離を決めて、観光地をめぐるコースを提案</h3>
+      <ul>
+        <li>「<b>距離を指定してコースを提案</b>」で20km・30kmなどを選ぶと、近くの観光地をめぐって戻るコースを提案します。</li>
+        <li>ルートができたら <b>🚴 走行</b> で、音声で曲がり角を案内する走行モードになります。ルートなしならメーターとして使えます。</li>
+        <li>パネルは「🗺️ 地図」ボタンや上下になぞる操作で小さくできます。</li>
+      </ul>
+    </div>
+    <div class="gbtns"><button id="gSkip">閉じる</button><button id="gNext" class="pri">次へ ▶</button></div>
+    <p class="gfoot">このガイドは、タイトル横の ❓ からいつでも見られます。</p>
+  </div>
+</div>
 <div id="toast"></div>
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -1125,7 +1175,7 @@ body.standalone .phead{padding-top:calc(10px + env(safe-area-inset-top))}
 <script>
 'use strict';
 (function(){
-const VERSION = 'v20';
+const VERSION = 'v21';
 const BROUTER = 'https://brouter.de/brouter';
 const LS_ROUTES = 'crp_routes', LS_VIEW = 'crp_view', LS_PREF = 'crp_pref';
 
@@ -1457,33 +1507,47 @@ function parseRoute(gj){
   if (!segs.length) segs.push({from:0, to:pts.length-1, tags:{}});
   segs.forEach(s => { s.cat = classify(s.tags); s.len = pts[s.to].d - pts[s.from].d; });
 
-  // grades: window of ~100m
+  // 標高の平滑化：前後120mの平均を2回。都市部のビル・高架・橋などによる標高データのノイズを抑える
+  if (hasEle){
+    pts.forEach(p => p.eleRaw = p.ele);
+    const smooth = (src, W) => {
+      const out = new Array(pts.length); let a = 0, b = 0, sum = 0, n = 0;
+      for (let i = 0; i < pts.length; i++){
+        while (b < pts.length && pts[b].d - pts[i].d <= W){ sum += src[b]; n++; b++; }
+        while (pts[i].d - pts[a].d > W){ sum -= src[a]; n--; a++; }
+        out[i] = sum / n;
+      }
+      return out;
+    };
+    const s1 = smooth(pts.map(p => p.eleRaw), 120), s2 = smooth(s1, 120);
+    pts.forEach((p, i) => p.ele = s2[i]);
+  }
+  // 勾配：前後75m（計150m）で計算
   const grade = new Array(pts.length).fill(0);
   if (hasEle){
-    let k = 0;
+    let a = 0, b = 0;
     for (let i = 0; i < pts.length; i++){
-      if (k < i) k = i;
-      while (k < pts.length-1 && pts[k].d - pts[i].d < 100) k++;
-      let a = i;
-      if (pts[k].d - pts[a].d < 100){ while (a > 0 && pts[k].d - pts[a].d < 100) a--; }
-      const dd = pts[k].d - pts[a].d;
-      grade[i] = dd > 20 ? (pts[k].ele - pts[a].ele) / dd * 100 : 0;
+      while (pts[i].d - pts[a].d > 75) a++;
+      if (b < i) b = i;
+      while (b < pts.length - 1 && pts[b].d - pts[i].d < 75) b++;
+      const dd = pts[b].d - pts[a].d;
+      grade[i] = dd > 60 ? (pts[b].ele - pts[a].ele) / dd * 100 : 0;
     }
   }
-  // max grade over 200m windows
+  // 最大勾配：300m区間の平均で見る（短い区間の誤差を拾わない）
   let maxG = 0, maxGi = 0;
   if (hasEle){
     let k = 0;
     for (let i = 0; i < pts.length; i++){
       if (k < i) k = i;
-      while (k < pts.length-1 && pts[k].d - pts[i].d < 200) k++;
+      while (k < pts.length-1 && pts[k].d - pts[i].d < 300) k++;
       const dd = pts[k].d - pts[i].d;
-      if (dd >= 150){ const g = (pts[k].ele - pts[i].ele) / dd * 100; if (g > maxG){ maxG = g; maxGi = i; } }
+      if (dd >= 250){ const g = (pts[k].ele - pts[i].ele) / dd * 100; if (g > maxG){ maxG = g; maxGi = i; } }
     }
   }
-  // ascent
-  let asc = +props['filtered ascend'];
-  if (!isFinite(asc) && hasEle){
+  // 獲得標高：平滑化した標高で、5m以上の上下だけを数える（どの候補も同じ方法で比べられるように）
+  let asc = null;
+  if (hasEle){
     asc = 0; let ref = pts[0].ele;
     pts.forEach(p => { if (p.ele - ref > 5){ asc += p.ele - ref; ref = p.ele; } else if (ref - p.ele > 5) ref = p.ele; });
   }
@@ -1653,15 +1717,16 @@ function buildWarnings(r){
   if (r.hasEle){
     let st = -1;
     for (let i = 0; i < pts.length; i++){
-      const steep = r.grade[i] >= 8;
+      const steep = r.grade[i] >= 7;
       if (steep && st < 0) st = i;
       if ((!steep || i === pts.length-1) && st >= 0){
-        if (pts[i].d - pts[st].d >= 150) add('steep', st, i);
+        // 250m以上続き、15m以上登る坂だけを「急な登り」とする
+        if (pts[i].d - pts[st].d >= 250 && pts[i].ele - pts[st].ele >= 15) add('steep', st, i);
         st = -1;
       }
     }
   }
-  const MIN = {ferry:1, nobike:1, steps:1, dismount:1, sidewalk:20, cond:1, unknown:50, busy:300, unpaved:50, tunnel:150, steep:150};
+  const MIN = {ferry:1, nobike:1, steps:1, dismount:1, sidewalk:60, cond:1, unknown:100, busy:300, unpaved:50, tunnel:150, steep:250};
   return W.filter(w => w.len >= MIN[w.type]).sort((a, b) => a.from - b.from);
 }
 const WINFO = {
@@ -1683,13 +1748,12 @@ function renderWarnings(){
   warnGroup.clearLayers();
   warnings = buildWarnings();
   const box = $('warnList');
-  const sev = warnings.filter(w => SEVERE.has(w.type)).length;
-  $('warnCount').innerHTML = route ? (sev ? `<span style="color:#dc2626">要確認${sev}</span> / ${warnings.length}件` : `${warnings.length}件`) : '';
+  const sev = warnings.filter(w => SEVERE.has(w.type)).length, info = warnings.filter(w => INFO_W.has(w.type)).length;
+  $('warnCount').innerHTML = route ? `${sev ? `<span style="color:#dc2626">要確認${sev}</span>・` : ''}注意${warnings.length - sev - info}・参考${info}` : '';
   if (route && sev) $('warnList').closest('details').open = true;
   if (!route){ box.innerHTML = '<p class="hint">ルートを作ると、自転車通行不可・階段・押し歩き・時間制限・通行可否が未確認の区間、交通量の多い道・未舗装・急坂・トンネルを表示します。</p>'; return; }
   if (!warnings.length){ box.innerHTML = '<p class="hint">目立った注意ポイントは見つかりませんでした 👍</p>'; return; }
-  box.innerHTML = '<p class="hint" style="margin-bottom:4px">ラベルの意味：<b>規制</b>＝地図データに登録された通行規制／<b>未確認</b>＝自転車の通行可否が未登録／<b>推定</b>＝道路の種類や標高からの推定。いずれも現地の標識が優先です。「避ける」でその区間を通らないルートを探し直します。</p>'
-   + warnings.map((w, i) => {
+  const row = (w, i) => {
     const p = route.pts[w.from];
     let extra = '', adv = WINFO[w.type].adv;
     if (w.type === 'steep'){
@@ -1699,7 +1763,14 @@ function renderWarnings(){
     if (w.type === 'cond') adv = '条件：' + (w.info || '不明');
     const len = w.len >= 1000 ? (w.len/1000).toFixed(1) + 'km' : Math.round(w.len) + 'm';
     return `<div class="warn" data-i="${i}"><span class="ic">${SEVERE.has(w.type) ? '🔴' : ''}${WINFO[w.type].ic}</span><div><span class="lv" style="color:${LV[WINFO[w.type].lv][1]};background:${LV[WINFO[w.type].lv][2]}">${LV[WINFO[w.type].lv][0]}</span><span style="${SEVERE.has(w.type) ? 'font-weight:700' : ''}">${WINFO[w.type].name}${extra}</span><small>${fmtKm(p.d*route.cumScale)}km地点から ${len}</small>${adv ? `<span class="adv">${esc(adv)}</span>` : ''}</div>${w.type !== 'steep' ? `<button class="act" data-nogo="${i}">避ける</button>` : ''}</div>`;
-  }).join('');
+  };
+  const grp = (title, cls, f) => { const arr = warnings.map((w, i) => [w, i]).filter(([w]) => f(w)); return arr.length ? `<div class="wgrp ${cls}">${title}（${arr.length}件）</div>` + arr.map(([w, i]) => row(w, i)).join('') : ''; };
+  const infoArr = warnings.map((w, i) => [w, i]).filter(([w]) => INFO_W.has(w.type));
+  box.innerHTML = (sev ? '' : '<p class="hint" style="color:#16a34a;font-weight:700">✅ 通れない・押し歩きの可能性がある区間は見つかりませんでした</p>')
+    + grp('🔴 要確認：通れない・押し歩きの可能性', 'sev', w => SEVERE.has(w.type))
+    + grp('🟠 注意：交通量・路面・坂・トンネル', 'cau', w => !SEVERE.has(w.type) && !INFO_W.has(w.type))
+    + (infoArr.length ? `<details class="winfo"><summary>⚪ 参考：自転車の通行可否が地図に未登録の区間（${infoArr.length}件・多くは歩道や小道）</summary>${infoArr.map(([w, i]) => row(w, i)).join('')}</details>` : '')
+    + '<p class="hint" style="margin-top:6px">ラベルの意味：<b>規制</b>＝地図データに登録された通行規制／<b>未確認</b>＝自転車の通行可否が未登録／<b>推定</b>＝道路の種類や標高からの推定。いずれも現地の標識が優先です。「避ける」でその区間を通らないルートを探し直します。</p>';
 }
 $('warnList').addEventListener('click', e => {
   const ng = e.target.closest('[data-nogo]');
@@ -1825,9 +1896,12 @@ async function doSearch(key){
   ];
   const [gsi, osm] = await Promise.all(jobs);
   const out = [];
-  [...osm, ...gsi].forEach(r => { if (isFinite(r.lat) && isFinite(r.lng) && !out.some(o => hav(o, r) < 300 && o.name === r.name && (o.type === r.type || r.src === 'gsi'))) out.push(r); });
-  const norm = x => String(x).replace(/[\s　・･()（）]/g, '').toLowerCase();
+  const norm = x => String(x).replace(/[\s　・･()（）]/g, '').replace(/駅$/, '').toLowerCase();
   const qq = norm(q);
+  // 同じ名前で1km以内のもの（駅の出入口・ホーム・路線ごとの駅など）は1つにまとめる
+  [...osm, ...gsi].forEach(r => { if (isFinite(r.lat) && isFinite(r.lng) && !out.some(o => hav(o, r) < 1000 && norm(o.name) === norm(r.name))) out.push(r); });
+  // 近く（200km以内）に候補があるときは、遠い同名の場所は出さない
+  if (out.some(r => hav(r, c) < 200000)) for (let k = out.length - 1; k >= 0; k--) if (hav(out[k], c) >= 200000) out.splice(k, 1);
   const score = r => {
     const n = norm(r.name); let sc = 0;
     if (n === qq || n + '駅' === qq || n === qq + '駅') sc += 1000;
@@ -1839,7 +1913,7 @@ async function doSearch(key){
     return sc - Math.min(400, hav(r, c) / 1000 * 1.5);
   };
   out.forEach(r => r.sc = score(r));
-  out.sort((a, b) => b.sc - a.sc);
+  out.sort((a, b) => (b.sc - a.sc) || (hav(a, c) - hav(b, c)));
   if (!out.length){ box.innerHTML = '<div class="res">見つかりませんでした。別の言い方で試してください。</div>'; return; }
   searchResults = out.slice(0, 12);
   box.innerHTML = `<div class="res" style="background:#f8fafc;font-size:12px;color:#475569;cursor:default">${key === 'S' ? '🟢 出発地' : '🔴 目的地'}を選んでください</div>`
@@ -1962,7 +2036,9 @@ function showPlacePopup(r){
 }
 
 /* ---------- 観光地・自転車置き場（OpenStreetMap / Overpass API） ---------- */
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+let overpassGood = 0;
+const overpassCache = new Map();
 const POI_MINZOOM = 12, PARK_MINZOOM = 14, PARK_NEAR = 200, MAX_POI = 4000;
 const poiData = new Map();               // id -> poi
 const poiLayerA = L.layerGroup(), poiLayerP = L.layerGroup(), poiLayerS = L.layerGroup();
@@ -1994,16 +2070,39 @@ nwr["shop"="bicycle"]${area};
 nwr["amenity"="bicycle_repair_station"]${area};
 );out center tags 3000;`;
 }
-async function overpass(q, signal){
-  let lastErr;
-  for (const url of OVERPASS){
+/* 観光地データ（Overpass）の問い合わせ：1サーバー15秒で打ち切り、別サーバーで再試行。結果は10分間覚えておく */
+async function overpass(q, signal, tmo){
+  const hit = overpassCache.get(q);
+  if (hit && Date.now() - hit.t < 600000) return hit.json;
+  let lastErr = new Error('failed');
+  for (let k = 0; k < OVERPASS.length; k++){
+    const idx = (overpassGood + k) % OVERPASS.length, url = OVERPASS[idx];
+    if (signal && signal.aborted) throw Object.assign(new Error('aborted'), {name:'AbortError'});
+    const ctl = new AbortController(), onAbort = () => ctl.abort();
+    if (signal) signal.addEventListener('abort', onAbort);
+    let timedOut = false;
+    const timer = setTimeout(() => { timedOut = true; ctl.abort(); }, tmo || 15000);
     try {
-      const r = await fetch(url, {method:'POST', body:'data=' + encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal});
+      const r = await fetch(url, {method:'POST', body:'data=' + encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ctl.signal});
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      return await r.json();
-    } catch (e) { if (e.name === 'AbortError') throw e; lastErr = e; }
+      const json = await r.json();
+      if (json.remark && /timed out|runtime error|out of memory/i.test(json.remark)) throw new Error('server: ' + json.remark);
+      overpassGood = idx;
+      overpassCache.set(q, {t:Date.now(), json});
+      return json;
+    } catch (e) {
+      if (signal && signal.aborted) throw Object.assign(new Error('aborted'), {name:'AbortError'});
+      lastErr = timedOut ? new Error('timeout') : e;
+    } finally { clearTimeout(timer); if (signal) signal.removeEventListener('abort', onAbort); }
   }
   throw lastErr;
+}
+/* 観光地の近く（200m）の自転車置き場だけを小さく問い合わせる */
+async function fetchParkingNear(list, signal){
+  const ps = list.slice(0, 12);
+  if (!ps.length) return;
+  const q = '[out:json][timeout:15];(' + ps.map(p => `nwr["amenity"="bicycle_parking"](around:${PARK_NEAR},${p.lat.toFixed(5)},${p.lng.toFixed(5)});`).join('') + ');out center 400;';
+  try { ingest(await overpass(q, signal, 12000)); } catch (e) {}
 }
 function ingest(json){
   (json.elements || []).forEach(el => {
@@ -2040,7 +2139,7 @@ function poiIcon(p){
 function renderPois(){
   poiLayerA.clearLayers(); poiLayerP.clearLayers(); poiLayerS.clearLayers();
   const z = map.getZoom(), b = map.getBounds().pad(0.3);
-  const onRoute = new Set((poiRouteList || []).map(x => x.p.id));
+  const onRoute = new Set((poiRouteList || []).concat(asList || []).map(x => x.p.id));
   poiData.forEach(p => {
     if (!b.contains([p.lat, p.lng]) && !onRoute.has(p.id)) return;
     if (p.kind === 'park' && z < PARK_MINZOOM) return;
@@ -2156,7 +2255,7 @@ async function findAlongRoute(){
 function renderPoiList(){
   const box = $('poiList');
   if (!poiRouteList){ box.innerHTML = ''; return; }
-  if (!poiRouteList.length){ box.innerHTML = '<p class="hint">ルートから1km以内に登録された観光地は見つかりませんでした。</p>'; return; }
+  if (!poiRouteList.length){ box.innerHTML = '<p class="hint">ルートから1km以内に、地図データに登録された観光地はありませんでした（読み込みは成功しています）。</p>'; return; }
   const onlyRec = $('poiRecOnly').checked;
   const list = onlyRec ? poiRouteList.filter(x => x.p.park != null) : poiRouteList;
   const rec = poiRouteList.filter(x => x.p.park != null).length;
@@ -2244,6 +2343,7 @@ let cands = [], candSel = -1, candMode = 'ab';
 const candLayer = L.layerGroup().addTo(map);
 const CAND_COLORS = ['#f97316', '#2563eb', '#16a34a', '#9333ea', '#db2777', '#0891b2'];
 const SEVERE = new Set(['nobike', 'steps', 'dismount', 'cond', 'ferry']);
+const INFO_W = new Set(['sidewalk', 'unknown']);
 function clearCands(){
   if (!cands.length && $('cardCand').hidden) return;
   cands = []; candSel = -1; candLayer.clearLayers(); $('cardCand').hidden = true;
@@ -2299,7 +2399,7 @@ function renderCands(){
   const D = pref.loopKm * 1000;
   const bDist = candMode === 'loop' ? bestIdx(c => Math.abs(c.st.dist - D)) : bestIdx(c => c.st.dist);
   const spread = f => { const v = cands.map(f), mx = Math.max(...v), mn = Math.min(...v); return mx > 0 ? (mx - mn) / mx : 0; };
-  const bAsc = bestIdx(c => c.st.asc / Math.max(c.st.dist, 1)), bBusy = bestIdx(c => c.st.busy), bOv = bestIdx(c => c.st.overlap);
+  const bAsc = bestIdx(c => c.st.asc), bBusy = bestIdx(c => c.st.busy), bOv = bestIdx(c => c.st.overlap);
   const bWater = bestIdx(c => -(c.st.water || 0)), bTurn = bestIdx(c => c.st.turns / Math.max(c.st.dist, 1));
   const nSev = cands.filter(c => c.st.severe > 0).length;
   $('candHint').innerHTML = (candMode === 'loop'
@@ -2310,7 +2410,7 @@ function renderCands(){
   $('candList').innerHTML = cands.map((c, i) => {
     const t = [];
     if (i === bDist) t.push(candMode === 'loop' ? '距離ぴったり' : '最短');
-    if (i === bAsc && spread(c => c.st.asc / Math.max(c.st.dist, 1)) > 0.15) t.push('坂が少ない');
+    if (i === bAsc && spread(c => c.st.asc) > 0.15) t.push('登りが一番少ない');
     if (i === bBusy && spread(c => c.st.busy) > 0.05) t.push('幹線道路が少ない');
     if (candMode === 'loop' && i === bOv && c.st.overlap < 0.25 && cands.length > 1) t.push('同じ道が少ない');
     if (c.st.quiet > 0.6) t.push('生活道路・自転車道中心');
@@ -2364,10 +2464,10 @@ async function compareRoutes(){
   const variants = [
     {name:'速さ優先', profile:'fastbike', alt:0}, {name:'交通量少なめ', profile:'fastbike-lowtraffic', alt:0},
     {name:'静かな道', profile:'fastbike-verylowtraffic', alt:0}, {name:'安全優先', profile:'safety', alt:0},
-    {name:'別ルート（速さ優先）', profile:'fastbike', alt:1}, {name:'別ルート（交通量少なめ）', profile:'fastbike-lowtraffic', alt:1}];
+    {name:'別ルート（速さ優先）', profile:'fastbike', alt:1}];
   let done = 0;
   setStatus(`候補を探しています… 0/${variants.length}`, 'busy');
-  const res = await pool(variants, 2, async v => {
+  const res = await pool(variants, 3, async v => {
     const r = parseRoute(await fetchRouteFor(pts, v.profile, v.alt));
     r.profile = v.profile;
     done++; setStatus(`候補を探しています… ${done}/${variants.length}`, 'busy');
@@ -2622,7 +2722,7 @@ ${park ? `nwr["amenity"="bicycle_parking"]${area};` : ''}
 );out center tags 1500;`;
 async function planSightCombos(S, D, shape, signal){
   const R = Math.round(Math.min(45000, D * (shape === 'out' ? 0.45 : 0.4)));
-  ingest(await overpass(SIGHT_Q(`(around:${R},${S.lat.toFixed(5)},${S.lng.toFixed(5)})`, R <= 15000), signal));
+  ingest(await overpass(SIGHT_Q(`(around:${R},${S.lat.toFixed(5)},${S.lng.toFixed(5)})`, false), signal, 15000));
   const seen = new Set(), cand = [];
   poiData.forEach(p => {
     if (p.kind !== 'sight' || !p.name || seen.has(p.name)) return;
@@ -2678,17 +2778,20 @@ let asTimer = null, asKey = '', asList = null;
 function routeKey(r){ const a = r.pts[0], b = r.pts[r.pts.length-1]; return [Math.round(r.dist), a.lat.toFixed(4), a.lng.toFixed(4), b.lat.toFixed(4), b.lng.toFixed(4), r.pts.length].join('|'); }
 function scheduleAutoSights(){
   clearTimeout(asTimer);
-  if (!route){ asKey = ''; asList = null; renderRouteSights(); return; }
-  if (routeKey(route) === asKey){ if (asList){ poiRouteList = asList; renderPois(); } renderRouteSights(); return; }
-  if (route.dist > 150000){ asList = null; $('routeSights').innerHTML = '<p class="hint">150kmを超えるルートでは、沿道の見どころの自動表示は行いません（「観光地・自転車置き場」カードで探せます）。</p>'; return; }
-  $('routeSights').innerHTML = '<p class="hint">🏯 沿道の見どころを探しています…</p>';
+  if (!route){ asKey = ''; asList = null; asState = 'idle'; renderRouteSights(); return; }
+  if (routeKey(route) === asKey && asState === 'done'){ renderPois(); renderRouteSights(); return; }
+  if (route.dist > 150000){ asList = null; asState = 'idle'; $('routeSights').innerHTML = '<p class="hint">150kmを超えるルートでは、沿道の見どころの自動表示は行いません（「観光地・自転車置き場」カードで探せます）。</p>'; return; }
+  asState = 'loading'; asT0 = Date.now(); renderRouteSights();
   asTimer = setTimeout(autoSights, 1200);
 }
+let asState = 'idle', asT0 = 0, asTick = null;
 async function autoSights(){
   const r = route; if (!r || RIDE.on) return;
   const key = routeKey(r);
-  try { ingest(await overpass(SIGHT_Q(`(around:600,${samplePolyline(r, 100)})`, true))); }
-  catch (e) { if (route === r) $('routeSights').innerHTML = '<p class="hint">沿道の見どころを読み込めませんでした（混み合っている可能性）。</p>'; return; }
+  asState = 'loading'; asT0 = Date.now(); renderRouteSights();
+  clearInterval(asTick); asTick = setInterval(() => { if (asState === 'loading') renderRouteSights(); else clearInterval(asTick); }, 1000);
+  try { ingest(await overpass(SIGHT_Q(`(around:600,${samplePolyline(r, 80)})`, false), null, 15000)); }
+  catch (e) { if (route === r){ asState = 'error'; asKey = ''; renderRouteSights(); } return; }
   if (route !== r) return;
   const pts = r.pts, list = [], seen = new Set();
   poiData.forEach(p => {
@@ -2700,13 +2803,20 @@ async function autoSights(){
     list.push({p, off:Math.round(bd), km:pts[bi].d * r.cumScale / 1000, n:sightScore(p)});
   });
   list.sort((a, b) => a.km - b.km);
-  asKey = key; asList = list; poiRouteList = list;
-  if (!pref.poiA){ pref.poiA = true; savePref(); applyPoiToggles(); }
-  renderPois(); renderPoiList(); renderRouteSights();
+  asKey = key; asList = list; asState = 'done';
+  if (list.length && !pref.poiA){ pref.poiA = true; savePref(); applyPoiToggles(); }
+  renderPois(); renderRouteSights();
+  // おすすめ上位の近くの自転車置き場を後から調べて⭐を付ける
+  const top = list.slice().sort((a, b) => b.n - a.n).slice(0, 8).map(x => x.p);
+  await fetchParkingNear(top);
+  if (route === r){ list.forEach(x => x.n = sightScore(x.p)); renderPois(); renderRouteSights(); }
 }
 function renderRouteSights(){
   const box = $('routeSights');
-  if (!route || !asList){ if (!route) box.innerHTML = ''; return; }
+  if (!route){ box.innerHTML = ''; return; }
+  if (asState === 'loading'){ const sec = Math.round((Date.now() - asT0) / 1000); box.innerHTML = `<div class="rs-h">🏯 沿道の見どころ</div><p class="hint">探しています…（${sec}秒）${sec >= 10 ? ' 観光地データのサーバーが混み合っているようです。最大45秒で打ち切ります。' : ''}</p>`; return; }
+  if (asState === 'error'){ box.innerHTML = '<div class="rs-h">🏯 沿道の見どころ</div><p class="hint" style="color:#b45309">⚠ 観光地データを読み込めませんでした（観光地データのサーバーが混み合っているか、通信が不安定です）。ルートの作成や走行には影響ありません。</p><button class="btn" id="btnAsRetry">↻ もう一度探す</button>'; return; }
+  if (!asList) return;
   if (!asList.length){ box.innerHTML = '<div class="rs-h">🏯 沿道の見どころ</div><p class="hint">ルートから600m以内に、地図データに登録された観光地は見つかりませんでした。「距離を指定してコースを提案」の「観光地をめぐる」なら、観光地を目的にしたコースを作れます。</p>'; return; }
   const top = asList.slice().sort((a, b) => b.n - a.n).slice(0, 6).sort((a, b) => a.km - b.km);
   const onRoute = new Set(wps.map(w => w.name));
@@ -2715,6 +2825,7 @@ function renderRouteSights(){
       return `<div class="rs" data-sid="${esc(x.p.id)}"><span class="ic">${s.ic}</span><div class="nm">${x.p.park != null ? '⭐ ' : ''}${esc(x.p.name)}<small>${x.km.toFixed(1)}km地点 ・ ${s.nm} ・ ${x.off < 60 ? 'ルート沿い' : 'ルートから' + x.off + 'm'}${x.p.park != null ? ' ・ 🚲置き場あり' : ''}</small></div>${via ? '<span class="rs-on">経由中</span>' : `<button data-via="${esc(x.p.id)}">寄る</button>`}</div>`; }).join('');
 }
 $('routeSights').addEventListener('click', e => {
+  if (e.target.closest('#btnAsRetry')){ asKey = ''; autoSights(); return; }
   const v = e.target.closest('[data-via]');
   if (v){ const p = poiData.get(v.dataset.via); if (p) addVia({lat:p.lat, lng:p.lng, name:p.name}); return; }
   const row = e.target.closest('[data-sid]'); if (!row) return;
@@ -2737,7 +2848,7 @@ function loopPts(S, brg, D, shape, k){
   return [S, Object.assign(destPt(S, brg - 30, r), {name:'', tmp:'周回ポイント1'}), Object.assign(destPt(S, brg + 30, r), {name:'', tmp:'周回ポイント2'}), S];
 }
 function loopStatus(msg, err){ const s = $('loopStatus'); s.textContent = msg || ''; s.style.color = err ? '#dc2626' : ''; }
-let loopCtl = null;
+let loopCtl = null, sightSkip = null;
 function setGenBtn(running){
   const b = $('btnLoopGen');
   b.textContent = running ? '■ 作成を中止' : '🔄 コースを提案する';
@@ -2770,19 +2881,29 @@ async function genLoops(){
     l.forEach((c, i) => { c.color = CAND_COLORS[i]; c.name = c.sights ? sightCourseName(c) : `コース${i + 1}（${dirName(c.brg)}まわり）`; });
     cands = l; candMode = 'loop'; candSel = -1; renderCands();
   };
-  let sightOk = false;
+  let sightOk = false, sightNote = '';
   if (pref.loopMode !== 'dir'){
     loopStatus('出発地のまわりの観光地を探しています…');
-    let combos = [];
-    try { combos = await planSightCombos(S, D, shape, signal); } catch (e) { combos = []; }
+    let combos = [], sightErr = false;
+    const sctl = new AbortController(), onMain = () => sctl.abort();
+    signal.addEventListener('abort', onMain);
+    sightSkip = () => sctl.abort();
+    $('loopSkip').hidden = false;
+    try { combos = await planSightCombos(S, D, shape, sctl.signal); } catch (e) { combos = []; sightErr = !signal.aborted; }
+    if (!sctl.signal.aborted && combos.length){
+      const ids = []; combos.forEach(c => c.sights.forEach(p => { if (!ids.includes(p)) ids.push(p); }));
+      loopStatus('観光地の近くの自転車置き場を調べています…');
+      await fetchParkingNear(ids, sctl.signal);
+    }
+    if (sctl.signal.aborted && !signal.aborted){ combos = []; sightErr = 'skip'; }
     if (combos.length && !signal.aborted){
       let dn = 0;
       loopStatus(`観光地をめぐるコースを作成中… 0/${combos.length}（できたものから下に表示します）`);
-      await pool(combos, 2, async cb => {
-        if (signal.aborted) return null;
+      await pool(combos, 3, async cb => {
+        if (signal.aborted || sctl.signal.aborted) return null;
         const pts = [S].concat(cb.sights.map(p => ({lat:p.lat, lng:p.lng, name:p.name}))).concat([S]);
         try {
-          const r = parseRoute(await fetchRouteFor(pts, profile, 0, signal)); r.profile = profile;
+          const r = parseRoute(await fetchRouteFor(pts, profile, 0, sctl.signal)); r.profile = profile;
           const ferry = r.segs.some(sg => sg.cat === 'ferry' && sg.len > 0);
           const strayed = pts.slice(1, -1).some(w => { let md = Infinity; for (let i = 0; i < r.pts.length; i += 2){ const d = hav(r.pts[i], w); if (d < md) md = d; } return md > 700; });
           if (!ferry && !strayed){
@@ -2796,11 +2917,15 @@ async function genLoops(){
         return null;
       });
     }
+    signal.removeEventListener('abort', onMain); sightSkip = null; $('loopSkip').hidden = true;
     sightOk = partial.length >= 2;
-    if (!sightOk && !signal.aborted) loopStatus(partial.length ? '観光地をめぐるコースが少ないため、方角で作るコースも加えています…' : '近くに地図データに登録された観光地が少ないため、方角で作っています…');
+    if (sightErr === 'skip') sightNote = '観光地を待たずに方角で作りました。';
+    else if (sightErr) sightNote = '観光地データを読み込めなかったため（サーバーの混雑など）、方角で作りました。';
+    else if (!sightOk) sightNote = partial.length ? '観光地をめぐるコースが少なかったため、方角で作るコースも加えました。' : '近くに地図データに登録された観光地が少ないため、方角で作りました。';
+    if (!sightOk && !signal.aborted) loopStatus(sightNote.replace('作りました', '作っています…').replace('加えました', '加えています…'));
   }
   if (!sightOk && !signal.aborted) loopStatus(`コースを作成中… 0/${brgs.length}（できたものから下に表示します）`);
-  if (!sightOk && !signal.aborted) await pool(brgs, 2, async b => {
+  if (!sightOk && !signal.aborted) await pool(brgs, 3, async b => {
     if (signal.aborted) return null;
     let k = 1, best = null;
     for (let tr = 0; tr < 3 && !signal.aborted; tr++){
@@ -2861,7 +2986,7 @@ async function genLoops(){
   list.forEach((c, i) => { c.color = CAND_COLORS[i]; if (c.sights) c.name = sightCourseName(c); else if (!c.via3) c.name = `コース${i + 1}（${dirName(c.brg)}まわり）`; });
   cands = list; candMode = 'loop';
   const allSev = list.every(c => c.st.severe > 0);
-  loopStatus((cancelled ? `中止しました。できた${list.length}コースを表示しています` : `${list.length}つのコースを提案しました${stopMsg}`)
+  loopStatus(sightNote + (cancelled ? `中止しました。できた${list.length}コースを表示しています` : `${list.length}つのコースを提案しました${stopMsg}`)
     + (allSev ? '。※すべてのコースに通行規制の区間があります（候補欄で確認できます）' : '。下の「ルート候補の比較」から選べます。'));
   selectCand(0);
   list.forEach(c => c.wps.forEach(needName));     // 他の候補の目印にも地名を付ける
@@ -2869,6 +2994,7 @@ async function genLoops(){
   enrichCourse(list, () => { if (cands === list){ if (candSel >= 0) setStatus(`候補「${cands[candSel].name}」を表示中`); renderCands(); } });
 }
 $('btnLoopGen').onclick = genLoops;
+$('loopSkip').onclick = () => { if (sightSkip) sightSkip(); };
 function wireSeg(id, key, cb){
   document.querySelectorAll(`#${id} button`).forEach(b => {
     b.classList.toggle('on', String(pref[key]) === b.dataset.v);
@@ -2985,7 +3111,7 @@ function rideStart(sim){
   RIDE.on = true; RIDE.sim = sim; RIDE.idx = 0; RIDE.prog = 0; RIDE.off = 0; RIDE.offSince = 0; RIDE.last = null; RIDE.speed = 0; RIDE.done = 0;
   RIDE.said = new Set(); RIDE.arrived = false; RIDE.startT = Date.now(); RIDE.follow = true;
   RIDE.turns = r ? computeTurns(r) : [];
-  RIDE.warns = r ? buildWarnings(r).filter(w => w.type !== 'busy' || w.len >= 1000).map(w => ({d:r.pts[w.from].d, type:w.type, len:w.len, info:w.info})) : [];
+  RIDE.warns = r ? buildWarnings(r).filter(w => (w.type !== 'busy' || w.len >= 1000) && !INFO_W.has(w.type)).map(w => ({d:r.pts[w.from].d, type:w.type, len:w.len, info:w.info})) : [];
   // 経由地の位置（ルート上の距離）
   RIDE.vias = []; let from = 0;
   if (r) wps.forEach((w, i) => {
@@ -3207,7 +3333,7 @@ function rideReroute(){
     if (route && hav(route.pts[0], RIDE.last) < 300){
       clearInterval(wait);
       RIDE.turns = computeTurns(route);
-      RIDE.warns = buildWarnings(route).filter(w => w.type !== 'busy' || w.len >= 1000).map(w => ({d:route.pts[w.from].d, type:w.type, len:w.len, info:w.info}));
+      RIDE.warns = buildWarnings(route).filter(w => (w.type !== 'busy' || w.len >= 1000) && !INFO_W.has(w.type)).map(w => ({d:route.pts[w.from].d, type:w.type, len:w.len, info:w.info}));
       RIDE.vias = []; RIDE.idx = 0; RIDE.prog = 0; RIDE.offSince = 0; RIDE.said = new Set();
       say('ルートを引き直しました');
     }
@@ -3222,9 +3348,9 @@ $('rFollow').onclick = () => { RIDE.follow = true; if (RIDE.last) map.setView([R
 $('rReroute').onclick = rideReroute;
 $('rEnd').onclick = () => {
   const now = Date.now();
-  if (now - RIDE.endArm < 3000){ rideClose(); return; }
+  if (now - RIDE.endArm < 8000){ rideClose(); return; }
   RIDE.endArm = now; $('rEnd').textContent = 'もう一度押すと終了';
-  setTimeout(() => { $('rEnd').textContent = '■ 終了'; }, 3000);
+  setTimeout(() => { if (Date.now() - RIDE.endArm >= 7900) $('rEnd').textContent = '■ 終了'; }, 8000);
 };
 map.on('dragstart', () => { if (RIDE.on) RIDE.follow = false; });
 $('btnRide').onclick = rideOpen;
@@ -3437,6 +3563,18 @@ $('sameGoal').checked = pref.sameGoal !== false;
 $('sameGoal').addEventListener('change', () => { pref.sameGoal = $('sameGoal').checked; savePref(); });
 goalSame = pref.sameGoal !== false;
 
+/* ---------- 初回ガイド（v21） ---------- */
+let gStep = 1;
+function showGuide(){ gStep = 1; renderGuide(); $('guide').hidden = false; }
+function renderGuide(){
+  document.querySelectorAll('.gstep').forEach(el => el.hidden = +el.dataset.s !== gStep);
+  $('gNext').textContent = gStep < 3 ? '次へ ▶' : 'はじめる';
+}
+function closeGuide(){ $('guide').hidden = true; pref.guideSeen = true; savePref(); }
+$('gNext').onclick = () => { if (gStep < 3){ gStep++; renderGuide(); } else closeGuide(); };
+$('gSkip').onclick = closeGuide;
+$('btnGuide').onclick = e => { e.stopPropagation(); showGuide(); };
+
 /* ---------- 現在地を出発地に（v11） ---------- */
 let meAcc = null;
 function showMe(ll, acc){
@@ -3574,7 +3712,7 @@ $('savedList').addEventListener('click', e => {
   const list = store.get(LS_ROUTES, []), i = +t.dataset.i, r = list[i];
   if (!r) return;
   if (t.dataset.act === 'del'){
-    if (t.dataset.confirm !== '1'){ t.dataset.confirm = '1'; t.textContent = '本当に削除'; t.style.background = '#fecaca'; setTimeout(() => { t.dataset.confirm = ''; t.textContent = '削除'; t.style.background = ''; }, 2500); return; }
+    if (t.dataset.confirm !== '1'){ t.dataset.confirm = '1'; t.textContent = '本当に削除'; t.style.background = '#fecaca'; setTimeout(() => { t.dataset.confirm = ''; t.textContent = '削除'; t.style.background = ''; }, 8000); return; }
     list.splice(i, 1); store.set(LS_ROUTES, list); renderSaved(); toast('削除しました'); return;
   }
   pushUndo();
@@ -3705,6 +3843,7 @@ window.addEventListener('orientationchange', () => setTimeout(() => { resetScrol
 
 /* ---------- init ---------- */
 $('ver').textContent = VERSION;
+if (!pref.guideSeen && !location.hash && !navigator.webdriver) setTimeout(showGuide, 600);
 applyPoiToggles(); schedulePoi();
 renderSaved(); renderMix();
 if (loadHash()){ renderNogos(); onWpsChanged({immediate:true}); alt = hashAlt; setTimeout(fitRoute, 100); }
