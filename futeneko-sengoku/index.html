@@ -35,6 +35,11 @@ button{font-family:inherit;cursor:pointer;}
 .opt small{font-weight:normal;font-size:12px;color:#888;}
 .opt.sel{border-color:#e8841e;background:#fff3df;color:#7a3a1a;}
 .opt.sel small{color:#b06a2a;}
+.opt.castle{min-width:calc(25% - 8px);flex:0 0 calc(25% - 6px);padding:8px 2px;font-size:14px;}
+@media (max-width:420px){.opt.castle{flex:0 0 calc(33.3% - 6px);}}
+.pvwrap{position:relative;margin-top:10px;background:#6f8f5a;border-radius:10px;padding:6px;}
+#preview{width:100%;display:block;}
+.reroll{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);border:0;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:bold;color:#7a3a1a;box-shadow:0 2px 6px rgba(0,0,0,.25);}
 .charbtn{border:3px solid #ddd;background:#fafafa;border-radius:12px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:4px;width:calc(25% - 6px);font-size:12px;color:#444;}
 .charbtn img{height:64px;object-fit:contain;}
 .charbtn.small img{height:40px;}
@@ -122,10 +127,13 @@ button{font-family:inherit;cursor:pointer;}
     <div class="sec"><h3>① どっちで たたかう？</h3>
       <div class="row">
         <button class="opt" id="sideAtk"><b>⚔ しろを せめる</b><small>ほんまるを おとせ／大将を たおせ</small></button>
-        <button class="opt" id="sideDef"><b>🏯 しろを まもる</b><small>15ターン まもりきれ／大将を たおせ</small></button>
+        <button class="opt" id="sideDef"><b>🏯 しろを まもる</b><small>さいごまで まもりきれ／大将を たおせ</small></button>
       </div>
     </div>
-    <div class="sec"><h3>② どの しろ？</h3><div class="row" id="mapList"></div><p class="desc" id="mapDesc"></p></div>
+    <div class="sec"><h3>② どの しろ？</h3><div class="row" id="mapList"></div><p class="desc" id="mapDesc"></p>
+      <h3 style="margin-top:12px">ちずの おおきさ</h3><div class="row" id="sizeList"></div>
+      <div class="pvwrap"><canvas id="preview"></canvas><button class="reroll" id="rerollBtn">🎲 べつの ちず</button></div>
+    </div>
     <div class="sec"><h3>③ あなたの 大将</h3><div class="row" id="charList"></div>
       <h3 style="margin-top:10px">あいての 大将</h3><div class="row" id="enemyList"></div></div>
     <div class="sec"><h3>④ つよさ</h3>
@@ -187,15 +195,19 @@ button{font-family:inherit;cursor:pointer;}
   <h2 style="text-align:center;font-size:24px;color:#7a3a1a">あそびかた</h2>
   <h3>もくてき</h3>
   <ul><li><b>せめる</b>：てきの <b>ほんまる</b>（しろの まんなか）に へいを のせるか、てきの <b>大将</b>を たおせば かち。</li>
-      <li><b>まもる</b>：<b>15ターン</b> まもりきるか、せめての 大将を たおせば かち。</li>
-      <li>ひきわけは ありません。15ターン たって ほんまるが ぶじなら、まもりての かち。</li></ul>
+      <li><b>まもる</b>：さいごの ターンまで まもりきるか、せめての 大将を たおせば かち。</li>
+      <li>ターンの かずは ちずの おおきさで かわる（ちいさい 15・ふつう 20・おおきい 25）。ひきわけは ありません。</li></ul>
+  <h3>しろの しゅるい</h3>
+  <ul><li><b>平城</b>：へいちの しろ。<b>砦</b>：きの さく（こわれやすい）。<b>山城</b>：やまに かこまれる。<b>水城</b>：ほりで かこまれる。</li>
+      <li><b>二の丸城</b>：かべが 2じゅう。<b>海城</b>：うみに かこまれ まえからしか せめられない（忍者は およげる）。<b>大城</b>：ほり＋2じゅうの かべの きょだいな しろ。</li>
+      <li>しろの まわりの もり・おか・かわは まいかい かわる。「🎲 べつの ちず」で えらびなおせる。</li></ul>
   <h3>そうさ</h3>
   <ul><li>じぶんの へい（あお）を タッチ → あおい マスに うごける。</li>
       <li>あかく ひかった てきを タッチで <b>こうげき</b>。オレンジの かべを タッチで <b>かべこわし</b>。</li>
       <li>うごいた あとでも、こうげきする まえなら「↩ もどす」で やりなおせる。</li>
       <li>「まつ」で その へいの ばんは おわり。まだ うごいていない へいには きいろい ●。</li>
       <li>したの きろくを タッチすると、たたかいの きろくが ぜんぶ みられる。</li>
-      <li>ちずは ドラッグで うごかせる。2ほんゆびで かくだい・しゅくしょう。⤢ で ぜんたい ひょうじ。</li></ul>
+      <li>ちずは ドラッグで うごかせる。2ほんゆびで かくだい・しゅくしょう。⤢ で ぜんたい ⇔ アップ を きりかえ。</li></ul>
   <h3>へいしゅ</h3>
   <ul><li><b>足軽</b>：うごき・こうげき・まもり ぜんぶ ふつう。騎馬に よわい。鉄砲には つよい。</li>
       <li><b>騎馬</b>：はやくて つよくて かたい エリート。足軽・鉄砲に とつげき！ 山に はいれない。川は にがて。</li>
@@ -205,7 +217,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>忍者</b>：かべや 山を のりこえ、もんを あけられる。こうげきは つよいが まもりは よわい。てきの となりに いくまで みえない！</li>
       <li><b>大将</b>：よろいが かたく ダメージを うけにくい。となりの みかたの こうげき UP。やられたら まけ。</li></ul>
   <h3>かべ・もんへの ダメージ</h3>
-  <ul><li>工作 6／鉄砲 3／足軽・騎馬・大将 2／弓・忍者 1。じょうへきは 10、もんは 8 で こわれる。</li></ul>
+  <ul><li>工作 6／鉄砲 3／足軽・騎馬・大将 2／弓・忍者 1。じょうへきは 10、もんは 8、きの さくは 5 で こわれる。</li></ul>
   <h3>ちけい</h3>
   <ul><li>もり・おか・やま・ほんまる：まもりが つよくなる。かわ：まもりが よわくなる。</li>
       <li>じょうへきの うえの へいは とても かたい。かべは こわせば とおれる。</li></ul>
@@ -218,8 +230,8 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v1.4';
-var TURN_LIMIT = 15;
+var VERSION = 'v1.5';
+var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
 // atk 攻撃, def 守り, mov 移動力, rmin/rmax 射程, cost 編成コスト
@@ -262,58 +274,185 @@ var TERRAIN = {
   'W': { id:'wall',  name:'じょうへき', def:0.6 },
   'G': { id:'gate',  name:'もん',   def:0.7 },
   'C': { id:'court', name:'じょうない', def:0.85 },
-  'K': { id:'keep',  name:'ほんまる', def:0.65 }
+  'K': { id:'keep',  name:'ほんまる', def:0.65 },
+  's': { id:'sea',   name:'うみ',   def:1.3 }
 };
 var WALL_HP = 10, GATE_HP = 8;
 
-// ---- マップ ----
-var MAPS = [
-  { id:'hira', name:'ひらじろ', kana:'平城', desc:'ひろい へいちに たつ しろ。まっすぐ せめこめ！',
-    rows: [
-      '...ff......ff..',
-      '..f..WWWWW..f..',
-      '.....WCCCW.....',
-      '.f...WCKCW...f.',
-      '.....WCCCW.....',
-      '.....WWGWW.....',
-      '..f....=....f..',
-      '....h..=..h....',
-      'f......=......f',
-      '...f...=...f...',
-      '.......=.......',
-      '...............'
-    ] },
-  { id:'yama', name:'やまじろ', kana:'山城', desc:'やまの うえの しろ。みちは せまい。にんじゃの でばん！',
-    rows: [
-      'mmmm.......mmmm',
-      'mm..WWWWW...fmm',
-      'm...WCCCW....mm',
-      'm.f.WCKCW..f..m',
-      'mm..WCCCW.....m',
-      'mmm.WWGWW..m..m',
-      'mmmmh.=.hmmm..m',
-      'mmmm..=..mmm.mm',
-      'mm.f..=....f..m',
-      'm.....=.......m',
-      'm..f..=...f...m',
-      'mm...........mm'
-    ] },
-  { id:'mizu', name:'みずじろ', kana:'水城', desc:'ほりに かこまれた しろ。はしを わたるか およぐか？',
-    rows: [
-      '...............',
-      '..rrrrrrrrrrr..',
-      '..r.WWWWWWW.r..',
-      '..r.WCCCCCW.r..',
-      '..r.WCCKCCW.r..',
-      '..r.WCCCCCW.r..',
-      '..r.WWWGWWW.r..',
-      '..rrrrrbrrrrr..',
-      '.......=.......',
-      '..f....=...f...',
-      '.......=.......',
-      '...............'
-    ] }
+// ---- 城テンプレート ----
+// 記号: W 石垣  P 柵(木の壁)  G 門  C 城内  K 本丸  ~ 堀  B 橋  s 海  m 山  h 丘  f 森  . 平地  = 道  (空白)=周りの地形のまま
+var CASTLES = [
+  { id:'hira', adj:{ def:{ ashigaru:-1 } }, name:'ひらじろ', kana:'平城', desc:'ひろい へいちに たつ しろ。まっすぐ せめこめ！',
+    t: [
+      'WWWWW',
+      'WCCCW',
+      'WCKCW',
+      'WCCCW',
+      'WWGWW'
+    ], gen:{ forest:1, hill:1, mount:0.3, river:0.35 } },
+  { id:'toride', adj:{ def:{ ashigaru:-1 } }, name:'とりで', kana:'砦', desc:'きの さくで かこった ちいさな とりで。かべは よわいが まわりは おかだらけ。',
+    t: [
+      ' hh     hh ',
+      ' h PPPPP h ',
+      '   PCCCP   ',
+      '   PCKCP   ',
+      '   PCCCP   ',
+      ' h PPGPP h ',
+      ' hh     hh '
+    ], gen:{ forest:1.3, hill:1.5, mount:0.3, river:0.3 } },
+  { id:'yama', adj:{ def:{ yumi:-1 } }, name:'やまじろ', kana:'山城', desc:'やまの うえの しろ。みちは せまい。にんじゃの でばん！',
+    t: [
+      'mmm     mmm',
+      'mm WWWWW mm',
+      'm  WCCCW  m',
+      'm  WCKCW  m',
+      'mm WCCCW mm',
+      'mmmWWGWWmmm',
+      'mmmmh.hmmmm',
+      ' mmm . mmm ',
+      '  m  .  m  '
+    ], gen:{ forest:1.2, hill:1.2, mount:1.4, river:0.2 } },
+  { id:'mizu', adj:{ def:{} }, name:'みずじろ', kana:'水城', desc:'ほりに かこまれた しろ。はしを わたるか およぐか？',
+    t: [
+      '~~~~~~~~~~~',
+      '~.WWWWWWW.~',
+      '~.WCCCCCW.~',
+      '~.WCCKCCW.~',
+      '~.WCCCCCW.~',
+      '~.WWWGWWW.~',
+      '~~~~~B~~~~~'
+    ], gen:{ forest:0.8, hill:0.6, mount:0.2, river:0.6 } },
+  { id:'nino', adj:{ def:{ ashigaru:1 } }, name:'にのまるじろ', kana:'二の丸城', desc:'そとの かべを やぶっても、なかに もう ひとつ かべ！ もんは 3つ。',
+    t: [
+      'WWWWWWWWWWW',
+      'WCCCCCCCCCW',
+      'WCWWWWWWWCW',
+      'WCWCCCCCWCW',
+      'WCWCCKCCWCW',
+      'WCWCCCCCWCW',
+      'WCWWWGWWWCW',
+      'WCCCCCCCCCW',
+      'WWGWWWWWGWW'
+    ], gen:{ forest:1, hill:1, mount:0.4, river:0.35 } },
+  { id:'umi', adj:{ def:{ yumi:-1 }, atk:{ ashigaru:1 } }, name:'うみじろ', kana:'海城', desc:'うみに つきでた しろ。せめる みちは まえだけ。にんじゃだけ うみを およげる。',
+    t: [
+      'sssssssssssss',
+      'sss WWWWW sss',
+      'ss  WCCCW  ss',
+      'ss  WCKCW  ss',
+      'ss  WCCCW  ss',
+      'sss WWGWW sss',
+      'ss         ss'
+    ], gen:{ forest:0.9, hill:0.8, mount:0.3, river:0, sea:true } },
+  { id:'oo', name:'おおじろ', kana:'大城', desc:'ほり・2つの もん・うちがわの かべ。いちばん かたい きょだいな しろ！',
+    t: [
+      '~~~~~~~~~~~~~~~',
+      '~WWWWWWWWWWWWW~',
+      '~WCCCCCCCCCCCW~',
+      '~WCCWWWWWWWCCW~',
+      '~WCCWCCCCCWCCW~',
+      '~WCCWCCKCCWCCW~',
+      '~WCCWCCCCCWCCW~',
+      '~WCCWWWGWWWCCW~',
+      '~WCCCCCCCCCCCW~',
+      '~WWWGWWWWWGWWW~',
+      '~~~~B~~~~~B~~~~'
+    ], gen:{ forest:0.9, hill:0.8, mount:0.3, river:0.3 } }
 ];
+var MAPS = CASTLES; // 互換
+
+// ---- マップの大きさ ----
+var SIZES = [
+  { id:'s', name:'ちいさい', w:15, h:12, turns:15, max:12, pts:{ atk:28, def:22 } },
+  { id:'m', name:'ふつう',   w:21, h:16, turns:20, max:16, pts:{ atk:40, def:30 } },
+  { id:'l', name:'おおきい', w:27, h:20, turns:25, max:20, pts:{ atk:52, def:36 } }
+];
+var PALISADE_HP = 5;
+
+// 地形生成用の乱数（シード固定）
+function mapRng(seed) {
+  var a = (seed >>> 0) || 1;
+  return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+// 城テンプレート＋自動生成の地形で行文字列を作る
+function generateRows(castle, size, seed) {
+  var R = mapRng(seed);
+  var tw = castle.t[0].length, th = castle.t.length;
+  var W = Math.max(size.w, tw + 4), H = Math.max(size.h, th + 1 + 6);
+  var ox = Math.floor((W - tw) / 2), oy = 1;      // 城は上側（oy は奇数行にそろえる）
+  var g = [], r, c;
+  for (r = 0; r < H; r++) { g.push([]); for (c = 0; c < W; c++) g[r].push('.'); }
+  var castleBottom = oy + th - 1;
+  var spawnTop = H - 4;
+  function inT(cc, rr) { return rr >= oy && rr < oy + th && cc >= ox && cc < ox + tw && castle.t[rr - oy][cc - ox] !== ' '; }
+  function free(cc, rr) { return rr >= 0 && rr < H && cc >= 0 && cc < W && !inT(cc, rr); }
+  // 海
+  if (castle.gen.sea) {
+    for (r = 0; r <= castleBottom; r++) for (c = 0; c < W; c++) {
+      if (r >= oy && c >= ox && c < ox + tw) continue;
+      g[r][c] = 's';
+    }
+    for (r = castleBottom + 1; r < Math.min(H - 5, castleBottom + 3); r++) { for (c = 0; c < W; c++) if (c < ox - 1 - (r - castleBottom) * 2 || c > ox + tw + (r - castleBottom) * 2) g[r][c] = 's'; }
+  }
+  // かたまり（森・丘・山）
+  var area = W * H;
+  function blob(ch, n, len, rowMin, rowMax) {
+    for (var i = 0; i < n; i++) {
+      var cc = Math.floor(R() * W), rr = rowMin + Math.floor(R() * Math.max(1, rowMax - rowMin));
+      for (var k = 0; k < len; k++) {
+        if (free(cc, rr) && g[rr][cc] === '.') g[rr][cc] = ch;
+        var nb = neighbors(cc, rr)[Math.floor(R() * 6)]; cc = nb[0]; rr = nb[1];
+        if (rr < 0 || rr >= H || cc < 0 || cc >= W) break;
+      }
+    }
+  }
+  blob('f', Math.round(area / 34 * castle.gen.forest), 4 + Math.floor(R() * 3), 0, H);
+  blob('h', Math.round(area / 70 * castle.gen.hill), 3, 0, H - 4);
+  blob('m', Math.round(area / 110 * castle.gen.mount), 3, 0, H - 5);
+  // 川（城と出陣地のあいだを横切る）
+  var riverRow = -1;
+  if (R() < castle.gen.river && spawnTop - castleBottom >= 5) {
+    riverRow = castleBottom + 2 + Math.floor(R() * (spawnTop - castleBottom - 4));
+    var rr2 = riverRow;
+    for (c = 0; c < W; c++) {
+      if (free(c, rr2) && g[rr2][c] !== 's') g[rr2][c] = 'r';
+      if (R() < 0.25) { var nr = rr2 + (R() < 0.5 ? -1 : 1); if (nr > castleBottom + 1 && nr < spawnTop - 1) { rr2 = nr; if (free(c, rr2)) g[rr2][c] = 'r'; } }
+    }
+    // 道とは別に 1〜2 本の橋
+    var nb2 = 1 + Math.floor(R() * 2);
+    for (var bi = 0; bi < nb2; bi++) { var bc = Math.floor(R() * W); for (r = castleBottom + 1; r < spawnTop; r++) if (g[r][bc] === 'r') g[r][bc] = 'b'; }
+  }
+  // テンプレートを書き込む
+  var MAP = { '~':'r', 'B':'b', 'P':'P' };
+  for (r = 0; r < th; r++) for (c = 0; c < tw; c++) {
+    var ch = castle.t[r][c]; if (ch === ' ') continue;
+    g[oy + r][ox + c] = MAP[ch] || ch;
+  }
+  // 道：いちばん外の門から下へ
+  for (r = 0; r < H; r++) for (c = 0; c < W; c++) {
+    if (g[r][c] !== 'G') continue;
+    // 外側の門＝下のマスが城の外
+    var below = r + 1 < H ? g[r + 1][c] : null;
+    if (!below || 'WPCKG'.indexOf(below) >= 0) continue;
+    var cc2 = c, center = Math.floor(W / 2);
+    for (var r3 = r + 1; r3 < H; r3++) {
+      var cur = g[r3][cc2];
+      if (cur === 'r') g[r3][cc2] = 'b';
+      else if (cur === 's') break;
+      else if ('WPGCK'.indexOf(cur) < 0 && cur !== 'b') g[r3][cc2] = '=';
+      // 下の行へ：ときどき中央に寄る（隣接を保つ）
+      if (r3 > r + 2 && R() < 0.35 && cc2 !== center) {
+        var odd = r3 & 1, step = cc2 < center ? 1 : -1;
+        // odd 行→次行で c / c+1、even 行→ c-1 / c に隣接
+        if (odd && step === 1) cc2 += 1; else if (!odd && step === -1) cc2 -= 1;
+      }
+    }
+  }
+  // 出陣地（下 4 行）は平地に
+  for (r = spawnTop; r < H; r++) for (c = 0; c < W; c++) if ('mrs'.indexOf(g[r][c]) >= 0) g[r][c] = '.';
+  return g.map(function (row) { return row.join(''); });
+}
 
 // ---- 大将キャラ ----
 var CHARS = [
@@ -349,10 +488,11 @@ function buildMap(mapDef) {
   for (var r = 0; r < mapDef.rows.length; r++) {
     var row = [];
     for (var c = 0; c < mapDef.rows[r].length; c++) {
-      var ch = mapDef.rows[r][c];
-      var t = { c:c, r:r, ch:ch, terr:TERRAIN[ch].id, hp:0, broken:false, open:false };
-      if (ch === 'W') t.hp = WALL_HP;
-      if (ch === 'G') t.hp = GATE_HP;
+      var ch = mapDef.rows[r][c], wood = false;
+      if (ch === 'P') { ch = 'W'; wood = true; }
+      var t = { c:c, r:r, ch:ch, terr:TERRAIN[ch].id, hp:0, maxHp:0, broken:false, open:false, wood:wood };
+      if (ch === 'W') t.hp = t.maxHp = wood ? PALISADE_HP : WALL_HP;
+      if (ch === 'G') t.hp = t.maxHp = GATE_HP;
       row.push(t);
     }
     tiles.push(row);
@@ -388,6 +528,7 @@ function moveCost(G, u, t) {
     case 'h': return 2;
     case 'm': if (ty === 'kiba') return null; return ty === 'ninja' ? 2 : 3;
     case 'r': if (ty === 'kiba') return 4; return (ty === 'ninja') ? 2 : 3;
+    case 's': return ty === 'ninja' ? 3 : null;
     case 'W':
       if (t.broken) return 2;
       if (s === 'def') return 1;
@@ -402,6 +543,7 @@ function moveCost(G, u, t) {
 }
 function defMod(G, u, t) {
   var m = TERRAIN[t.ch].def;
+  if (t.ch === 'W' && t.wood) m = 0.75;
   if (t.ch === 'W' && t.broken) m = 0.9;
   if (t.ch === 'G' && t.broken) m = 0.9;
   return m;
@@ -548,13 +690,12 @@ function doHitWall(G, u, t) {
 function canRepairFrom(G, u, c, r, t) {
   if (u.type !== 'kosaku' || u.side !== 'def') return false;
   if (!t || (t.ch !== 'W' && t.ch !== 'G')) return false;
-  var max = t.ch === 'W' ? WALL_HP : GATE_HP;
+  var max = t.maxHp;
   if (t.hp >= max) return false;
   return hexDist(c, r, t.c, t.r) <= 1;
 }
 function doRepair(G, u, t) {
-  var max = t.ch === 'W' ? WALL_HP : GATE_HP;
-  t.hp = Math.min(max, t.hp + 4);
+  t.hp = Math.min(t.maxHp, t.hp + 4);
   if (t.hp > 0) t.broken = false;
   u.acted = true;
 }
@@ -585,10 +726,31 @@ function makeUnit(type, side, charId) {
   return { id: uidSeq++, type: type, side: side, atk: T.atk, def: T.def, mov: T.mov, rmin: T.rmin, rmax: T.rmax,
            hp: 10, c: -1, r: -1, acted: false, moved: false, revealed: false, charId: charId || null };
 }
-function defaultArmy(side) {
-  if (side === 'atk') return { ashigaru: 4, kiba: 2, yumi: 1, teppo: 0, kosaku: 1, ninja: 1 };
-  return { ashigaru: 4, kiba: 0, yumi: 2, teppo: 1, kosaku: 1, ninja: 0 };
+function defaultArmy(side, sizeIndex, castleIndex) {
+  var si = sizeIndex || 0;
+  var A = [
+    { ashigaru: 4, kiba: 2, yumi: 1, teppo: 0, kosaku: 1, ninja: 1 },
+    { ashigaru: 5, kiba: 2, yumi: 2, teppo: 1, kosaku: 2, ninja: 1 },
+    { ashigaru: 6, kiba: 3, yumi: 2, teppo: 2, kosaku: 2, ninja: 1 }
+  ];
+  var D = [
+    { ashigaru: 4, kiba: 0, yumi: 2, teppo: 1, kosaku: 1, ninja: 0 },
+    { ashigaru: 5, kiba: 0, yumi: 3, teppo: 1, kosaku: 2, ninja: 0 },
+    { ashigaru: 6, kiba: 0, yumi: 3, teppo: 2, kosaku: 2, ninja: 0 }
+  ];
+  var src = (side === 'atk' ? A : D)[si], o = {};
+  for (var k in src) o[k] = src[k];
+  var a = castleAdj(castleIndex, side);
+  for (var k2 in a) o[k2] = Math.max(0, (o[k2] || 0) + a[k2]);
+  return o;
 }
+function castleAdj(ci, side) { var c = CASTLES[ci || 0]; return (c && c.adj && c.adj[side]) || {}; }
+function pointsFor(side, sizeIndex, castleIndex) {
+  var p = SIZES[sizeIndex || 0].pts[side], a = castleAdj(castleIndex, side);
+  for (var k in a) p += UNIT_TYPES[k].cost * a[k];
+  return p;
+}
+function maxUnitsFor(sizeIndex) { return SIZES[sizeIndex || 0].max; }
 function armyCost(army) {
   var s = 0; for (var k in army) s += UNIT_TYPES[k].cost * army[k]; return s;
 }
@@ -599,10 +761,14 @@ var MAX_UNITS = 12;
 // 配置：防衛側は城内/城壁、攻撃側は下側
 function placeArmies(G) {
   var keep = findKeep(G);
-  var walls = listTiles(G, 'W'), courts = listTiles(G, 'C'), gate = listTiles(G, 'G')[0];
-  // 城壁の中で門に近い順（下側=攻め手側を優先）
-  walls.sort(function (a, b) { return (b.r - a.r) || Math.abs(a.c - gate.c) - Math.abs(b.c - gate.c); });
-  courts.sort(function (a, b) { return (b.r - a.r) || Math.abs(a.c - gate.c) - Math.abs(b.c - gate.c); });
+  var walls = listTiles(G, 'W'), courts = listTiles(G, 'C'), gates = listTiles(G, 'G');
+  gates.sort(function (a, b) { return b.r - a.r; });
+  var gate = gates[0];
+  function gd(t) { var m = 99; gates.forEach(function (q) { if (q.r === gate.r) m = Math.min(m, hexDist(t.c, t.r, q.c, q.r)); }); return m; }
+  // 城壁：攻め手側（下）・門に近い順
+  walls.sort(function (a, b) { return (b.r - a.r) || gd(a) - gd(b); });
+  // 城内：本丸と門のあいだを優先（門に近いほう→本丸まわり）
+  courts.sort(function (a, b) { return gd(a) - gd(b) || (b.r - a.r); });
   var used = {};
   function put(u, t) { u.c = t.c; u.r = t.r; used[key(t.c, t.r)] = true; }
   function nextFree(list) { for (var i = 0; i < list.length; i++) if (!used[key(list[i].c, list[i].r)]) return list[i]; return null; }
@@ -611,6 +777,13 @@ function placeArmies(G) {
   // 防衛側
   defs.forEach(function (u) {
     if (u.type === 'taisho') put(u, keep);
+  });
+  // 大将の護衛：本丸のとなりに足軽を 2 たい
+  var guardSpots = courts.filter(function (t) { return hexDist(t.c, t.r, keep.c, keep.r) === 1; });
+  var nGuard = 0;
+  defs.forEach(function (u) {
+    if (u.type !== 'ashigaru' || nGuard >= 2 || u.c >= 0) return;
+    var t = nextFree(guardSpots); if (t) { put(u, t); u.guard = true; nGuard++; }
   });
   defs.forEach(function (u) {
     if (u.type === 'yumi' || u.type === 'teppo') { var t = nextFree(walls); if (t) put(u, t); }
@@ -624,10 +797,10 @@ function placeArmies(G) {
   var spots = [];
   for (var r = G.map.h - 1; r >= G.map.h - 4; r--) for (var c = 0; c < G.map.w; c++) {
     var t = G.map.tiles[r][c];
-    if (t.ch === 'm' || t.ch === 'r' || t.ch === 'W') continue;
+    if (t.ch === 'm' || t.ch === 'r' || t.ch === 'W' || t.ch === 's') continue;
     spots.push(t);
   }
-  var cx = gate.c;
+  var cx = Math.floor(G.map.w / 2);
   spots.sort(function (a, b) { return (Math.abs(a.c - cx) + (G.map.h - 1 - a.r) * 1.5) - (Math.abs(b.c - cx) + (G.map.h - 1 - b.r) * 1.5); });
   // 大将はやや後ろ、騎馬・足軽は前
   var order = { ashigaru: 0, kiba: 0, kosaku: 1, ninja: 1, yumi: 2, teppo: 2, taisho: 3 };
@@ -646,8 +819,10 @@ function placeArmies(G) {
 
 function newGame(opts) {
   // opts: {mapIndex, playerSide:'atk'|'def', playerChar, cpuChar, playerArmy, cpuArmy, difficulty}
-  var mapDef = MAPS[opts.mapIndex];
-  var G = { map: buildMap(mapDef), mapDef: mapDef, units: [], turn: 1, side: 'atk', playerSide: opts.playerSide,
+  var castle = CASTLES[opts.mapIndex || 0], si = opts.sizeIndex || 0, size = SIZES[si];
+  var seed = opts.mapSeed || Math.floor(Math.random() * 1e9) + 1;
+  var mapDef = { id: castle.id, name: castle.name, rows: generateRows(castle, size, seed) };
+  var G = { map: buildMap(mapDef), mapDef: mapDef, castle: castle, sizeIndex: si, turnLimit: size.turns, mapSeed: seed, units: [], turn: 1, side: 'atk', playerSide: opts.playerSide,
             cpuSide: opts.playerSide === 'atk' ? 'def' : 'atk', over: false, winner: null, log: [], difficulty: opts.difficulty || 'normal',
             chars: {} };
   G.chars[opts.playerSide] = opts.playerChar;
@@ -685,7 +860,7 @@ function endTurn(G) {
   if (G.side === 'atk') { G.side = 'def'; }
   else {
     G.side = 'atk'; G.turn++;
-    if (G.turn > TURN_LIMIT) { G.over = true; G.winner = 'def'; G.reason = 'しろを まもりきった！'; return; }
+    if (G.turn > (G.turnLimit || TURN_LIMIT)) { G.over = true; G.winner = 'def'; G.reason = 'しろを まもりきった！'; return; }
   }
   G.units.forEach(function (u) { if (u.side === G.side) { u.acted = false; u.moved = false; } });
 }
@@ -750,14 +925,18 @@ function aiPlan(G, u) {
     var p = k.split(',').map(Number), c = p[0], r = p[1];
     var moved = !(c === u.c && r === u.r);
     var t = tileAt(G, c, r);
+    if (side === 'def' && u.guard && keep && hexDist(c, r, keep.c, keep.r) > 2) continue;
+    // 守りの大将は本丸を はなれない
+    if (side === 'def' && u.type === 'taisho' && keep && t.ch !== 'K' && tileAt(G, u.c, u.r).ch === 'K') continue;
     var score = 0;
     var action = { kind: 'wait' };
 
     // 位置の価値
     var dk = field[k]; if (dk === undefined) dk = 99;
+    var urg = Math.min(1, G.turn / (G.turnLimit || TURN_LIMIT)); // 残りターンが少ないほど強気
     if (side === 'atk') {
       if (u.type === 'taisho') score += -dk * 0.25 - 2; // 大将は後方で指揮
-      else score += -dk * 1.6;
+      else score += -dk * 1.6 * (1 + urg);
     } else {
       // 防衛：城内・城壁にいることが大事、大将は本丸
       if (u.type === 'taisho') score += -hexDist(c, r, keep.c, keep.r) * 4;
@@ -770,7 +949,7 @@ function aiPlan(G, u) {
     }
     var tmpU = { type: u.type, def: u.def, hp: u.hp };
     var thr = threatAt(G, side, c, r, tmpU);
-    score += -thr * (u.type === 'taisho' ? 3 : 0.45);
+    score += -thr * (u.type === 'taisho' ? 3 : (side === 'atk' ? 0.45 * (1 - 0.6 * urg) : 0.45));
     score += (1 - defMod(G, u, t)) * 4;
 
     // 行動候補
@@ -833,8 +1012,8 @@ function aiPlan(G, u) {
         for (var q = 0; q < nbs.length; q++) {
           var wt = tileAt(G, nbs[q][0], nbs[q][1]);
           if (canRepairFrom(G, u, c, r, wt)) {
-            var max = wt.ch === 'W' ? WALL_HP : GATE_HP;
-            var v3 = 3 + (max - wt.hp) * 0.8 + (wt.broken ? 6 : 0);
+            var max = wt.maxHp;
+            var v3 = 3 + (wt.maxHp - wt.hp) * 0.8 + (wt.broken ? 6 : 0);
             if (v3 > bestAct) { bestAct = v3; action = { kind: 'repair', target: wt }; }
           }
           if (canCloseGateFrom(G, u, c, r, wt)) { var v4 = 10; if (v4 > bestAct) { bestAct = v4; action = { kind: 'close', target: wt }; } }
@@ -926,7 +1105,8 @@ var SFX = {
 };
 
 // ---- 設定状態 ----
-var setup = { side: 'atk', mapIndex: 0, playerChar: 'fute', cpuChar: 'kuro', difficulty: 'normal', army: null };
+var setup = { side: 'atk', mapIndex: 0, sizeIndex: 0, mapSeed: 1 + Math.floor(Math.random() * 1e9), playerChar: 'fute', cpuChar: 'kuro', difficulty: 'normal', army: null };
+function resetArmy() { setup.army = defaultArmy(setup.side, setup.sizeIndex, setup.mapIndex); }
 var G = null;
 var cam = { x: 0, y: 0, s: 1 };
 var canvas, ctx, W = 0, H = 0, DPR = 1;
@@ -946,20 +1126,28 @@ function show(id) {
 
 // ---- セットアップ画面 ----
 function initSetup() {
-  setup.army = defaultArmy(setup.side);
+  resetArmy();
   renderSetup();
 }
 function renderSetup() {
   $('sideAtk').classList.toggle('sel', setup.side === 'atk');
   $('sideDef').classList.toggle('sel', setup.side === 'def');
   var mapBox = $('mapList'); mapBox.innerHTML = '';
-  MAPS.forEach(function (m, i) {
-    var b = document.createElement('button'); b.className = 'opt' + (i === setup.mapIndex ? ' sel' : '');
+  CASTLES.forEach(function (m, i) {
+    var b = document.createElement('button'); b.className = 'opt castle' + (i === setup.mapIndex ? ' sel' : '');
     b.innerHTML = '<b>' + m.name + '</b><small>' + m.kana + '</small>';
-    b.onclick = function () { SFX.tap(); setup.mapIndex = i; renderSetup(); };
+    b.onclick = function () { SFX.tap(); setup.mapIndex = i; resetArmy(); renderSetup(); };
     mapBox.appendChild(b);
   });
-  $('mapDesc').textContent = MAPS[setup.mapIndex].desc;
+  $('mapDesc').textContent = CASTLES[setup.mapIndex].desc;
+  var sz = $('sizeList'); sz.innerHTML = '';
+  SIZES.forEach(function (s, i) {
+    var b = document.createElement('button'); b.className = 'opt' + (i === setup.sizeIndex ? ' sel' : '');
+    b.innerHTML = '<b>' + s.name + '</b><small>' + s.w + '×' + s.h + '・' + s.turns + 'ターン</small>';
+    b.onclick = function () { SFX.tap(); setup.sizeIndex = i; resetArmy(); renderSetup(); };
+    sz.appendChild(b);
+  });
+  drawPreview();
   var cb = $('charList'); cb.innerHTML = '';
   CHARS.forEach(function (ch) {
     var b = document.createElement('button'); b.className = 'charbtn' + (ch.id === setup.playerChar ? ' sel' : '');
@@ -977,13 +1165,13 @@ function renderSetup() {
   });
   ['easy', 'normal', 'hard'].forEach(function (d) { $('dif_' + d).classList.toggle('sel', setup.difficulty === d); });
   // 編成
-  var pts = POINTS[setup.side], used = armyCost(setup.army), cnt = armyCount(setup.army) + 1;
-  $('ptsInfo').textContent = 'つかえる点：' + pts + '　つかった点：' + used + '　のこり：' + (pts - used) + '　へいの数：' + cnt + '/' + MAX_UNITS;
+  var pts = pointsFor(setup.side, setup.sizeIndex, setup.mapIndex), used = armyCost(setup.army), cnt = armyCount(setup.army) + 1, maxU = maxUnitsFor(setup.sizeIndex);
+  $('ptsInfo').textContent = 'つかえる点：' + pts + '　つかった点：' + used + '　のこり：' + (pts - used) + '　へいの数：' + cnt + '/' + maxU;
   var ab = $('armyList'); ab.innerHTML = '';
   BUY_ORDER.forEach(function (k) {
     var T = UNIT_TYPES[k];
     var row = document.createElement('div'); row.className = 'arow';
-    var canAdd = used + T.cost <= pts && cnt < MAX_UNITS;
+    var canAdd = used + T.cost <= pts && cnt < maxU;
     row.innerHTML = '<span class="uic ' + (setup.side === 'atk' ? 'blue' : 'blue') + '">' + T.ch + '</span>' +
       '<span class="uname"><b>' + T.name + '</b><small>' + T.kana + '・' + T.cost + '点</small></span>' +
       '<button class="pm" data-k="' + k + '" data-d="-1"' + (setup.army[k] <= 0 ? ' disabled' : '') + '>－</button>' +
@@ -998,17 +1186,40 @@ function renderSetup() {
   BUY_ORDER.concat(['taisho']).forEach(function (k) { var T = UNIT_TYPES[k]; var p = document.createElement('p'); p.innerHTML = '<b>' + T.name + '（' + T.kana + '）</b> ' + T.desc; armyDesc.appendChild(p); });
 }
 
+// ---- ちずの プレビュー ----
+var PCOL = { '.':'#9fd27a', '=':'#d9c08a', f:'#3f8a3a', h:'#b9c66a', m:'#7a706a', r:'#5fb0e8', b:'#c59a5a', W:'#8d8d93', P:'#a2743f', G:'#5b3d20', C:'#e6d6a8', K:'#d9452f', s:'#3a7fc0' };
+function drawPreview() {
+  var cv = $('preview'); if (!cv) return;
+  var rows = generateRows(CASTLES[setup.mapIndex], SIZES[setup.sizeIndex], setup.mapSeed);
+  var w = rows[0].length, h = rows.length;
+  var cw = cv.offsetWidth || 300, dpr = Math.min(2, window.devicePixelRatio || 1);
+  var hs = Math.min(cw / ((w + 0.5) * SQ3 + 1), 260 / ((h - 1) * 1.5 + 2.2));
+  var ch = Math.ceil(((h - 1) * 1.5 + 2.2) * hs);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr); cv.style.height = ch + 'px';
+  var c2 = cv.getContext('2d'); c2.setTransform(dpr, 0, 0, dpr, 0, 0); c2.clearRect(0, 0, cw, ch);
+  var ox = (cw - (w + 0.5) * SQ3 * hs) / 2;
+  for (var r = 0; r < h; r++) for (var c = 0; c < w; c++) {
+    var x = ox + hs * SQ3 * (c + 0.5 * (r & 1)) + hs * SQ3 / 2, y = hs * 1.5 * r + hs * 1.1;
+    c2.beginPath();
+    for (var i = 0; i < 6; i++) { var a = Math.PI / 180 * (60 * i - 30); var px = x + hs * Math.cos(a), py = y + hs * Math.sin(a); if (i) c2.lineTo(px, py); else c2.moveTo(px, py); }
+    c2.closePath(); c2.fillStyle = PCOL[rows[r][c]] || '#9fd27a'; c2.fill();
+  }
+  // 出陣地
+  c2.fillStyle = 'rgba(47,111,224,.25)'; c2.fillRect(0, hs * 1.5 * (h - 4) + hs * 0.2, cw, ch);
+  c2.fillStyle = '#1d4fb0'; c2.font = 'bold 11px sans-serif'; c2.textAlign = 'left'; c2.fillText('▼ せめての しゅつじん ばしょ', 6, ch - 5);
+}
+
 // ---- ゲーム開始 ----
 function startGame() {
-  var cpuArmy = defaultArmy(setup.side === 'atk' ? 'def' : 'atk');
+  var cpuArmy = defaultArmy(setup.side === 'atk' ? 'def' : 'atk', setup.sizeIndex, setup.mapIndex);
   if (setup.difficulty === 'easy') { cpuArmy.ashigaru = Math.max(1, cpuArmy.ashigaru - 1); if (cpuArmy.kiba) cpuArmy.kiba--; else cpuArmy.yumi = Math.max(0, cpuArmy.yumi - 1); }
   if (setup.difficulty === 'hard') { cpuArmy.ashigaru += 1; cpuArmy.yumi += 1; }
-  G = newGame({ mapIndex: setup.mapIndex, playerSide: setup.side, playerChar: setup.playerChar, cpuChar: setup.cpuChar,
+  G = newGame({ mapIndex: setup.mapIndex, sizeIndex: setup.sizeIndex, mapSeed: setup.mapSeed, playerSide: setup.side, playerChar: setup.playerChar, cpuChar: setup.cpuChar,
                 playerArmy: setup.army, cpuArmy: cpuArmy, difficulty: setup.difficulty });
   sel = null; reach = null; targets = []; anim = []; phase = 'idle'; hoverInfo = null; LOG = [];
   show('gameScreen');
-  logMsg('かっせん はじまり！ ' + (G.playerSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + TURN_LIMIT + 'ターン）', 'sys');
-  resize(); fitCamera();
+  logMsg('かっせん はじまり！ ' + (G.playerSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.castle.name + '・' + G.turnLimit + 'ターン）', 'sys');
+  resize(); startCamera();
   updateHud();
   if (G.side !== G.playerSide) setTimeout(cpuTurn, 600);
   else banner(G.playerSide === 'atk' ? 'しろを せめろ！' : 'しろを まもれ！', 1400);
@@ -1034,8 +1245,26 @@ function fitCamera() {
   var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = ($('bottom').offsetHeight || 120) + 10;
   var availH = H - hudTop - hudBot;
   cam.s = Math.min(W / b[0], availH / b[1]) * 0.98;
-  cam.s = Math.max(0.25, cam.s);
+  cam.s = Math.max(0.15, cam.s);
   cam.x = (W - b[0] * cam.s) / 2; cam.y = hudTop + (availH - b[1] * cam.s) / 2;
+}
+var camMode = 'fit';
+function startCamera() {
+  fitCamera();
+  if (cam.s >= 0.5) { camMode = 'fit'; return; }
+  // 大きい マップは じぶんの 大将の まわりを 大きめに
+  var g0 = general(G, G.playerSide), p = hexCenter(g0.c, g0.r);
+  var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = ($('bottom').offsetHeight || 120) + 10;
+  cam.s = Math.min(0.62, Math.max(0.5, W / 900));
+  cam.x = W / 2 - p[0] * cam.s; cam.y = hudTop + (H - hudTop - hudBot) / 2 - p[1] * cam.s;
+  clampCam(); camMode = 'near';
+}
+function toggleCamera() {
+  if (camMode === 'near') { fitCamera(); camMode = 'fit'; return; }
+  var c0 = sel || general(G, G.playerSide), p = hexCenter(c0.c, c0.r);
+  var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = ($('bottom').offsetHeight || 120) + 10;
+  var target = Math.min(1, Math.max(0.55, cam.s * 1.8));
+  cam.s = target; cam.x = W / 2 - p[0] * cam.s; cam.y = hudTop + (H - hudTop - hudBot) / 2 - p[1] * cam.s; clampCam(); camMode = 'near';
 }
 function clampCam() {
   var b = mapBounds(); var mw = b[0] * cam.s, mh = b[1] * cam.s;
@@ -1092,7 +1321,18 @@ function drawTile(t) {
     case '=':
       ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(x - 10, y - R, 20, R * 2);
       break;
+    case 's':
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 2;
+      for (var sw = -1; sw <= 1; sw += 2) { ctx.beginPath(); ctx.arc(x - 8 + sw * 4, y + sw * 9, 7, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); ctx.beginPath(); ctx.arc(x + 8 + sw * 4, y + sw * 9, 7, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); }
+      break;
     case 'W':
+      if (!t.broken && t.wood) {
+        ctx.fillStyle = '#7a5530';
+        for (var pk = -22; pk <= 22; pk += 9) { ctx.fillRect(x + pk - 3, y - 18, 6, 34); ctx.beginPath(); ctx.moveTo(x + pk - 3, y - 18); ctx.lineTo(x + pk, y - 25); ctx.lineTo(x + pk + 3, y - 18); ctx.fill(); }
+        ctx.fillStyle = '#5b3d20'; ctx.fillRect(x - 26, y - 6, 52, 4); ctx.fillRect(x - 26, y + 6, 52, 4);
+        if (t.hp < t.maxHp) hpBar(x, y + 24, t.hp / t.maxHp);
+        break;
+      }
       if (!t.broken) {
         ctx.fillStyle = '#b4b4bb'; hexPath(x, y, R * 0.8); ctx.fill();
         ctx.strokeStyle = '#6f6f78'; ctx.lineWidth = 1.5;
@@ -1100,7 +1340,7 @@ function drawTile(t) {
         for (var r2 = 0; r2 < 5; r2++) { var off = (r2 % 2) * 10; for (var xx = -26 + off; xx < 26; xx += 20) { ctx.beginPath(); ctx.moveTo(x + xx, y - 20 + r2 * 10); ctx.lineTo(x + xx, y - 10 + r2 * 10); ctx.stroke(); } }
         // 狭間
         ctx.fillStyle = '#eeeef2'; for (var m2 = -20; m2 <= 20; m2 += 20) ctx.fillRect(x + m2 - 4, y - 30, 8, 7);
-        if (t.hp < WALL_HP) hpBar(x, y + 24, t.hp / WALL_HP);
+        if (t.hp < t.maxHp) hpBar(x, y + 24, t.hp / t.maxHp);
       } else {
         ctx.fillStyle = '#8d8d93'; for (var q = 0; q < 6; q++) { ctx.beginPath(); ctx.arc(x + Math.cos(q) * 14, y + Math.sin(q * 2) * 10, 5, 0, Math.PI * 2); ctx.fill(); }
       }
@@ -1112,7 +1352,7 @@ function drawTile(t) {
         if (t.open) { ctx.fillStyle = '#2b2b2b'; ctx.fillRect(x - 10, y - 16, 20, 36); ctx.fillStyle = '#5b3d20'; ctx.fillRect(x - 16, y - 20, 5, 40); ctx.fillRect(x + 11, y - 20, 5, 40); }
         else { ctx.strokeStyle = '#d9b36a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y - 20); ctx.lineTo(x, y + 20); ctx.stroke(); ctx.fillStyle = '#d9b36a'; [[-8, -10], [8, -10], [-8, 10], [8, 10]].forEach(function (d) { ctx.beginPath(); ctx.arc(x + d[0], y + d[1], 2.2, 0, Math.PI * 2); ctx.fill(); }); }
         ctx.fillStyle = '#4a4a52'; ctx.fillRect(x - 24, y - 28, 48, 8);
-        if (t.hp < GATE_HP) hpBar(x, y + 26, t.hp / GATE_HP);
+        if (t.hp < t.maxHp) hpBar(x, y + 26, t.hp / t.maxHp);
       } else {
         ctx.fillStyle = '#5b3d20'; ctx.fillRect(x - 16, y + 6, 14, 10); ctx.fillRect(x + 4, y - 2, 12, 8);
       }
@@ -1220,7 +1460,7 @@ function floatText(c, r, text, col, big) { anim.push({ c: c, r: r, text: text, c
 // ---- HUD ----
 function updateHud() {
   var mine = G.side === G.playerSide;
-  $('turnLbl').textContent = 'ターン ' + G.turn + ' / ' + TURN_LIMIT;
+  $('turnLbl').textContent = 'ターン ' + G.turn + ' / ' + G.turnLimit;
   $('sideLbl').textContent = mine ? 'あなたの ばん' : 'あいての ばん';
   $('sideLbl').className = mine ? 'me' : 'cpu';
   $('endTurnBtn').disabled = !mine || phase === 'cpu';
@@ -1476,7 +1716,7 @@ function initInput() {
     var ids = Object.keys(ptrs);
     if (ids.length === 2) {
       var a = ptrs[ids[0]], b = ptrs[ids[1]]; var d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      var ns = Math.max(0.3, Math.min(3, startS * d / startDist));
+      var ns = Math.max(0.15, Math.min(3, startS * d / startDist));
       var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
       var wx = (pinchMid[0] - cam.x) / cam.s, wy = (pinchMid[1] - cam.y) / cam.s;
       cam.s = ns; cam.x = mid[0] - wx * ns; cam.y = mid[1] - wy * ns; clampCam();
@@ -1495,19 +1735,20 @@ function initInput() {
     } else { dragging = false; }
   }
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up); canvas.addEventListener('pointerleave', up);
-  canvas.addEventListener('wheel', function (e) { e.preventDefault(); var rect = canvas.getBoundingClientRect(); var mx = e.clientX - rect.left, my = e.clientY - rect.top; var wx = (mx - cam.x) / cam.s, wy = (my - cam.y) / cam.s; var ns = Math.max(0.3, Math.min(3, cam.s * (e.deltaY < 0 ? 1.1 : 0.9))); cam.s = ns; cam.x = mx - wx * ns; cam.y = my - wy * ns; clampCam(); }, { passive: false });
+  canvas.addEventListener('wheel', function (e) { e.preventDefault(); var rect = canvas.getBoundingClientRect(); var mx = e.clientX - rect.left, my = e.clientY - rect.top; var wx = (mx - cam.x) / cam.s, wy = (my - cam.y) / cam.s; var ns = Math.max(0.15, Math.min(3, cam.s * (e.deltaY < 0 ? 1.1 : 0.9))); cam.s = ns; cam.x = mx - wx * ns; cam.y = my - wy * ns; clampCam(); }, { passive: false });
 }
 
 // ---- 起動 ----
 window.addEventListener('load', function () {
   canvas = $('cv'); ctx = canvas.getContext('2d');
   $('verLbl').textContent = VERSION;
-  $('startBtn').onclick = function () { SFX.tap(); audio(); initSetup(); show('setupScreen'); };
+  $('startBtn').onclick = function () { SFX.tap(); audio(); show('setupScreen'); initSetup(); };
   $('helpBtn').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
   $('helpBtn2').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
   $('helpClose').onclick = function () { SFX.tap(); $('helpBox').classList.remove('on'); };
-  $('sideAtk').onclick = function () { SFX.tap(); setup.side = 'atk'; setup.army = defaultArmy('atk'); renderSetup(); };
-  $('sideDef').onclick = function () { SFX.tap(); setup.side = 'def'; setup.army = defaultArmy('def'); renderSetup(); };
+  $('sideAtk').onclick = function () { SFX.tap(); setup.side = 'atk'; resetArmy(); renderSetup(); };
+  $('sideDef').onclick = function () { SFX.tap(); setup.side = 'def'; resetArmy(); renderSetup(); };
+  $('rerollBtn').onclick = function () { SFX.tap(); setup.mapSeed = 1 + Math.floor(Math.random() * 1e9); drawPreview(); };
   ['easy', 'normal', 'hard'].forEach(function (d) { $('dif_' + d).onclick = function () { SFX.tap(); setup.difficulty = d; renderSetup(); }; });
   $('goBtn').onclick = function () { SFX.tap(); startGame(); };
   $('backBtn').onclick = function () { SFX.tap(); show('title'); };
@@ -1522,7 +1763,7 @@ window.addEventListener('load', function () {
   $('confirmNo').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); };
   $('logLine').onclick = function () { SFX.tap(); openLog(); };
   $('logClose').onclick = function () { SFX.tap(); $('logBox').classList.remove('on'); };
-  $('fitBtn').onclick = function () { SFX.tap(); fitCamera(); };
+  $('fitBtn').onclick = function () { SFX.tap(); toggleCamera(); };
   $('quitBtn').onclick = function () { SFX.tap(); if (confirm('タイトルに もどりますか？')) { G = null; show('title'); } };
   $('againBtn').onclick = function () { SFX.tap(); $('resultBox').classList.remove('on'); startGame(); };
   $('toTitleBtn').onclick = function () { SFX.tap(); $('resultBox').classList.remove('on'); G = null; show('title'); };
