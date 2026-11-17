@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6a04d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>フテ猫 セリフ工房</title>
+<style>
+:root{--bg:#fff8ef;--card:#fff;--ink:#3b2f25;--sub:#8a7564;--acc:#f08a2c;--acc2:#e0602a;--line:#ecdcc9;--ok:#2f9e6b;--ng:#d0443a;--blue:#2f7fd0;--warn:#c98a12}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-text-size-adjust:100%}
+body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:860px;margin:0 auto;padding:12px 14px 60px}
+header{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+header .logo{font-size:30px}
+header h1{font-size:20px;margin:0;flex:1}
+header .ver{font-size:11px;color:var(--sub)}
+header a{font-size:12px;color:var(--sub)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0}
+.tab{padding:9px 2px;border:2px solid var(--line);background:#fff;border-radius:12px;font-size:13.5px;font-weight:700;color:var(--sub);cursor:pointer}
+.tab.on{border-color:var(--acc);color:var(--acc2);background:#fff3e4}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.hide{display:none!important}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 0}
+label{font-size:14px}
+select,input[type=text],input[type=password],input[type=number]{font-size:16px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);max-width:100%}
+textarea{width:100%;font-size:16px;line-height:1.6;padding:8px 10px;border:1px solid var(--line);border-radius:10px;resize:vertical;background:#fffdf9;color:var(--ink);font-family:inherit}
+.btn{padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.warn{color:var(--ng)}
+.btn.sm{padding:6px 9px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:default}
+.note{font-size:12.5px;color:var(--sub);line-height:1.6;margin:6px 0 0}
+.msg{font-size:14px;margin-top:6px;min-height:1.3em}
+.msg.err{color:var(--ng)}
+.msg.ok{color:var(--ok)}
+h2{font-size:15px;margin:0 0 8px}
+.seg{display:flex;gap:6px}
+.seg label{flex:1;border:2px solid var(--line);border-radius:10px;padding:9px 4px;text-align:center;font-weight:700;cursor:pointer;font-size:13.5px;line-height:1.35}
+.seg label small{display:block;font-weight:400;font-size:11.5px;color:var(--sub)}
+.seg input{display:none}
+.seg label:has(input:checked){border-color:var(--acc);background:#fff3e4;color:var(--acc2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:2px solid var(--line);border-radius:20px;padding:6px 11px;font-size:14px;font-weight:700;background:#fff;cursor:pointer}
+.chip.on{color:#fff}
+.line{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;border:1px solid var(--line);border-left:6px solid #ccc;border-radius:12px;padding:10px;margin-bottom:8px;background:#fff}
+.line .no{font-size:12px;color:var(--sub);text-align:center;width:2.2em;padding-top:6px}
+.line textarea{min-height:2.6em;padding:6px 8px}
+.line .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.line .meta select{font-size:14px;padding:5px 6px}
+.line .meta input{font-size:13px;padding:5px 7px;width:9.5em}
+.line .acts{display:flex;flex-wrap:wrap;gap:6px;grid-column:2}
+.st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;background:#f2ebe2;color:var(--sub)}
+.st.ok{background:#e1f4ea;color:var(--ok)}
+.st.old{background:#fff2d6;color:var(--warn)}
+.st.busy{background:#e4efff;color:var(--blue)}
+.line.playing{box-shadow:0 0 0 3px #f8c58e}
+.cbox{border:1px solid var(--line);border-left:6px solid #ccc;border-radius:12px;padding:12px;margin-bottom:12px;background:#fff}
+.cbox .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cbox .top input.nm{font-weight:700;width:9em}
+.cbox .top input.em{width:3.2em;text-align:center}
+.grid2{display:grid;grid-template-columns:max-content 1fr max-content;gap:6px 10px;align-items:center;margin-top:6px}
+.grid2 span.v{font-size:13px;color:var(--sub);min-width:2.8em;text-align:right}
+.grid2 label{font-size:13.5px}
+input[type=range]{width:100%}
+fieldset{border:1px dashed var(--line);border-radius:10px;padding:8px 10px;margin:10px 0 0}
+legend{font-size:13px;font-weight:700;color:var(--acc2);padding:0 4px}
+.bar{height:10px;background:#f1e4d4;border-radius:6px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.sticky{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:14px 0 6px;z-index:4}
+.tagbar{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tagbar button{font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:#fbf5ee;cursor:pointer}
+details summary{cursor:pointer;font-weight:700;font-size:14.5px}
+footer{font-size:11px;color:var(--sub);text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">🗣️</div>
+  <h1>フテ猫 セリフ工房 <span class="ver" id="verLbl"></span></h1>
+  <a href="../">ゲームセンターへ</a>
+</header>
+
+<div class="tabs">
+  <button class="tab on" data-tab="script">📜 台本</button>
+  <button class="tab" data-tab="chars">🎭 キャラ声</button>
+  <button class="tab" data-tab="export">📦 書き出し</button>
+  <button class="tab" data-tab="setup">⚙️ 設定</button>
+</div>
+
+<!-- ===== 台本 ===== -->
+<section id="tab-script">
+  <div class="card">
+    <h2>どっちの声でしゃべる？</h2>
+    <div class="seg">
+      <label><input type="radio" name="engine" value="web" checked>📱 端末の声<small>無料・ためし聞き用</small></label>
+      <label><input type="radio" name="engine" value="el">✨ ElevenLabs<small>人間そっくり・ファイルにできる</small></label>
+    </div>
+    <p class="note" id="engineNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>セリフを足す</h2>
+    <div class="chips" id="addChars"></div>
+    <textarea id="addText" rows="2" placeholder="例：にゃんだよ、また来たのか。" style="margin-top:8px"></textarea>
+    <div class="tagbar" id="tagBar"></div>
+    <div class="row">
+      <button class="btn pri" id="addBtn">＋ 追加</button>
+      <button class="btn" id="addPlay">▶ 試しに聞く</button>
+    </div>
+    <details style="margin-top:6px">
+      <summary>まとめて貼り付ける</summary>
+      <p class="note">1行に1セリフ。「キャラ名：セリフ」の形で書くと、キャラも自動で分けます（名前がないときは上で選んだキャラ）。</p>
+      <textarea id="bulkText" rows="5" placeholder="フテ猫：にゃんだよ、また来たのか。&#10;チャッピー：あそぼうよ〜！&#10;あかり：よーし、がんばるぞ！"></textarea>
+      <div class="row"><button class="btn" id="bulkBtn">まとめて追加</button></div>
+    </details>
+  </div>
+
+  <div class="row" style="justify-content:space-between">
+    <h2 style="margin:0">台本 <span id="lineCount" class="note"></span></h2>
+    <div class="row" style="margin:0">
+      <input type="text" id="sceneName" placeholder="台本の名前" style="width:11em">
+    </div>
+  </div>
+  <div id="lines"></div>
+  <p class="note" id="emptyNote">まだセリフがありません。上で追加してください。</p>
+
+  <div class="card">
+    <div class="row" style="margin:0">
+      <button class="btn pri" id="playAll">▶ 通しで聞く</button>
+      <button class="btn" id="stopBtn">■ 止める</button>
+      <button class="btn blue" id="genAll">✨ まだのセリフをぜんぶ作る</button>
+    </div>
+    <div class="bar hide" id="genBar"><i></i></div>
+    <div class="msg" id="genMsg"></div>
+  </div>
+</section>
+
+<!-- ===== キャラの声 ===== -->
+<section id="tab-chars" class="hide">
+  <div class="card">
+    <h2>キャラごとの声を決める</h2>
+    <p class="note">「端末の声」は高さ・速さで性格を出します。「ElevenLabs」はキャラごとに声（ボイス）を選びます。日本語の声は、elevenlabs.io の Voice Library で探して「Add to my voices」すると、ここの一覧に出てきます。</p>
+    <div class="row">
+      <label>ためし文：<input type="text" id="sampleText" value="こんにちは！ ぼくの声、どうかな？" style="width:16em"></label>
+    </div>
+  </div>
+  <div id="charList"></div>
+  <div class="row"><button class="btn" id="addChar">＋ キャラを増やす</button></div>
+</section>
+
+<!-- ===== 書き出し ===== -->
+<section id="tab-export" class="hide">
+  <div class="card">
+    <h2>ゲームに入れる</h2>
+    <p class="note">ElevenLabsで作ったセリフだけが書き出されます（端末の声はファイルにできません）。</p>
+    <div class="row">
+      <button class="btn pri" id="expZip">🗂 MP3をZIPでまとめて</button>
+      <button class="btn pri" id="expJs">🧩 ゲーム用JS（voices.js）</button>
+    </div>
+    <div class="msg" id="expMsg"></div>
+    <details style="margin-top:8px">
+      <summary>ゲーム用JSの使い方</summary>
+      <p class="note">voices.js の中身をゲームのHTMLの &lt;script&gt; に貼るだけで使えます。音はWeb Audioで鳴らすのでiPhoneでも安定します。</p>
+      <textarea readonly rows="5" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">// ボタンを押したときなど（ユーザー操作のあと）に
+playFuteVoice('fute_01');
+// セリフの文字は FUTE_VOICE_TEXT['fute_01'] で取れます</textarea>
+    </details>
+  </div>
+  <div class="card">
+    <h2>台本の保存</h2>
+    <div class="row">
+      <button class="btn" id="saveJson">💾 台本を保存（.json）</button>
+      <label class="btn" style="display:inline-block">📂 台本を開く<input type="file" id="loadJson" accept=".json,application/json" style="display:none"></label>
+      <button class="btn" id="saveTxt">📝 台本を文字で（.txt）</button>
+    </div>
+    <p class="note">保存ファイルにはセリフとキャラ設定が入ります（音声は入りません。音声はこの端末に残っています）。</p>
+    <div class="row"><button class="btn warn" id="clearAll">台本をぜんぶ消す</button></div>
+    <div class="msg" id="fileMsg"></div>
+  </div>
+</section>
+
+<!-- ===== 設定 ===== -->
+<section id="tab-setup" class="hide">
+  <div class="card">
+    <h2>ElevenLabs のキー</h2>
+    <div class="row">
+      <input type="password" id="elKey" placeholder="sk_..." style="flex:1;min-width:12em" autocomplete="off">
+      <button class="btn" id="keyShow">👁</button>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="keyRemember" checked> この端末に覚えておく</label>
+      <button class="btn pri" id="keyTest">つないでみる</button>
+    </div>
+    <div class="msg" id="keyMsg"></div>
+    <p class="note">elevenlabs.io にログイン →「Developers」→「API Keys」。もじおこし用に作ったキーは「Speech to Text」だけなので、<b>「Text to Speech」と「Voices（Read）」</b>にもチェックを入れてください（「User（Read）」もあると残りの文字数が見えます）。キーはこの端末にだけ保存され、ElevenLabsに直接送られます。</p>
+    <p class="note" id="quota"></p>
+  </div>
+  <div class="card">
+    <h2>ElevenLabs の作り方</h2>
+    <div class="row"><label>モデル：<select id="model"></select></label></div>
+    <p class="note" id="modelNote"></p>
+    <div class="row"><label>音質：<select id="fmt">
+      <option value="mp3_44100_128">高音質（128kbps）</option>
+      <option value="mp3_44100_64">ふつう（64kbps）</option>
+      <option value="mp3_22050_32">軽い（32kbps・ゲーム埋め込み向け）</option>
+    </select></label></div>
+    <p class="note">ゲームのHTMLに埋め込むなら「軽い」がおすすめ（1秒あたり約4KB）。ElevenLabsは文字数で料金がかかります（1文字＝およそ1クレジット）。</p>
+  </div>
+</section>
+
+<footer>© 泉正道 / フテ猫実行委員会</footer>
+</div>
+
+<script>
+'use strict';
+const APP_VER = '1.0';
+document.getElementById('verLbl').textContent = 'v' + APP_VER;
+const $ = (id) => document.getElementById(id);
+
+/* ---------- 保存 ---------- */
+const LS_STATE = 'futeVoice.state';
+const LS_KEY = 'futeVoice.elevenKey';
+const LS_KEY_MOJI = 'futeMoji.elevenKey';
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} }
+
+const DEFAULT_CHARS = [
+  {id:'fute',  name:'フテ猫',     emoji:'🐱', color:'#f08a2c', web:{pitch:0.8, rate:0.95}},
+  {id:'kuro',  name:'クロネコ',   emoji:'🐈‍⬛', color:'#4a4a5a', web:{pitch:1.0, rate:1.0}},
+  {id:'chap',  name:'チャッピー', emoji:'🐶', color:'#3f9fd8', web:{pitch:1.5, rate:1.1}},
+  {id:'akari', name:'あかり',     emoji:'👧', color:'#e5508a', web:{pitch:1.4, rate:1.05}},
+  {id:'papa',  name:'おとうさん', emoji:'👨', color:'#3d8a5a', web:{pitch:0.7, rate:0.95}},
+  {id:'mama',  name:'おかあさん', emoji:'👩', color:'#a066c8', web:{pitch:1.15, rate:1.0}}
+];
+function newEl(){ return {voiceId:'', voiceName:'', stability:0.5, similarity:0.75, style:0.2, speed:1.0}; }
+function freshChar(c){ return {id:c.id, name:c.name, emoji:c.emoji, color:c.color, web:{voiceURI:'', pitch:c.web.pitch, rate:c.web.rate}, el:newEl()}; }
+
+let S = null;
+function defaultState(){
+  return {engine:'web', model:'eleven_multilingual_v2', fmt:'mp3_44100_64', scene:'', curChar:'fute',
+          chars: DEFAULT_CHARS.map(freshChar), lines: [], seq: 1};
+}
+function loadState(){
+  let s=null; try{ s=JSON.parse(lsGet(LS_STATE)||'null'); }catch(e){ s=null; }
+  const d = defaultState();
+  if(!s || typeof s!=='object') return d;
+  for(const k of Object.keys(d)) if(s[k]===undefined) s[k]=d[k];
+  if(!Array.isArray(s.chars) || !s.chars.length) s.chars = d.chars;
+  s.chars.forEach(c => { c.web = Object.assign({voiceURI:'',pitch:1,rate:1}, c.web||{}); c.el = Object.assign(newEl(), c.el||{}); });
+  if(!Array.isArray(s.lines)) s.lines = [];
+  return s;
+}
+let saveT = 0;
+function save(){ clearTimeout(saveT); saveT = setTimeout(() => { saveT = 0; lsSet(LS_STATE, JSON.stringify(S)); }, 250); }
+S = loadState();
+function flushSave(){ if(saveT){ clearTimeout(saveT); saveT = 0; lsSet(LS_STATE, JSON.stringify(S)); } }
+window.addEventListener('pagehide', flushSave);
+document.addEventListener('visibilitychange', () => { if(document.hidden) flushSave(); });
+
+function charOf(id){ return S.chars.find(c => c.id===id) || S.chars[0]; }
+
+/* ---------- 音声キャッシュ（IndexedDB） ---------- */
+const audioMem = {};   // lineId -> {sig, buf:ArrayBuffer}
+let dbP = null;
+function db(){
+  if(dbP) return dbP;
+  dbP = new Promise((res) => {
+    try{
+      const r = indexedDB.open('futeVoice', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('audio');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => res(null);
+    }catch(e){ res(null); }
+  });
+  return dbP;
+}
+async function idbPut(k, v){ const d=await db(); if(!d) return; return new Promise(r=>{ try{ const t=d.transaction('audio','readwrite'); t.objectStore('audio').put(v,k); t.oncomplete=()=>r(); t.onerror=()=>r(); }catch(e){ r(); } }); }
+async function idbDel(k){ const d=await db(); if(!d) return; return new Promise(r=>{ try{ const t=d.transaction('audio','readwrite'); t.objectStore('audio').delete(k); t.oncomplete=()=>r(); t.onerror=()=>r(); }catch(e){ r(); } }); }
+async function idbAll(){
+  const d=await db(); if(!d) return {};
+  return new Promise(r=>{
+    const out={};
+    try{
+      const t=d.transaction('audio','readonly'); const st=t.objectStore('audio');
+      const cur=st.openCursor();
+      cur.onsuccess=()=>{ const c=cur.result; if(c){ out[c.key]=c.value; c.continue(); } else r(out); };
+      cur.onerror=()=>r(out);
+    }catch(e){ r(out); }
+  });
+}
+
+/* ---------- ElevenLabs ---------- */
+function getKey(){ return ($('elKey').value.trim()) || lsGet(LS_KEY) || lsGet(LS_KEY_MOJI) || ''; }
+let elVoices = [];   // {voice_id,name,labels,preview_url}
+let elModels = [];
+const FALLBACK_MODELS = [
+  {model_id:'eleven_multilingual_v2', name:'Multilingual v2（安定・おすすめ）'},
+  {model_id:'eleven_v3', name:'Eleven v3（感情ゆたか・[笑う]などのタグ）'},
+  {model_id:'eleven_flash_v2_5', name:'Flash v2.5（速い・安い）'}
+];
+function isV3(){ return /v3/.test(S.model); }
+
+async function elFetch(path, opt){
+  const key = getKey();
+  if(!key) throw new Error('ElevenLabsのキーが入っていません（⚙️設定）');
+  opt = opt || {};
+  opt.headers = Object.assign({'xi-api-key': key}, opt.headers||{});
+  const r = await fetch('https://api.elevenlabs.io' + path, opt);
+  if(!r.ok){
+    let m = r.status + '';
+    try{ const j = await r.json(); const d = j.detail; m += ' ' + (typeof d==='string' ? d : (d && (d.message||d.status)) || JSON.stringify(j)); }catch(e){}
+    if(r.status===401) m += '（キーが違うか、権限が足りません）';
+    throw new Error(m);
+  }
+  return r;
+}
+async function loadVoices(){
+  const r = await elFetch('/v1/voices');
+  const j = await r.json();
+  elVoices = (j.voices||[]).map(v => ({voice_id:v.voice_id, name:v.name, labels:v.labels||{}, preview_url:v.preview_url}));
+  elVoices.sort((a,b)=>a.name.localeCompare(b.name));
+  renderChars();
+  return elVoices.length;
+}
+async function loadModels(){
+  try{
+    const r = await elFetch('/v1/models');
+    const j = await r.json();
+    elModels = (j||[]).filter(m => m.can_do_text_to_speech && (!m.languages || m.languages.some(l => l.language_id==='ja')))
+      .map(m => ({model_id:m.model_id, name:m.name}));
+  }catch(e){ elModels = []; }
+  renderModels();
+}
+async function loadQuota(){
+  try{
+    const r = await elFetch('/v1/user/subscription');
+    const j = await r.json();
+    const left = (j.character_limit||0) - (j.character_count||0);
+    $('quota').textContent = '今月の残り：約 ' + left.toLocaleString() + ' 文字（' + (j.character_count||0).toLocaleString() + ' / ' + (j.character_limit||0).toLocaleString() + ' 使用）';
+  }catch(e){ $('quota').textContent = ''; }
+}
+function renderModels(){
+  const list = elModels.length ? elModels : FALLBACK_MODELS;
+  if(!list.some(m => m.model_id===S.model)) list.unshift({model_id:S.model, name:S.model});
+  $('model').innerHTML = '';
+  list.forEach(m => { const o=document.createElement('option'); o.value=m.model_id; o.textContent=m.name + (m.name.indexOf(m.model_id)<0 ? '（'+m.model_id+'）' : ''); $('model').appendChild(o); });
+  $('model').value = S.model;
+  modelNote();
+}
+function modelNote(){
+  $('modelNote').textContent = isV3()
+    ? 'v3 は［laughs］［whispers］［sighs］などのタグで、笑い・ささやき・ため息を入れられます。安定度は 0（自由）/0.5/1（安定）の3段階になります。'
+    : 'Multilingual v2 は日本語が安定しています。［ ］のタグは読み上げ前に取りのぞきます。';
+  renderTagBar();
+}
+function cleanForEl(t){ return isV3() ? t : t.replace(/\[[^\]]*\]/g,'').trim(); }
+function cleanForWeb(t){ return t.replace(/\[[^\]]*\]/g,'').trim(); }
+
+function elSettings(c){
+  const e = c.el;
+  if(isV3()){
+    const st = e.stability < 0.25 ? 0 : (e.stability > 0.75 ? 1 : 0.5);
+    return {stability:st, similarity_boost:e.similarity};
+  }
+  return {stability:e.stability, similarity_boost:e.similarity, style:e.style, use_speaker_boost:true, speed:e.speed};
+}
+function sigFor(line){
+  const c = charOf(line.charId);
+  return JSON.stringify([cleanForEl(line.text), c.el.voiceId, S.model, S.fmt, elSettings(c)]);
+}
+async function elTTS(text, c){
+  if(!c.el.voiceId) throw new Error(c.name + ' のElevenLabsの声が決まっていません（🎭キャラの声）');
+  const body = {text: text, model_id: S.model, voice_settings: elSettings(c)};
+  const r = await elFetch('/v1/text-to-speech/' + encodeURIComponent(c.el.voiceId) + '?output_format=' + S.fmt, {
+    method:'POST', headers:{'Content-Type':'application/json','Accept':'audio/mpeg'}, body: JSON.stringify(body)
+  });
+  return await r.arrayBuffer();
+}
+
+/* ---------- 再生（Web Audio / 端末の声） ---------- */
+let actx = null, curSrc = null, stopFlag = false;
+function ctx(){
+  if(!actx){ const C = window.AudioContext || window.webkitAudioContext; actx = new C(); }
+  if(actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function decode(buf){
+  const c = ctx();
+  return new Promise((res, rej) => c.decodeAudioData(buf.slice(0), res, rej));
+}
+async function playBuf(buf){
+  const ab = await decode(buf);
+  return new Promise((res) => {
+    const s = ctx().createBufferSource(); s.buffer = ab; s.connect(ctx().destination);
+    s.onended = () => { if(curSrc===s) curSrc=null; res(); };
+    curSrc = s; s.start();
+  });
+}
+let webVoices = [];
+function refreshWebVoices(){
+  try{ webVoices = speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang)); }catch(e){ webVoices = []; }
+  if($('tab-chars') && !$('tab-chars').classList.contains('hide')) renderChars();
+}
+if('speechSynthesis' in window){
+  refreshWebVoices();
+  try{ speechSynthesis.addEventListener('voiceschanged', refreshWebVoices); }catch(e){ speechSynthesis.onvoiceschanged = refreshWebVoices; }
+}
+function speakWeb(text, c){
+  return new Promise((res) => {
+    if(!('speechSynthesis' in window)){ res(); return; }
+    const t = cleanForWeb(text); if(!t){ res(); return; }
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'ja-JP';
+    const v = webVoices.find(x => x.voiceURI===c.web.voiceURI);
+    if(v) u.voice = v;
+    u.pitch = c.web.pitch; u.rate = c.web.rate;
+    let done = false; const fin = () => { if(!done){ done=true; res(); } };
+    u.onend = fin; u.onerror = fin;
+    // 長すぎる無反応の保険
+    setTimeout(fin, 2000 + t.length * 400);
+    speechSynthesis.speak(u);
+  });
+}
+function stopAll(){
+  stopFlag = true;
+  try{ speechSynthesis.cancel(); }catch(e){}
+  if(curSrc){ try{ curSrc.stop(); }catch(e){} curSrc = null; }
+  document.querySelectorAll('.line.playing').forEach(el => el.classList.remove('playing'));
+}
+
+/* ---------- セリフの状態 ---------- */
+function lineState(line){
+  const a = audioMem[line.id];
+  if(!a) return 'none';
+  return a.sig === sigFor(line) ? 'ok' : 'old';
+}
+const busy = {};
+async function genLine(line){
+  const c = charOf(line.charId);
+  const t = cleanForEl(line.text);
+  if(!t) throw new Error('セリフが空です');
+  busy[line.id] = true; updateLineStatus(line);
+  try{
+    const buf = await elTTS(t, c);
+    const rec = {sig: sigFor(line), buf: buf};
+    audioMem[line.id] = rec;
+    await idbPut(line.id, rec);
+  } finally {
+    delete busy[line.id]; updateLineStatus(line);
+  }
+}
+async function playLine(line){
+  const c = charOf(line.charId);
+  if(S.engine === 'el'){
+    if(lineState(line) !== 'ok') await genLine(line);
+    await playBuf(audioMem[line.id].buf);
+  } else {
+    await speakWeb(line.text, c);
+  }
+}
+
+/* ---------- 画面：台本 ---------- */
+function autoFile(charId){
+  const n = S.lines.filter(l => l.charId===charId).length + 1;
+  let name = charId + '_' + String(n).padStart(2,'0');
+  while(S.lines.some(l => l.file===name)) name = charId + '_' + String(++S.seq).padStart(2,'0');
+  return name;
+}
+function addLine(charId, text){
+  text = (text||'').trim(); if(!text) return null;
+  const line = {id: 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2,6), charId: charId, text: text, file: autoFile(charId)};
+  S.lines.push(line);
+  return line;
+}
+function renderAddChars(){
+  const box = $('addChars'); box.innerHTML = '';
+  if(!S.chars.some(c => c.id===S.curChar)) S.curChar = S.chars[0].id;
+  S.chars.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (c.id===S.curChar ? ' on' : '');
+    b.style.borderColor = c.color;
+    if(c.id===S.curChar) b.style.background = c.color;
+    b.textContent = c.emoji + ' ' + c.name;
+    b.onclick = () => { S.curChar = c.id; save(); renderAddChars(); };
+    box.appendChild(b);
+  });
+}
+const TAGS = ['[laughs]','[giggles]','[sighs]','[whispers]','[excited]','[angry]','[sad]','[surprised]'];
+function renderTagBar(){
+  const bar = $('tagBar'); bar.innerHTML = '';
+  if(!isV3() || S.engine!=='el'){ bar.classList.add('hide'); return; }
+  bar.classList.remove('hide');
+  TAGS.forEach(t => {
+    const b = document.createElement('button'); b.type='button'; b.textContent = t;
+    b.onclick = () => { const ta=$('addText'); const p=ta.selectionStart||ta.value.length; ta.value = ta.value.slice(0,p) + t + ' ' + ta.value.slice(p); ta.focus(); };
+    bar.appendChild(b);
+  });
+}
+const lineEls = {};
+function statusText(line){
+  if(busy[line.id]) return ['busy','つくり中…'];
+  const s = lineState(line);
+  if(s==='ok') return ['ok','✨ 作成ずみ'];
+  if(s==='old') return ['old','△ 変更あり'];
+  return ['','○ まだ'];
+}
+function updateLineStatus(line){
+  const el = lineEls[line.id]; if(!el) return;
+  const st = el.querySelector('.st'); const [cls, txt] = statusText(line);
+  st.className = 'st ' + cls; st.textContent = txt;
+  el.querySelector('.dl').disabled = lineState(line)==='none';
+}
+function renderLines(){
+  const box = $('lines'); box.innerHTML = '';
+  for(const k of Object.keys(lineEls)) delete lineEls[k];
+  $('emptyNote').classList.toggle('hide', S.lines.length>0);
+  const chars = S.lines.reduce((a,l)=>a+cleanForEl(l.text).length,0);
+  $('lineCount').textContent = S.lines.length ? '（' + S.lines.length + 'セリフ・' + chars + '文字）' : '';
+  S.lines.forEach((line, i) => {
+    const c = charOf(line.charId);
+    const el = document.createElement('div'); el.className = 'line'; el.style.borderLeftColor = c.color;
+    const no = document.createElement('div'); no.className='no'; no.innerHTML = (i+1) + '<br><span style="font-size:20px">' + c.emoji + '</span>';
+    const body = document.createElement('div');
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const sel = document.createElement('select');
+    S.chars.forEach(cc => { const o=document.createElement('option'); o.value=cc.id; o.textContent=cc.emoji+' '+cc.name; sel.appendChild(o); });
+    sel.value = line.charId;
+    sel.onchange = () => { line.charId = sel.value; save(); renderLines(); };
+    const fn = document.createElement('input'); fn.type='text'; fn.value=line.file; fn.title='ファイル名';
+    fn.onchange = () => { line.file = fn.value.trim().replace(/[\\/:*?"<>|\s]+/g,'_') || line.file; fn.value=line.file; save(); };
+    const st = document.createElement('span'); st.className='st';
+    meta.append(sel, fn, st);
+    const ta = document.createElement('textarea'); ta.value = line.text; ta.rows = 1;
+    ta.oninput = () => { line.text = ta.value; save(); updateLineStatus(line); };
+    ta.onblur = () => renderCountOnly();
+    body.append(meta, ta);
+    const acts = document.createElement('div'); acts.className='acts';
+    const bPlay = mkBtn('▶ 聞く', 'btn sm pri', async () => {
+      stopAll(); stopFlag = false; el.classList.add('playing');
+      try{ await playLine(line); }catch(e){ msg($('genMsg'), e.message, true); }
+      el.classList.remove('playing');
+    });
+    const bGen = mkBtn('✨ 作りなおす', 'btn sm blue', async () => {
+      bGen.disabled = true;
+      try{ await genLine(line); stopAll(); stopFlag=false; await playBuf(audioMem[line.id].buf); }catch(e){ msg($('genMsg'), e.message, true); }
+      bGen.disabled = false;
+    });
+    const bDl = mkBtn('⬇ MP3', 'btn sm dl', () => {
+      const a = audioMem[line.id]; if(!a) return;
+      download(new Blob([a.buf], {type:'audio/mpeg'}), line.file + '.mp3');
+    });
+    const bUp = mkBtn('↑', 'btn sm', () => { if(i>0){ S.lines.splice(i-1,0,S.lines.splice(i,1)[0]); save(); renderLines(); } });
+    const bDn = mkBtn('↓', 'btn sm', () => { if(i<S.lines.length-1){ S.lines.splice(i+1,0,S.lines.splice(i,1)[0]); save(); renderLines(); } });
+    const bDel = mkBtn('🗑', 'btn sm warn', () => {
+      if(!confirmTwice(bDel)) return;
+      S.lines.splice(i,1); delete audioMem[line.id]; idbDel(line.id); save(); renderLines();
+    });
+    acts.append(bPlay, bGen, bDl, bUp, bDn, bDel);
+    el.append(no, body, document.createElement('div'), acts);
+    box.appendChild(el);
+    lineEls[line.id] = el;
+    updateLineStatus(line);
+  });
+}
+function renderCountOnly(){
+  const chars = S.lines.reduce((a,l)=>a+cleanForEl(l.text).length,0);
+  $('lineCount').textContent = S.lines.length ? '（' + S.lines.length + 'セリフ・' + chars + '文字）' : '';
+}
+function mkBtn(label, cls, fn){ const b=document.createElement('button'); b.className=cls; b.textContent=label; b.onclick=fn; return b; }
+function confirmTwice(b){
+  if(b.dataset.armed && Date.now()-(+b.dataset.armed) < 3000){ return true; }
+  b.dataset.armed = Date.now(); const old = b.textContent; b.textContent = 'もう一回で消す';
+  setTimeout(() => { b.textContent = old; delete b.dataset.armed; }, 3000);
+  return false;
+}
+function msg(el, t, err){ el.textContent = t || ''; el.className = 'msg' + (err ? ' err' : (t ? ' ok' : '')); }
+
+function engineNote(){
+  $('engineNote').textContent = S.engine==='el'
+    ? '▶ を押すと、まだ作っていないセリフはElevenLabsで作ってから鳴らします（文字数ぶんクレジットを使います）。作った音声はこの端末に残るので、2回目からは無料です。'
+    : 'iPhone・パソコンに入っている声で読み上げます。無料ですが、ファイルには書き出せません。台本の流れや間を確かめる用です。';
+  renderTagBar();
+}
+
+/* ---------- 画面：キャラの声 ---------- */
+function slider(parent, label, min, max, step, val, onch, fmt){
+  const l = document.createElement('label'); l.textContent = label;
+  const r = document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=step; r.value=val;
+  const v = document.createElement('span'); v.className='v'; v.textContent = fmt ? fmt(val) : val;
+  r.oninput = () => { const x = parseFloat(r.value); v.textContent = fmt ? fmt(x) : x; onch(x); };
+  parent.append(l, r, v);
+}
+function renderChars(){
+  const box = $('charList'); box.innerHTML = '';
+  S.chars.forEach((c, idx) => {
+    const d = document.createElement('div'); d.className='cbox'; d.style.borderLeftColor = c.color;
+    const top = document.createElement('div'); top.className='top';
+    const em = document.createElement('input'); em.type='text'; em.className='em'; em.value=c.emoji;
+    em.onchange = () => { c.emoji = em.value.trim() || '🙂'; save(); renderAddChars(); renderLines(); };
+    const nm = document.createElement('input'); nm.type='text'; nm.className='nm'; nm.value=c.name;
+    nm.onchange = () => { c.name = nm.value.trim() || c.name; save(); renderAddChars(); renderLines(); };
+    const col = document.createElement('input'); col.type='color'; col.value=c.color;
+    col.onchange = () => { c.color = col.value; d.style.borderLeftColor=c.color; save(); renderAddChars(); renderLines(); };
+    top.append(em, nm, col);
+    if(idx >= DEFAULT_CHARS.length){
+      const del = mkBtn('🗑', 'btn sm warn', () => {
+        if(!confirmTwice(del)) return;
+        if(S.lines.some(l => l.charId===c.id)){ alert('このキャラのセリフが台本に残っています'); return; }
+        S.chars.splice(idx,1); save(); renderChars(); renderAddChars();
+      });
+      top.appendChild(del);
+    }
+    d.appendChild(top);
+
+    // 端末の声
+    const f1 = document.createElement('fieldset'); const lg1 = document.createElement('legend'); lg1.textContent='📱 端末の声'; f1.appendChild(lg1);
+    const vs = document.createElement('select'); vs.style.width='100%';
+    const o0 = document.createElement('option'); o0.value=''; o0.textContent='（おまかせの日本語ボイス）'; vs.appendChild(o0);
+    webVoices.forEach(v => { const o=document.createElement('option'); o.value=v.voiceURI; o.textContent=v.name + (v.localService?'':'（ネット）'); vs.appendChild(o); });
+    vs.value = c.web.voiceURI; if(vs.value!==c.web.voiceURI) vs.value='';
+    vs.onchange = () => { c.web.voiceURI = vs.value; save(); };
+    f1.appendChild(vs);
+    const g1 = document.createElement('div'); g1.className='grid2';
+    slider(g1, '声の高さ', 0.1, 2, 0.05, c.web.pitch, x => { c.web.pitch = x; save(); });
+    slider(g1, 'はやさ', 0.5, 1.6, 0.05, c.web.rate, x => { c.web.rate = x; save(); });
+    f1.appendChild(g1);
+    const t1 = mkBtn('▶ 端末の声で聞く', 'btn sm', async () => { stopAll(); stopFlag=false; await speakWeb($('sampleText').value, c); });
+    const r1 = document.createElement('div'); r1.className='row'; r1.appendChild(t1); f1.appendChild(r1);
+    d.appendChild(f1);
+
+    // ElevenLabs
+    const f2 = document.createElement('fieldset'); const lg2 = document.createElement('legend'); lg2.textContent='✨ ElevenLabs の声'; f2.appendChild(lg2);
+    const es = document.createElement('select'); es.style.width='100%';
+    const e0 = document.createElement('option'); e0.value=''; e0.textContent = elVoices.length ? '（声をえらぶ）' : '（⚙️設定で「つないでみる」と一覧が出ます）'; es.appendChild(e0);
+    elVoices.forEach(v => {
+      const o=document.createElement('option'); o.value=v.voice_id;
+      const lb = [v.labels.gender, v.labels.age, v.labels.accent || v.labels.language].filter(Boolean).join('・');
+      o.textContent = v.name + (lb ? '（' + lb + '）' : ''); es.appendChild(o);
+    });
+    if(c.el.voiceId && !elVoices.some(v => v.voice_id===c.el.voiceId)){
+      const o=document.createElement('option'); o.value=c.el.voiceId; o.textContent=(c.el.voiceName||'登録した声') + '（' + c.el.voiceId.slice(0,8) + '…）'; es.appendChild(o);
+    }
+    es.value = c.el.voiceId;
+    es.onchange = () => {
+      c.el.voiceId = es.value; const v = elVoices.find(x => x.voice_id===es.value); c.el.voiceName = v ? v.name : '';
+      idIn.value = c.el.voiceId; save(); renderLines();
+    };
+    f2.appendChild(es);
+    const idRow = document.createElement('div'); idRow.className='row';
+    const idIn = document.createElement('input'); idIn.type='text'; idIn.placeholder='Voice ID を直接入れる'; idIn.value=c.el.voiceId; idIn.style.flex='1'; idIn.style.fontSize='13px';
+    idIn.onchange = () => { c.el.voiceId = idIn.value.trim(); c.el.voiceName=''; save(); renderChars(); renderLines(); };
+    const pv = mkBtn('🔊 見本', 'btn sm', () => {
+      const v = elVoices.find(x => x.voice_id===c.el.voiceId);
+      if(v && v.preview_url){ try{ const a = new Audio(v.preview_url); a.play(); }catch(e){} }
+    });
+    idRow.append(idIn, pv); f2.appendChild(idRow);
+    const g2 = document.createElement('div'); g2.className='grid2';
+    const pct = x => Math.round(x*100) + '%';
+    slider(g2, '安定度', 0, 1, 0.05, c.el.stability, x => { c.el.stability = x; save(); }, pct);
+    slider(g2, 'そっくり度', 0, 1, 0.05, c.el.similarity, x => { c.el.similarity = x; save(); }, pct);
+    slider(g2, '感情の強さ', 0, 1, 0.05, c.el.style, x => { c.el.style = x; save(); }, pct);
+    slider(g2, 'はやさ', 0.7, 1.2, 0.05, c.el.speed, x => { c.el.speed = x; save(); }, x => x.toFixed(2));
+    f2.appendChild(g2);
+    const n2 = document.createElement('p'); n2.className='note';
+    n2.textContent = '安定度を下げると感情ゆたかに、上げると落ちついた読み方に。v3 では「感情の強さ」「はやさ」は使われません。';
+    f2.appendChild(n2);
+    const em2 = document.createElement('div'); em2.className='msg';
+    const t2 = mkBtn('▶ ElevenLabsで聞く（文字数ぶん使います）', 'btn sm blue', async () => {
+      t2.disabled = true; msg(em2, 'つくり中…');
+      try{ const buf = await elTTS(cleanForEl($('sampleText').value), c); msg(em2, ''); stopAll(); stopFlag=false; await playBuf(buf); }
+      catch(e){ msg(em2, e.message, true); }
+      t2.disabled = false;
+    });
+    const r2 = document.createElement('div'); r2.className='row'; r2.appendChild(t2); f2.append(r2, em2);
+    d.appendChild(f2);
+    box.appendChild(d);
+  });
+}
+
+/* ---------- ZIP（無圧縮） ---------- */
+const CRC_T = (() => { const t = new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c = 0xFFFFFFFF; for(let i=0;i<u8.length;i++) c = CRC_T[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(files){
+  const enc = new TextEncoder(); const parts = []; const cen = []; let off = 0;
+  const now = new Date();
+  const dt = ((now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1)) & 0xFFFF;
+  const dd = (((now.getFullYear()-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate()) & 0xFFFF;
+  files.forEach(f => {
+    const nm = enc.encode(f.name); const data = f.data; const crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,dt,true); lh.setUint16(12,dd,true); lh.setUint32(14,crc,true);
+    lh.setUint32(18,data.length,true); lh.setUint32(22,data.length,true); lh.setUint16(26,nm.length,true); lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer), nm, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true);
+    ch.setUint16(12,dt,true); ch.setUint16(14,dd,true); ch.setUint32(16,crc,true);
+    ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true); ch.setUint16(28,nm.length,true);
+    ch.setUint32(42,off,true);
+    cen.push(new Uint8Array(ch.buffer), nm);
+    off += 30 + nm.length + data.length;
+  });
+  const cenSize = cen.reduce((a,p)=>a+p.length,0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true);
+  end.setUint32(12,cenSize,true); end.setUint32(16,off,true);
+  return new Blob([...parts, ...cen, new Uint8Array(end.buffer)], {type:'application/zip'});
+}
+function download(blob, name){
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(u); a.remove(); }, 4000);
+}
+function b64(buf){
+  const u8 = new Uint8Array(buf); let s = ''; const CH = 0x8000;
+  for(let i=0;i<u8.length;i+=CH) s += String.fromCharCode.apply(null, u8.subarray(i, i+CH));
+  return btoa(s);
+}
+function readyLines(){ return S.lines.filter(l => lineState(l)==='ok'); }
+function sceneSlug(){ return (S.scene||'serifu').replace(/[\\/:*?"<>|\s]+/g,'_'); }
+function buildVoicesJs(lines){
+  const v = {}, t = {};
+  lines.forEach(l => { v[l.file] = b64(audioMem[l.id].buf); t[l.file] = cleanForWeb(l.text); });
+  return '// フテ猫 セリフ工房 v' + APP_VER + ' で作ったセリフ音声（' + (S.scene||'台本') + '）\n' +
+    'window.FUTE_VOICES = Object.assign(window.FUTE_VOICES||{}, ' + JSON.stringify(v) + ');\n' +
+    'window.FUTE_VOICE_TEXT = Object.assign(window.FUTE_VOICE_TEXT||{}, ' + JSON.stringify(t) + ');\n' +
+    'window.playFuteVoice = window.playFuteVoice || (function(){\n' +
+    '  var ctx = null, cache = {}, cur = null;\n' +
+    '  function ac(){ if(!ctx){ var C = window.AudioContext || window.webkitAudioContext; ctx = new C(); } if(ctx.state === "suspended") ctx.resume(); return ctx; }\n' +
+    '  function get(name){\n' +
+    '    if(cache[name]) return Promise.resolve(cache[name]);\n' +
+    '    var s = window.FUTE_VOICES[name]; if(!s) return Promise.reject(new Error("no voice: " + name));\n' +
+    '    var bin = atob(s), u = new Uint8Array(bin.length); for(var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);\n' +
+    '    return new Promise(function(res, rej){ ac().decodeAudioData(u.buffer, function(b){ cache[name] = b; res(b); }, rej); });\n' +
+    '  }\n' +
+    '  // name のセリフを鳴らす。再生がおわると Promise が解決します。opt.volume(0〜1)・opt.stopPrev(前のセリフを止める、既定true)\n' +
+    '  return function(name, opt){\n' +
+    '    opt = opt || {};\n' +
+    '    return get(name).then(function(b){\n' +
+    '      if(cur && opt.stopPrev !== false){ try{ cur.stop(); }catch(e){} }\n' +
+    '      var c = ac(), s = c.createBufferSource(), g = c.createGain();\n' +
+    '      g.gain.value = opt.volume == null ? 1 : opt.volume; s.buffer = b; s.connect(g); g.connect(c.destination);\n' +
+    '      cur = s; s.start();\n' +
+    '      return new Promise(function(res){ s.onended = function(){ if(cur === s) cur = null; res(); }; });\n' +
+    '    });\n' +
+    '  };\n' +
+    '})();\n';
+}
+
+/* ---------- イベント ---------- */
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x===b));
+  ['script','chars','export','setup'].forEach(n => $('tab-'+n).classList.toggle('hide', b.dataset.tab!==n));
+  if(b.dataset.tab==='chars'){ refreshWebVoices(); renderChars(); }
+  window.scrollTo(0,0);
+});
+document.querySelectorAll('input[name=engine]').forEach(r => {
+  r.checked = r.value === S.engine;
+  r.onchange = () => { if(r.checked){ S.engine = r.value; save(); engineNote(); if(S.engine==='el' && !getKey()) msg($('genMsg'), '⚙️設定でElevenLabsのキーを入れてください', true); } };
+});
+$('addBtn').onclick = () => {
+  const l = addLine(S.curChar, $('addText').value);
+  if(!l) return;
+  $('addText').value = ''; save(); renderLines();
+  if(lineEls[l.id]) lineEls[l.id].scrollIntoView({behavior:'smooth', block:'nearest'});
+};
+$('addText').addEventListener('keydown', (e) => { if(e.key==='Enter' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); $('addBtn').click(); } });
+$('addPlay').onclick = async () => {
+  stopAll(); stopFlag = false;
+  const c = charOf(S.curChar); const t = $('addText').value.trim(); if(!t) return;
+  if(S.engine==='el'){
+    try{ msg($('genMsg'),'つくり中…'); const buf = await elTTS(cleanForEl(t), c); msg($('genMsg'),''); await playBuf(buf); }
+    catch(e){ msg($('genMsg'), e.message, true); }
+  } else await speakWeb(t, c);
+};
+function parseBulk(text){
+  const out = [];
+  text.split(/\r?\n/).forEach(raw => {
+    const s = raw.trim(); if(!s) return;
+    const m = s.match(/^([^：:「」]{1,12})[：:]\s*(.+)$/) || s.match(/^([^「」：:]{1,12})「(.+)」$/);
+    let cid = S.curChar, txt = s;
+    if(m){
+      const nm = m[1].trim();
+      const c = S.chars.find(x => x.name===nm || nm.indexOf(x.name)===0 || x.name.indexOf(nm)===0);
+      if(c){ cid = c.id; txt = m[2].trim(); }
+    }
+    txt = txt.replace(/^「(.*)」$/, '$1');
+    out.push([cid, txt]);
+  });
+  return out;
+}
+$('bulkBtn').onclick = () => {
+  const items = parseBulk($('bulkText').value);
+  items.forEach(([cid, t]) => addLine(cid, t));
+  if(items.length){ $('bulkText').value=''; save(); renderLines(); msg($('genMsg'), items.length + ' セリフ追加しました'); }
+};
+$('sceneName').value = S.scene || '';
+$('sceneName').oninput = () => { S.scene = $('sceneName').value; save(); };
+$('stopBtn').onclick = stopAll;
+$('playAll').onclick = async () => {
+  stopAll(); stopFlag = false; msg($('genMsg'), '');
+  for(const line of S.lines.slice()){
+    if(stopFlag) break;
+    const el = lineEls[line.id]; if(el){ el.classList.add('playing'); el.scrollIntoView({behavior:'smooth', block:'center'}); }
+    try{
+      // 通し再生：ElevenLabsモードでも、まだ作っていないセリフは端末の声で（クレジットを勝手に使わない）
+      if(S.engine==='el' && lineState(line)==='ok') await playBuf(audioMem[line.id].buf);
+      else await speakWeb(line.text, charOf(line.charId));
+    }catch(e){ msg($('genMsg'), e.message, true); }
+    if(el) el.classList.remove('playing');
+    if(stopFlag) break;
+    await new Promise(r => setTimeout(r, 250));
+  }
+};
+let genning = false;
+$('genAll').onclick = async () => {
+  if(genning){ genning = false; return; }
+  const todo = S.lines.filter(l => lineState(l)!=='ok' && cleanForEl(l.text));
+  if(!todo.length){ msg($('genMsg'), 'ぜんぶ作成ずみです'); return; }
+  if(!getKey()){ msg($('genMsg'), '⚙️設定でElevenLabsのキーを入れてください', true); return; }
+  const noVoice = [...new Set(todo.map(l => charOf(l.charId)).filter(c => !c.el.voiceId).map(c => c.name))];
+  if(noVoice.length){ msg($('genMsg'), noVoice.join('・') + ' のElevenLabsの声を 🎭キャラの声 で決めてください', true); return; }
+  const chars = todo.reduce((a,l)=>a+cleanForEl(l.text).length,0);
+  if(!confirm(todo.length + ' セリフ（約' + chars + '文字）をElevenLabsで作ります。いいですか？')) return;
+  genning = true; $('genAll').textContent = '■ 作るのをやめる';
+  const bar = $('genBar'); bar.classList.remove('hide');
+  let n = 0, err = 0;
+  for(const l of todo){
+    if(!genning) break;
+    msg($('genMsg'), (n+1) + ' / ' + todo.length + ' つくり中…');
+    try{ await genLine(l); }catch(e){ err++; msg($('genMsg'), e.message, true); if(/401|402|quota|キー/.test(e.message)) break; await new Promise(r=>setTimeout(r,800)); }
+    n++; bar.firstElementChild.style.width = (n/todo.length*100) + '%';
+  }
+  genning = false; $('genAll').textContent = '✨ まだのセリフをぜんぶ作る';
+  setTimeout(() => bar.classList.add('hide'), 1200);
+  if(!err) msg($('genMsg'), n + ' セリフ作りました');
+  loadQuota();
+};
+
+/* 書き出し */
+$('expZip').onclick = () => {
+  const ls = readyLines();
+  if(!ls.length){ msg($('expMsg'), 'ElevenLabsで作ったセリフがまだありません', true); return; }
+  const files = ls.map(l => ({name: l.file + '.mp3', data: new Uint8Array(audioMem[l.id].buf)}));
+  const txt = ls.map(l => l.file + '\t' + charOf(l.charId).name + '\t' + cleanForWeb(l.text)).join('\n');
+  files.push({name:'serifu.txt', data:new TextEncoder().encode(txt)});
+  download(makeZip(files), sceneSlug() + '_voices.zip');
+  msg($('expMsg'), ls.length + ' 個のMP3を書き出しました' + (ls.length<S.lines.length ? '（まだ作っていない ' + (S.lines.length-ls.length) + ' セリフは入っていません）' : ''));
+};
+$('expJs').onclick = () => {
+  const ls = readyLines();
+  if(!ls.length){ msg($('expMsg'), 'ElevenLabsで作ったセリフがまだありません', true); return; }
+  const js = buildVoicesJs(ls);
+  download(new Blob([js], {type:'text/javascript'}), 'voices.js');
+  msg($('expMsg'), 'voices.js（約' + Math.round(js.length/1024) + 'KB・' + ls.length + 'セリフ）を書き出しました');
+};
+$('saveJson').onclick = () => {
+  const data = {app:'futeneko-voice', ver:APP_VER, scene:S.scene, chars:S.chars, lines:S.lines, model:S.model, fmt:S.fmt};
+  download(new Blob([JSON.stringify(data, null, 1)], {type:'application/json'}), sceneSlug() + '.json');
+};
+$('saveTxt').onclick = () => {
+  const txt = S.lines.map(l => charOf(l.charId).name + '：' + l.text).join('\n');
+  download(new Blob([txt], {type:'text/plain'}), sceneSlug() + '.txt');
+};
+$('loadJson').onchange = async (e) => {
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const j = JSON.parse(await f.text());
+    if(!Array.isArray(j.lines)) throw new Error('台本ファイルではありません');
+    if(Array.isArray(j.chars) && j.chars.length){
+      j.chars.forEach(c => { c.web = Object.assign({voiceURI:'',pitch:1,rate:1}, c.web||{}); c.el = Object.assign(newEl(), c.el||{}); });
+      S.chars = j.chars;
+    }
+    S.lines = j.lines.filter(l => l && l.id && typeof l.text==='string');
+    S.lines.forEach(l => { if(!S.chars.some(c=>c.id===l.charId)) l.charId = S.chars[0].id; if(!l.file) l.file = l.id; });
+    S.scene = j.scene || ''; if(j.model) S.model = j.model; if(j.fmt) S.fmt = j.fmt;
+    $('sceneName').value = S.scene; $('fmt').value = S.fmt; renderModels();
+    save(); renderAddChars(); renderLines();
+    msg($('fileMsg'), '「' + (S.scene||f.name) + '」を開きました');
+  }catch(err){ msg($('fileMsg'), '開けませんでした：' + err.message, true); }
+  e.target.value = '';
+};
+$('clearAll').onclick = () => {
+  if(!confirmTwice($('clearAll'))) return;
+  S.lines.forEach(l => { delete audioMem[l.id]; idbDel(l.id); });
+  S.lines = []; S.scene = ''; $('sceneName').value=''; save(); renderLines();
+  msg($('fileMsg'), '台本を消しました');
+};
+
+/* 設定 */
+(function initKey(){
+  const k = lsGet(LS_KEY) || lsGet(LS_KEY_MOJI) || '';
+  $('elKey').value = k;
+  $('keyRemember').checked = true;
+  if(!lsGet(LS_KEY) && lsGet(LS_KEY_MOJI)) msg($('keyMsg'), 'もじおこしで使ったキーを読みこみました');
+})();
+$('keyShow').onclick = () => { $('elKey').type = $('elKey').type==='password' ? 'text' : 'password'; };
+$('elKey').onchange = () => { lsSet(LS_KEY, $('keyRemember').checked && $('elKey').value.trim() ? $('elKey').value.trim() : null); };
+$('keyRemember').onchange = () => $('elKey').onchange();
+$('keyTest').onclick = async () => {
+  $('elKey').onchange();
+  msg($('keyMsg'), 'つないでいます…');
+  try{
+    const n = await loadVoices();
+    await loadModels(); loadQuota();
+    msg($('keyMsg'), 'つながりました！ 声が ' + n + ' 個 見つかりました。🎭キャラの声 で選べます');
+  }catch(e){ msg($('keyMsg'), e.message, true); }
+};
+$('model').onchange = () => { S.model = $('model').value; save(); modelNote(); renderLines(); };
+$('fmt').value = S.fmt;
+$('fmt').onchange = () => { S.fmt = $('fmt').value; save(); renderLines(); };
+$('addChar').onclick = () => {
+  const id = 'c' + Date.now().toString(36);
+  S.chars.push({id:id, name:'あたらしいキャラ', emoji:'🙂', color:'#888888', web:{voiceURI:'',pitch:1,rate:1}, el:newEl()});
+  save(); renderChars(); renderAddChars();
+};
+
+/* iPhone：最初のタッチで音を起こす */
+document.addEventListener('touchend', function unlock(){ try{ ctx(); }catch(e){} document.removeEventListener('touchend', unlock); }, {passive:true});
+
+/* ---------- はじめ ---------- */
+renderModels(); renderAddChars(); engineNote(); renderLines();
+idbAll().then(all => { for(const k of Object.keys(all)) audioMem[k] = all[k]; S.lines.forEach(updateLineStatus); });
+if(getKey()){ loadVoices().then(() => loadModels()).then(loadQuota).catch(() => {}); }
+
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>
