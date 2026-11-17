@@ -70,7 +70,7 @@ dl{display:grid;grid-template-columns:110px 1fr;gap:4px 8px;font-size:13px;margi
       <div class="kjrow">おそう まち <select id="kjT"><option value="hajimari">はじまりの まち</option><option value="home">みんなの家・はたけ</option><option value="capital">おうと フテリア</option><option value="dwarf">ドワーフの むら</option><option value="elf">エルフの むら</option><option value="vtown">ひのしまの まち</option><option value="wvil">にしのはての むら</option><option value="svil">みなみのおかの むら</option></select>
         <button id="kjGo">👹 しゅつげき！</button></div>
       <div id="kjst" class="card" style="background:#faf3e6;box-shadow:none">かいじゅうは いません</div>
-      <div class="small" style="margin-top:6px">※ だれか プレイヤーが あそんでいる ときだけ でてこられます（v4.05 いこう）。プレイヤーに たおされると おわり。キーボード：やじるし／WASD で いどう、スペース＝こうげき、B＝たてものを こわす、R＝ほえる</div>
+      <div class="small" style="margin-top:6px">※ だれも いなくても しゅつげき できます。そのときは まちの そばで まちかまえて、プレイヤーが くると あらわれます（v4.06 いこう）。プレイヤーに たおされると おわり。キーボード：やじるし／WASD で いどう、スペース＝こうげき、B＝たてものを こわす、R＝ほえる</div>
     </div><div>
       <div class="pad" id="pad">
         <button data-d="-1,-1">↖</button><button data-d="0,-1">⬆</button><button data-d="1,-1">↗</button>
@@ -107,7 +107,7 @@ function split(buf,cb){for(;;){if(buf.length<2)return buf;let mul=1,len=0,i=1,dg
 function open1(url){let ws;try{ws=new WebSocket(url,['mqtt']);}catch(e){return;}const c={url,ws,ok:false,buf:new Uint8Array(0)};D.cx.push(c);ws.binaryType='arraybuffer';
   ws.onopen=()=>{const vh=new Uint8Array([0,4,77,81,84,84,4,0x02,0,60]);ws.send(mqPkt(0x10,[vh,mqStr('fwadm_'+Math.random().toString(36).slice(2,10))]));};
   ws.onmessage=ev=>{const d=new Uint8Array(ev.data);const nb=new Uint8Array(c.buf.length+d.length);nb.set(c.buf);nb.set(d,c.buf.length);c.buf=nb;
-    c.buf=split(c.buf,(h,body)=>{const ty=h>>4;if(ty===2&&body[1]===0){c.ok=true;ws.send(mqSub(['reg/+','stat/+','p/+','wop','kill','chat','kjs'].map(x=>D.rb+x)));conn();}
+    c.buf=split(c.buf,(h,body)=>{const ty=h>>4;if(ty===2&&body[1]===0){c.ok=true;ws.send(mqSub(['reg/+','stat/+','p/+','wop','kill','chat','kjs','kjw'].map(x=>D.rb+x)));conn();}
       else if(ty===3){const tl=(body[0]<<8)|body[1];const topic=td.decode(body.subarray(2,2+tl));let off=2+tl;if((h>>1)&3)off+=2;recv(topic,td.decode(body.subarray(off)));}});};
   ws.onclose=()=>{const k=D.cx.indexOf(c);if(k>=0)D.cx.splice(k,1);conn();setTimeout(()=>{if(D.rb&&!D.cx.some(x=>x.url===url))open1(url);},8000);};
   ws.onerror=()=>{try{ws.close();}catch(e){}};}
@@ -124,6 +124,7 @@ function recv(topic,msg){if(!topic.startsWith(D.rb))return;const t=topic.slice(D
   if(t==='wop'){const o=J(msg);if(!o||!o.ev)return;const e=o.ev;if(e.s==='bat'){D.bat[e.id]={n:String(e.n||'').slice(0,40),x:e.x,y:e.y,at:Date.now()};return;}
     const who=o.i?nameOf(o.i):'';const bn=e.id&&META.nm[e.id]?META.nm[e.id]:'';let s=EVN[e.s]||e.s;addEv((bn?bn+'：':'')+s+(e.by?'（'+esc(e.by)+'）':who?'（'+who+'）':''),'⚔️');return;}
   if(t==='kill'){const o=J(msg);if(!o||!o.ty)return;if(META.boss.includes(o.ty)||/^shi_/.test(o.ty))addEv((META.nm[o.ty]||o.ty)+' が たおされた'+(Array.isArray(o.w)?'（'+o.w.map(nameOf).join('・')+'）':''),'🏆');return;}
+  if(t==='kjw'){const o=J(msg);if(o&&(!D.kjw||(+o.t||0)>=(+D.kjw.t||0)))D.kjw=o;return;}
   if(t==='kjs'){const o=J(msg);if(o){D.kj=o;D.kjAt=Date.now();}return;}
   if(t==='chat'){const o=J(msg);if(!o||typeof o.t!=='string')return;D.chat.unshift({at:Date.now(),n:String(o.n||'').slice(0,8),t:o.t.slice(0,60)});D.chat.length=Math.min(D.chat.length,100);return;}}
 /* ---- がめん ---- */
@@ -162,14 +163,18 @@ $('tbl').querySelector('thead').onclick=e=>{const k=e.target.dataset.k;if(!k)ret
 $('tbl').querySelector('tbody').onclick=e=>{const tr=e.target.closest('tr.pl');if(tr)detail(tr.dataset.pid);};
 /* ---- だいかいじゅう ---- */
 let SEQ=0;function pub(topic,msg){const pk=mqPkt(0x30,[mqStr(topic),te.encode(msg)]);let n=0;for(const c of D.cx)if(c.ok){try{c.ws.send(pk);n++;}catch(e){}}return n;}
+function kjwPub(o){o.ak=META.h;o.t=Date.now();D.kjw=o;const pk=mqPkt(0x31,[mqStr(D.rb+'kjw'),te.encode(JSON.stringify(o))]);for(const c of D.cx)if(c.ok){try{c.ws.send(pk);}catch(e){}}}
+const KJT={hajimari:[65,28],home:[18,34],capital:[224,-92],dwarf:[78,-182],elf:[-251,172],vtown:[217,190],wvil:[-237,42],svil:[-1,186]};
+function live(){return D.kj&&Date.now()-D.kjAt<3000;}
 function adm(o){o.ak=META.h;o.q=(++SEQ)+'_'+Date.now();return pub(D.rb+'adm',JSON.stringify(o));}
 const KJN={gansekin:'ガンセキング',ikarigani:'イカリガニ',morinonushi:'モリノヌシ'};
-function kjRender(){const el=$('kjst');if(!el)return;const o=D.kj;if(!o||Date.now()-D.kjAt>3000){el.innerHTML='かいじゅうは いません'+(D.kjWait&&Date.now()-D.kjWait<8000?'<br><b>しゅつげき ちゅう…</b>':'');return;}
+function kjRender(){const el=$('kjst');if(!el)return;const o=D.kj;if(!live()){const w=D.kjw;if(w&&w.on){el.innerHTML='<b>👹 '+esc(KJN[w.k]||w.k)+'</b> まちかまえ ちゅう<br>ばしょ（'+w.x+', '+w.y+'）<br><span class="small">いまは だれも あそんでいないので、ここで まっています。プレイヤーが くると あらわれて あばれます。いどうは できます（こうげき・こわす・ほえるは プレイヤーが いるときだけ）</span>';return;}el.innerHTML='かいじゅうは いません'+(D.kjWait&&Date.now()-D.kjWait<8000?'<br><b>しゅつげき ちゅう…</b>':'');return;}
   el.innerHTML='<b>👹 '+esc(KJN[o.k]||o.k)+'</b> あばれ ちゅう！<br>HP <div class="bar" style="display:inline-block;width:160px;vertical-align:middle"><i style="width:'+Math.max(0,Math.min(100,o.hp/o.mhp*100))+'%"></i></div> '+o.hp.toLocaleString()+' / '+o.mhp.toLocaleString()+'<br>ばしょ（'+o.x+', '+o.y+'）　ちかくの プレイヤー '+o.np+' にん';}
 setInterval(kjRender,500);
 let MV=[0,0],mvKeys=new Set();
 function mvSend(){adm({a:'move',dx:MV[0],dy:MV[1]});}
 setInterval(()=>{if(MV[0]||MV[1])mvSend();},200);
+let simT=0;setInterval(()=>{const w=D.kjw;if(live()||!w||!w.on||!(MV[0]||MV[1]))return;const l=Math.hypot(MV[0],MV[1]);w.x=Math.round((+w.x+MV[0]/l*0.4)*10)/10;w.y=Math.round((+w.y+MV[1]/l*0.4)*10)/10;w.x=Math.max(-300,Math.min(300,w.x));w.y=Math.max(-230,Math.min(230,w.y));if(++simT%5===0)kjwPub(Object.assign({},w));kjRender();},200);
 function setMv(dx,dy){const was=MV[0]||MV[1];MV=[dx,dy];if(dx||dy||was)mvSend();}
 $('pad').querySelectorAll('button[data-d]').forEach(b=>{const [dx,dy]=b.dataset.d.split(',').map(Number);
   b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('dn');setMv(dx,dy);});
@@ -179,13 +184,13 @@ function keyMv(){let x=0,y=0;for(const k of mvKeys){x+=KM[k][0];y+=KM[k][1];}set
 document.addEventListener('keydown',e=>{if($('app').style.display==='none'||/INPUT|SELECT/.test(document.activeElement.tagName))return;const k=e.key.length===1?e.key.toLowerCase():e.key;
   if(KM[k]){e.preventDefault();if(!mvKeys.has(k)){mvKeys.add(k);keyMv();}return;}if(k===' '){e.preventDefault();adm({a:'skill'});}if(k==='b')adm({a:'smash'});if(k==='r')$('kjRoar').click();});
 document.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;if(KM[k]){mvKeys.delete(k);keyMv();}});
-$('kjGo').onclick=()=>{const on=rows().filter(r=>r.on).length;if(!on){alert('いま あそんでいる プレイヤーが いないので、かいじゅうは でられません');return;}if(D.kj&&Date.now()-D.kjAt<3000){alert('もう かいじゅうが あばれています');return;}
+$('kjGo').onclick=()=>{if(live()||(D.kjw&&D.kjw.on)){alert('もう かいじゅうが でています（さきに「かえる」で かえらせてね）');return;}
   if(!confirm($('kjT').selectedOptions[0].text+' に '+$('kjK').selectedOptions[0].text+' を しゅつげき させますか？'))return;
-  const n=adm({a:'spawn',k:$('kjK').value,town:$('kjT').value,hpx:+$('kjH').value});D.kjWait=Date.now();addEv('かんりしゃが '+$('kjK').selectedOptions[0].text+' を '+$('kjT').selectedOptions[0].text+' に しゅつげき させた','👹');if(!n)alert('サーバーに つながっていません');};
+  const sid='a'+Date.now(),T=KJT[$('kjT').value]||KJT.hajimari;kjwPub({on:1,sid,k:$('kjK').value,hpx:+$('kjH').value,x:T[0]+12,y:T[1]+2,hpf:1});const n=adm({a:'spawn',sid,k:$('kjK').value,town:$('kjT').value,hpx:+$('kjH').value});D.kjWait=Date.now();addEv('かんりしゃが '+$('kjK').selectedOptions[0].text+' を '+$('kjT').selectedOptions[0].text+' に しゅつげき させた','👹');if(!n)alert('サーバーに つながっていません');};
 $('kjAtk').onclick=()=>adm({a:'skill'});
 $('kjSmash').onclick=()=>adm({a:'smash'});
 $('kjRoar').onclick=()=>adm({a:'roar',t:$('kjRT').value.trim()||'ガオーーーッ！'});
-$('kjLeave').onclick=()=>{if(confirm('かいじゅうを かえらせますか？'))adm({a:'leave'});};
+$('kjLeave').onclick=()=>{if(confirm('かいじゅうを かえらせますか？')){adm({a:'leave'});kjwPub({on:0});}};
 /* ---- ログイン ---- */
 function start(wc){D.rb=(wc?BASE+'k/'+hashStr(wc)+'/':BASE)+'m5/';$('room').textContent=wc?'ワールド：'+wc:'みんなの ワールド';$('login').style.display='none';$('app').style.display='block';
   for(const u of BROKERS)open1(u);setTimeout(()=>{D.ready=1;},4000);render();setInterval(render,2000);}
