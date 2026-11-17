@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>フテ猫ワールド かんりしゃ</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f4efe6;color:#3a2a1a}
+header{background:#5a3a1a;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0;flex:1}
+.chip{background:rgba(255,255,255,.18);border-radius:999px;padding:3px 10px;font-size:12px}
+.wrap{max-width:1200px;margin:0 auto;padding:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:12px}
+.card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:12px}
+.card h2{font-size:14px;margin:0 0 8px;color:#7a4a1a}
+.big{font-size:28px;font-weight:bold}
+.warn{background:#ffe6e6;border:2px solid #e05060;color:#a01020}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:6px 6px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
+th{background:#faf3e6;cursor:pointer;white-space:nowrap}
+tr.pl{cursor:pointer}tr.pl:hover{background:#fff8ea}
+.on{color:#1a9a3a;font-weight:bold}.off{color:#999}
+.bar{height:6px;background:#eee;border-radius:3px;overflow:hidden;min-width:60px}.bar i{display:block;height:100%;background:#e8344a}
+.log{max-height:260px;overflow:auto;font-size:12px;line-height:1.5}
+.log div{border-bottom:1px dashed #eee;padding:2px 0}
+.tm{color:#999;font-size:11px;margin-right:4px}
+.shi{display:inline-block;padding:1px 6px;border-radius:6px;font-size:11px;margin:1px;background:#eee}
+.shi.b{background:#d8f2d8}.shi.e{background:#ffe0a0}
+#login{max-width:340px;margin:80px auto}
+input,select,button{font-size:15px;padding:8px 10px;border-radius:8px;border:1px solid #c8b8a0}
+button{background:#f08c1a;color:#fff;border:none;font-weight:bold;cursor:pointer}
+button.s{background:#8a6a4a;font-size:12px;padding:5px 9px}
+#detail{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10}
+#detail .card{max-width:520px;width:94%;max-height:86vh;overflow:auto}
+dl{display:grid;grid-template-columns:110px 1fr;gap:4px 8px;font-size:13px;margin:0}dt{color:#8a6a4a}dd{margin:0}
+.small{font-size:11px;color:#888}
+</style></head><body>
+<div id="login" class="card">
+  <h2>🔐 フテ猫ワールド かんりしゃ ログイン</h2>
+  <p class="small">かんりしゃ パスワードを いれてください。</p>
+  <input id="pw" type="password" placeholder="パスワード" style="width:100%;margin-bottom:8px" autocomplete="current-password">
+  <input id="wc" placeholder="ワールドコード（ふつうは からっぽ）" style="width:100%;margin-bottom:8px">
+  <button id="go" style="width:100%">ログイン</button>
+  <div id="lerr" style="color:#c02030;margin-top:8px;font-size:13px"></div>
+</div>
+<div id="app" style="display:none">
+<header><h1>🐱 フテ猫ワールド かんりしゃ がめん</h1><span class="chip" id="conn">せつぞく ちゅう…</span><span class="chip" id="room"></span><button class="s" id="logout">ログアウト</button></header>
+<div class="wrap">
+  <div class="grid">
+    <div class="card"><h2>👥 オンライン</h2><div class="big" id="onN">0</div><div class="small" id="onL"></div></div>
+    <div class="card" id="capCard"><h2>🏰 おうと フテリア</h2><div id="cap">ふつう</div></div>
+    <div class="card"><h2>⚔️ いま おきている おおきな たたかい</h2><div id="bat" class="small">なし</div></div>
+    <div class="card"><h2>📊 ぜんたい</h2><div id="sum" style="font-size:13px"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px"><h2>🧑‍🤝‍🧑 プレイヤー いちらん <span class="small">（ゆびで タップすると くわしく）</span></h2>
+    <div style="overflow:auto"><table id="tbl"><thead><tr>
+      <th data-k="on">じょうたい</th><th data-k="n">なまえ</th><th data-k="l">Lv</th><th data-k="hp">HP</th><th data-k="g">おかね</th><th data-k="ch">メインクエスト</th><th data-k="sh">してんのう</th><th data-k="area">いる ばしょ</th><th data-k="pet">ペット</th><th data-k="t">さいご</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="small" style="margin-top:6px">※ くわしい じょうたい（HP・クエストなど）は v4.03 いこうの ゲームで あそぶと とどきます。</div>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>📜 できごと</h2><div class="log" id="ev"></div></div>
+    <div class="card"><h2>💬 チャット</h2><div class="log" id="chat"></div></div>
+  </div>
+</div></div>
+<div id="detail"><div class="card"><div id="dbody"></div><button class="s" id="dclose" style="margin-top:10px">とじる</button></div></div>
+<script>
+const META={"nm": {"slime": "スライム", "mush": "キノコン", "wolf": "オオカミ", "goblin": "ゴブリン", "golem": "ゴーレム", "bigmush": "ドクキノコン", "ginrou": "ギンロウ", "gobking": "ゴブリンキング", "king": "キングスライム", "dragon": "ドラゴン", "umislime": "うみスライム", "kaizoku": "かいぞくゴブリン", "senchou": "かいぞくせんちょう", "yamigob": "やみゴブリン", "yureislime": "ゆうれいスライム", "isekigolem": "いせきゴーレム", "maou": "いせきのまおう", "yukislime": "ゆきスライム", "yukiwolf": "ゆきオオカミ", "icegolem": "こおりゴーレム", "gansekin": "だいかいじゅう ガンセキング", "leafslime": "はっぱスライム", "hanaslime": "はなスライム", "crysslime": "すいしょうスライム", "crysgolem": "すいしょうゴーレム", "crysguard": "すいしょうの しゅごしゃ", "kusaslime": "くさはらスライム", "sunaslime": "すなスライム", "norawolf": "のらオオカミ", "akagob": "あかゴブリン", "morislime": "もりスライム", "kurowolf": "くろオオカミ", "morigob": "もりの ゴブリン", "kokegolem": "こけゴーレム", "koorislime": "こおりスライム", "ginwolf": "ぎんいろオオカミ", "yukigob": "ゆきゴブリン", "takagolem": "たかねゴーレム", "dokuslime": "どくスライム", "akawolf": "あかオオカミ", "iwagolem": "いわゴーレム", "yoganslime": "ようがんスライム", "hinowolf": "ひのオオカミ", "yogangolem": "ようがんゴーレム", "kazanryu": "かざんの ほのおりゅう", "hinodragon": "ほのおの ドラゴン", "iwadragon": "いわやまの ドラゴン", "hanabachi": "はなミツバチ", "tanekoron": "たねころん", "ohanabachi": "おおハナバチ", "nijiyado": "にじいろヤドカリ", "cocokani": "ココナッツガニ", "yashigani": "おおヤシガニ", "sunamogu": "すなもぐり", "pukakurage": "ぷかクラゲ", "ohyado": "おおヤドカリ", "hasamikani": "はさみガニ", "uzutako": "うずしおタコ", "suishobat": "すいしょうコウモリ", "hikariyado": "ひかりヤドカリ", "tobiuo": "とびうおだん", "gargoyle": "ガーゴイル", "kagemage": "かげの まほうつかい", "kirigolem": "きりの ゴーレム", "kiriwolf": "ミストウルフ", "demslime": "やみスライム", "hellwolf": "ヘルハウンド", "demgolem": "デーモンゴーレム", "shi_fire": "ほのおの してんのう イグニス", "shi_ice": "こおりの してんのう グラシア", "shi_wind": "かぜの してんのう テンペスト", "shi_dark": "やみの してんのう ネクロ", "daimaou": "だいまおう ノクス", "kyojin": "こおりのきょじん", "seaserpent": "シーサーペント", "kaizokubune": "かいぞくの こぶね", "seadragon": "シードラゴン", "kaizokute": "かいぞくの てした", "kaizokuho": "かいぞくの ほうげきしゅ", "kaizokuou": "かいぞくおう ブラックひげ", "ikarigani": "だいかいじゅう イカリガニ", "morinonushi": "だいかいじゅう モリノヌシ"}, "boss": ["bigmush", "crysguard", "daimaou", "dragon", "gansekin", "ginrou", "gobking", "hinodragon", "ikarigani", "iwadragon", "kaizokuou", "kazanryu", "king", "kyojin", "maou", "morinonushi", "ohanabachi", "ohyado", "senchou", "shi_dark", "shi_fire", "shi_ice", "shi_wind", "yashigani"], "salt": "7e715d0afd72a328", "h": "9785a01e5b6a2221354283214c7223cecb3723309cb08a9766a7aaee2bbfe68d"};
+const BASE='futeneko-world/g0330/w1/';
+const BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt'];
+const CH={fute:'フテ猫',kuro:'クロネコ',chappy:'チャッピー',papa:'おとうさん',mama:'おかあさん',akari:'あかりちゃん'};
+const CHAP=['おうさまからの てがみ','みっつの まちを たずねよう','いわやまの ドラゴンを たおせ！','うみの むこうの すいしょう島','エルフの もりと せいれいの かご','ドワーフの おうこく','せいけん エクスカリバー','ドラゴンと ともに','まおうの してんのう','きたにしの しろと ふたつの とう'];
+const SHI=[['shi_fire','ほのお'],['shi_ice','こおり'],['shi_wind','かぜ'],['shi_dark','やみ']];
+const PETN={fire:'ほのお',ice:'こおり',rock:'いわ',wind:'かぜ'};
+const EVN={start:'たたかいが はじまった',war:'こおりの ぐんたいが せめてきた',fall:'おうとが せんりょう された',ewar:'エルフの むらに ゴーレムが しんぐん',nsplit:'ネクロが ぶんしん',nfall:'ネクロの かたほうを たおした',nrev:'ネクロが ふたたび ぶんしん',nwin:'ネクロを どうじに たおした',bossin:'ボスが あらわれた'};
+const te=new TextEncoder(),td=new TextDecoder();
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function hashStr(t){let h=2166136261;for(const ch of t){h^=ch.codePointAt(0);h=Math.imul(h,16777619)>>>0;}return h.toString(36);}
+async function sha(s){const b=await crypto.subtle.digest('SHA-256',te.encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+const D={reg:{},stat:{},pres:{},bat:{},ev:[],chat:[],cx:[],rb:'',sort:'on',desc:true,dup:new Map()};
+/* ---- MQTT ---- */
+function mqStr(s){const b=te.encode(s);const o=new Uint8Array(b.length+2);o[0]=b.length>>8;o[1]=b.length&255;o.set(b,2);return o;}
+function mqPkt(h,parts){let len=0;parts.forEach(p=>len+=p.length);const rl=[];let x=len;do{let d=x%128;x=Math.floor(x/128);if(x>0)d|=128;rl.push(d);}while(x>0);const o=new Uint8Array(1+rl.length+len);o[0]=h;o.set(rl,1);let i=1+rl.length;parts.forEach(p=>{o.set(p,i);i+=p.length;});return o;}
+function mqSub(t){const parts=[new Uint8Array([0,1])];t.forEach(x=>{parts.push(mqStr(x));parts.push(new Uint8Array([0]));});return mqPkt(0x82,parts);}
+function split(buf,cb){for(;;){if(buf.length<2)return buf;let mul=1,len=0,i=1,dg;do{if(i>=buf.length)return buf;dg=buf[i++];len+=(dg&127)*mul;mul*=128;}while(dg&128);if(buf.length<i+len)return buf;const h=buf[0],body=buf.subarray(i,i+len);buf=buf.slice(i+len);cb(h,body);}}
+function open1(url){let ws;try{ws=new WebSocket(url,['mqtt']);}catch(e){return;}const c={url,ws,ok:false,buf:new Uint8Array(0)};D.cx.push(c);ws.binaryType='arraybuffer';
+  ws.onopen=()=>{const vh=new Uint8Array([0,4,77,81,84,84,4,0x02,0,60]);ws.send(mqPkt(0x10,[vh,mqStr('fwadm_'+Math.random().toString(36).slice(2,10))]));};
+  ws.onmessage=ev=>{const d=new Uint8Array(ev.data);const nb=new Uint8Array(c.buf.length+d.length);nb.set(c.buf);nb.set(d,c.buf.length);c.buf=nb;
+    c.buf=split(c.buf,(h,body)=>{const ty=h>>4;if(ty===2&&body[1]===0){c.ok=true;ws.send(mqSub(['reg/+','stat/+','p/+','wop','kill','chat'].map(x=>D.rb+x)));conn();}
+      else if(ty===3){const tl=(body[0]<<8)|body[1];const topic=td.decode(body.subarray(2,2+tl));let off=2+tl;if((h>>1)&3)off+=2;recv(topic,td.decode(body.subarray(off)));}});};
+  ws.onclose=()=>{const k=D.cx.indexOf(c);if(k>=0)D.cx.splice(k,1);conn();setTimeout(()=>{if(D.rb&&!D.cx.some(x=>x.url===url))open1(url);},8000);};
+  ws.onerror=()=>{try{ws.close();}catch(e){}};}
+setInterval(()=>{for(const c of D.cx)if(c.ok)try{c.ws.send(new Uint8Array([0xc0,0]));}catch(e){}},25000);
+function conn(){const n=D.cx.filter(c=>c.ok).length;$('conn').textContent=n?('🟢 サーバー '+n+'/'+BROKERS.length+' つながっています'):'🔴 つながっていません';}
+function dup(topic,msg){if(topic.endsWith('/p/')||/\/(reg|stat|p)\//.test(topic))return false;const k=topic+'|'+msg;const now=Date.now();if(D.dup.has(k)&&now-D.dup.get(k)<5000)return true;D.dup.set(k,now);if(D.dup.size>500){for(const [kk,t] of D.dup)if(now-t>5000)D.dup.delete(kk);}return false;}
+function J(m){try{return JSON.parse(m);}catch(e){return null;}}
+function addEv(t,ic){D.ev.unshift({at:Date.now(),t,ic:ic||'📜'});D.ev.length=Math.min(D.ev.length,150);}
+function nameOf(pid){return (D.stat[pid]&&D.stat[pid].n)||(D.reg[pid]&&D.reg[pid].n)||(D.pres[pid]&&D.pres[pid].n)||pid;}
+function recv(topic,msg){if(!topic.startsWith(D.rb))return;const t=topic.slice(D.rb.length);if(dup(topic,msg))return;
+  if(t.startsWith('reg/')){const pid=t.slice(4);const o=J(msg);if(!msg||!o){delete D.reg[pid];return;}const old=D.reg[pid];if(!old||(+o.t||0)>=(+old.t||0))D.reg[pid]=o;return;}
+  if(t.startsWith('stat/')){const pid=t.slice(5);const o=J(msg);if(!o)return;const old=D.stat[pid];if(!old||(+o.t||0)>=(+old.t||0))D.stat[pid]=o;return;}
+  if(t.startsWith('p/')){const pid=t.slice(2);const o=J(msg);if(!o)return;if(o.bye){if(D.pres[pid]){D.pres[pid].bye=1;addEv(nameOf(pid)+' が ログアウト','👋');}return;}const was=D.pres[pid]&&!D.pres[pid].bye&&Date.now()-D.pres[pid].seen<30000;D.pres[pid]=Object.assign(o,{seen:Date.now()});if(!was&&D.ready)addEv((o.n||pid)+' が ログイン（Lv'+(o.l||'?')+'）','🟢');return;}
+  if(t==='wop'){const o=J(msg);if(!o||!o.ev)return;const e=o.ev;if(e.s==='bat'){D.bat[e.id]={n:String(e.n||'').slice(0,40),x:e.x,y:e.y,at:Date.now()};return;}
+    const who=o.i?nameOf(o.i):'';const bn=e.id&&META.nm[e.id]?META.nm[e.id]:'';let s=EVN[e.s]||e.s;addEv((bn?bn+'：':'')+s+(e.by?'（'+esc(e.by)+'）':who?'（'+who+'）':''),'⚔️');return;}
+  if(t==='kill'){const o=J(msg);if(!o||!o.ty)return;if(META.boss.includes(o.ty)||/^shi_/.test(o.ty))addEv((META.nm[o.ty]||o.ty)+' が たおされた'+(Array.isArray(o.w)?'（'+o.w.map(nameOf).join('・')+'）':''),'🏆');return;}
+  if(t==='chat'){const o=J(msg);if(!o||typeof o.t!=='string')return;D.chat.unshift({at:Date.now(),n:String(o.n||'').slice(0,8),t:o.t.slice(0,60)});D.chat.length=Math.min(D.chat.length,100);return;}}
+/* ---- がめん ---- */
+function ago(t){if(!t)return '-';const s=(Date.now()-t)/1000;if(s<60)return Math.round(s)+'びょう まえ';if(s<3600)return Math.round(s/60)+'ふん まえ';if(s<86400)return Math.round(s/3600)+'じかん まえ';return Math.round(s/86400)+'にち まえ';}
+function hm(t){const d=new Date(t);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}
+function online(pid){const p=D.pres[pid];return p&&!p.bye&&Date.now()-p.seen<20000;}
+function rows(){const ids=new Set([...Object.keys(D.reg),...Object.keys(D.stat),...Object.keys(D.pres)]);const R=[];
+  for(const pid of ids){const r=D.reg[pid]||{},s=D.stat[pid]||{},p=D.pres[pid]||{};const on=online(pid);
+    R.push({pid,on:on?1:0,n:s.n||p.n||r.n||'?',c:s.c||p.c||r.c,l:+(on&&p.l||s.l||r.l||0),hp:s.hp,mhp:s.mhp,g:s.g,ch:s.ch!=null?s.ch:-1,cn:s.cn,st:s.st,sh:s.sh,area:s.area||'',pet:s.pet,t:Math.max(+r.t||0,+s.t||0,p.seen||0),s,r,p,cf:(on&&p.cf)||0});}
+  return R;}
+function render(){const R=rows();const k=D.sort,dir=D.desc?-1:1;
+  R.sort((a,b)=>{let x=a[k],y=b[k];if(k==='sh'){x=a.sh?Object.values(a.sh).filter(v=>v===1).length:-1;y=b.sh?Object.values(b.sh).filter(v=>v===1).length:-1;}if(k==='pet'){x=a.pet?a.pet.l:-1;y=b.pet?b.pet.l:-1;}if(x==null)x=-1;if(y==null)y=-1;if(x<y)return -dir;if(x>y)return dir;return b.t-a.t;});
+  const on=R.filter(r=>r.on);$('onN').textContent=on.length+' にん';$('onL').innerHTML=on.map(r=>esc(r.n)).join('・')||'だれも いません';
+  const occ=R.filter(r=>r.cf);const cc=$('capCard');cc.classList.toggle('warn',occ.length>0);$('cap').innerHTML=occ.length?'⚠️ <b>せんりょう ちゅう</b>（まおうぐん・まもの Lv80）<br><span class="small">'+occ.map(r=>esc(r.n)).join('・')+' の クエストで せんりょう された</span>':'✅ へいわ';
+  const now=Date.now();const B=Object.values(D.bat).filter(b=>now-b.at<25000);$('bat').innerHTML=B.length?B.map(b=>'<div>'+esc(b.n)+' <span class="small">（'+Math.round(b.x/32)+', '+Math.round(b.y/32)+'）</span></div>').join(''):'なし';
+  const tot=R.length,act7=R.filter(r=>now-r.t<7*864e5).length;const sb={};for(const [id] of SHI)sb[id]=R.filter(r=>r.sh&&r.sh[id]===1).length;
+  const lv=R.map(r=>r.l).filter(Boolean);
+  $('sum').innerHTML='とうろく プレイヤー：<b>'+tot+'</b> にん（1しゅうかん いないに あそんだ ひと '+act7+' にん）<br>さいこう レベル：<b>'+(lv.length?Math.max(...lv):'-')+'</b><br>してんのうを たおした ひと：'+SHI.map(([id,n])=>n+' '+sb[id]).join('／');
+  const tb=$('tbl').querySelector('tbody');
+  tb.innerHTML=R.map(r=>{const sh=r.sh?SHI.map(([id,n])=>'<span class="shi '+(r.sh[id]===1?'b':r.sh[id]===2?'e':'')+'">'+n+(r.sh[id]===1?'✓':r.sh[id]===2?'⚔':'')+'</span>').join(''):'<span class="small">-</span>';
+    const hp=r.mhp?'<div class="bar"><i style="width:'+Math.max(0,Math.min(100,r.hp/r.mhp*100))+'%"></i></div><span class="small">'+r.hp+'/'+r.mhp+'</span>':'-';
+    const q=r.ch>=0?'<b>だい'+(r.ch+1)+'わ</b> '+esc(r.cn||CHAP[r.ch]||'')+'<br><span class="small">'+esc(r.st||'')+'</span>':'<span class="small">-</span>';
+    return '<tr class="pl" data-pid="'+esc(r.pid)+'"><td class="'+(r.on?'on':'off')+'">'+(r.on?'● オンライン':'○ オフライン')+(r.cf?' 🏰⚠️':'')+'</td><td><b>'+esc(r.n)+'</b><br><span class="small">'+esc(CH[r.c]||r.c||'')+'</span></td><td>'+(r.l||'-')+'</td><td>'+hp+'</td><td>'+(r.g!=null?r.g.toLocaleString()+'G':'-')+'</td><td>'+q+'</td><td>'+sh+'</td><td>'+esc(r.area)+'</td><td>'+(r.pet?esc(r.pet.n)+'<br><span class="small">'+(r.pet.e?'たまご':(PETN[r.pet.k]||r.pet.k)+' Lv'+r.pet.l)+'</span>':'-')+'</td><td class="small">'+ago(r.t)+'</td></tr>';}).join('');
+  $('ev').innerHTML=D.ev.map(e=>'<div><span class="tm">'+hm(e.at)+'</span>'+e.ic+' '+esc(e.t)+'</div>').join('')||'<span class="small">まだ ありません（この がめんを ひらいてからの できごとが でます）</span>';
+  $('chat').innerHTML=D.chat.map(e=>'<div><span class="tm">'+hm(e.at)+'</span><b>'+esc(e.n)+'</b>：'+esc(e.t)+'</div>').join('')||'<span class="small">まだ ありません</span>';
+  if(D.open)detail(D.open);}
+function detail(pid){D.open=pid;const r=rows().find(x=>x.pid===pid);if(!r)return;const s=r.s,p=r.p,g=r.r;
+  const L=[['じょうたい',r.on?'● オンライン':'○ オフライン（'+ago(r.t)+'）'],['なまえ',r.n],['キャラ',CH[r.c]||r.c],['レベル',r.l],['HP',s.mhp?s.hp+' / '+s.mhp:'-'],['けいけんち',s.ex!=null?s.ex:'-'],['おかね',s.g!=null?s.g.toLocaleString()+' G':'-'],['ぶき',s.w||'-'],
+    ['メインクエスト',s.ch!=null?'だい'+(s.ch+1)+'わ「'+(s.cn||'')+'」':'-'],['いま やること',s.st||'-'],['してんのう',s.sh?SHI.map(([id,n])=>n+'：'+(s.sh[id]===1?'たおした':s.sh[id]===2?'たたかい ちゅう':'まだ')).join('<br>'):'-'],
+    ['おうと',s.cf?'⚠️ せんりょう された まま（レジスタンス '+(s.res||0)+'/3）':'ふつう'],['たおした ボス',s.bt?s.bn+' / '+s.bt:'-'],['ペット',s.pet?esc(s.pet.n)+'（'+(s.pet.e?'たまご':(PETN[s.pet.k]||s.pet.k)+'の ドラゴン Lv'+s.pet.l)+'）'+(s.rid?' 🐉のって とんでいる':''):'-'],
+    ['いる ばしょ',(s.area||'-')+(s.x!=null?' <span class="small">（'+s.x+', '+s.y+'）</span>':'')],['ゲームの にっすう',s.d?s.d+'にちめ':'-'],['バージョン',(r.on&&p.v)||s.v||'-'],['パスワード',g.h?'あり':'なし'],['はじめた ひ',g.f?new Date(+g.f).toLocaleDateString('ja-JP'):'-'],['じょうたいの こうしん',s.t?ago(s.t):'まだ とどいていません'],['ID',pid]];
+  $('dbody').innerHTML='<h2>🧑 '+esc(r.n)+'</h2><dl>'+L.map(([a,b])=>'<dt>'+a+'</dt><dd>'+(typeof b==='string'&&b.includes('<')?b:esc(b))+'</dd>').join('')+'</dl>';$('detail').style.display='flex';}
+$('dclose').onclick=()=>{D.open=null;$('detail').style.display='none';};
+$('detail').onclick=e=>{if(e.target.id==='detail')$('dclose').onclick();};
+$('tbl').querySelector('thead').onclick=e=>{const k=e.target.dataset.k;if(!k)return;if(D.sort===k)D.desc=!D.desc;else{D.sort=k;D.desc=k!=='n'&&k!=='area';}render();};
+$('tbl').querySelector('tbody').onclick=e=>{const tr=e.target.closest('tr.pl');if(tr)detail(tr.dataset.pid);};
+/* ---- ログイン ---- */
+function start(wc){D.rb=(wc?BASE+'k/'+hashStr(wc)+'/':BASE)+'m5/';$('room').textContent=wc?'ワールド：'+wc:'みんなの ワールド';$('login').style.display='none';$('app').style.display='block';
+  for(const u of BROKERS)open1(u);setTimeout(()=>{D.ready=1;},4000);render();setInterval(render,2000);}
+async function login(){const pw=$('pw').value.trim();if(!pw){$('lerr').textContent='パスワードを いれてね';return;}
+  let h='';try{h=await sha(META.salt+':'+pw);}catch(e){$('lerr').textContent='この ブラウザでは つかえません';return;}
+  if(h!==META.h){$('lerr').textContent='パスワードが ちがいます';$('pw').value='';return;}
+  try{sessionStorage.setItem('fwadm',h);sessionStorage.setItem('fwadmwc',$('wc').value.trim());}catch(e){}start($('wc').value.trim());}
+$('go').onclick=login;$('pw').onkeydown=e=>{if(e.key==='Enter')login();};
+$('logout').onclick=()=>{try{sessionStorage.removeItem('fwadm');}catch(e){}location.reload();};
+try{if(sessionStorage.getItem('fwadm')===META.h)start(sessionStorage.getItem('fwadmwc')||'');}catch(e){}
+</script></body></html>
