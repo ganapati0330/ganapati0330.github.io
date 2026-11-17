@@ -138,7 +138,7 @@ function rows(){const ids=new Set([...Object.keys(D.reg),...Object.keys(D.stat),
 function render(){const R=rows();const k=D.sort,dir=D.desc?-1:1;
   R.sort((a,b)=>{let x=a[k],y=b[k];if(k==='sh'){x=a.sh?Object.values(a.sh).filter(v=>v===1).length:-1;y=b.sh?Object.values(b.sh).filter(v=>v===1).length:-1;}if(k==='pet'){x=a.pet?a.pet.l:-1;y=b.pet?b.pet.l:-1;}if(x==null)x=-1;if(y==null)y=-1;if(x<y)return -dir;if(x>y)return dir;return b.t-a.t;});
   const on=R.filter(r=>r.on);$('onN').textContent=on.length+' にん';$('onL').innerHTML=on.map(r=>esc(r.n)).join('・')||'だれも いません';
-  const occ=R.filter(r=>r.cf);const cc=$('capCard');cc.classList.toggle('warn',occ.length>0);$('cap').innerHTML=occ.length?'⚠️ <b>せんりょう ちゅう</b>（まおうぐん・まもの Lv80）<br><span class="small">'+occ.map(r=>esc(r.n)).join('・')+' の クエストで せんりょう された</span>':'✅ へいわ';
+  const occ=R.filter(r=>r.cf);const cc=$('capCard');cc.classList.toggle('warn',occ.length>0);$('cap').innerHTML=occ.length?'⚠️ <b>せんりょう ちゅう</b>（まおうぐん・まもの Lv75）<br><span class="small">'+occ.map(r=>esc(r.n)).join('・')+' の クエストで せんりょう された</span>':'✅ へいわ';
   const now=Date.now();const B=Object.values(D.bat).filter(b=>now-b.at<25000);$('bat').innerHTML=B.length?B.map(b=>'<div>'+esc(b.n)+' <span class="small">（'+Math.round(b.x/32)+', '+Math.round(b.y/32)+'）</span></div>').join(''):'なし';
   const tot=R.length,act7=R.filter(r=>now-r.t<7*864e5).length;const sb={};for(const [id] of SHI)sb[id]=R.filter(r=>r.sh&&r.sh[id]===1).length;
   const lv=R.map(r=>r.l).filter(Boolean);
