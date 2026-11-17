@@ -70,13 +70,13 @@ dl{display:grid;grid-template-columns:110px 1fr;gap:4px 8px;font-size:13px;margi
       <div class="kjrow">おそう まち <select id="kjT"><option value="hajimari">はじまりの まち</option><option value="home">みんなの家・はたけ</option><option value="capital">おうと フテリア</option><option value="dwarf">ドワーフの むら</option><option value="elf">エルフの むら</option><option value="vtown">ひのしまの まち</option><option value="wvil">にしのはての むら</option><option value="svil">みなみのおかの むら</option></select>
         <button id="kjGo">👹 しゅつげき！</button> <button id="kjView" style="background:#c0302a">🎮 かいじゅうの がめんで そうさ</button></div>
       <div id="kjst" class="card" style="background:#faf3e6;box-shadow:none">かいじゅうは いません</div>
-      <div class="small" style="margin-top:6px">※ だれも いなくても しゅつげき できます。そのときは まちの そばで まちかまえて、プレイヤーが くると あらわれます（v4.06 いこう）。プレイヤーに たおされると おわり。キーボード：やじるし／WASD で いどう、スペース＝こうげき、B＝たてものを こわす、R＝ほえる</div>
+      <div class="small" style="margin-top:6px">※ だれも いなくても しゅつげき できます。そのときは まちの そばで まちかまえて、プレイヤーが くると あらわれます（v4.06 いこう）。プレイヤーに たおされると おわり。キーボード：やじるし／WASD で いどう、スペース＝こうげき、B＝たてものを こわす、E＝まほう、R＝ほえる</div>
     </div><div>
       <div class="pad" id="pad">
         <button data-d="-1,-1">↖</button><button data-d="0,-1">⬆</button><button data-d="1,-1">↗</button>
         <button data-d="-1,0">⬅</button><button class="c" id="kjAtk">こうげき</button><button data-d="1,0">➡</button>
         <button data-d="-1,1">↙</button><button data-d="0,1">⬇</button><button data-d="1,1">↘</button></div>
-      <div class="acts"><button id="kjSmash">🏚️ たてものを こわす</button><button id="kjRoar">📢 ほえる</button><input id="kjRT" placeholder="ほえる ことば（ガオーーッ！）" style="width:170px;font-size:13px"><button id="kjLeave" style="background:#888">💨 かえる</button></div>
+      <div class="acts"><button id="kjMagic">🔥 まほう</button><button id="kjSmash">🏚️ たてものを こわす</button><button id="kjRoar">📢 ほえる</button><input id="kjRT" placeholder="ほえる ことば（ガオーーッ！）" style="width:170px;font-size:13px"><button id="kjLeave" style="background:#888">💨 かえる</button></div>
     </div></div></div>
   <div class="grid">
     <div class="card"><h2>📜 できごと</h2><div class="log" id="ev"></div></div>
@@ -175,20 +175,21 @@ let MV=[0,0],mvKeys=new Set();
 function mvSend(){adm({a:'move',dx:MV[0],dy:MV[1]});}
 setInterval(()=>{if(MV[0]||MV[1])mvSend();},200);
 let simT=0;setInterval(()=>{const w=D.kjw;if(live()||!w||!w.on||!(MV[0]||MV[1]))return;const l=Math.hypot(MV[0],MV[1]);w.x=Math.round((+w.x+MV[0]/l*0.4)*10)/10;w.y=Math.round((+w.y+MV[1]/l*0.4)*10)/10;w.x=Math.max(-300,Math.min(300,w.x));w.y=Math.max(-230,Math.min(230,w.y));if(++simT%5===0)kjwPub(Object.assign({},w));kjRender();},200);
-function setMv(dx,dy){const was=MV[0]||MV[1];MV=[dx,dy];if(dx||dy||was)mvSend();}
+let LD=[0,0];function setMv(dx,dy){if(dx||dy)LD=[dx,dy];const was=MV[0]||MV[1];MV=[dx,dy];if(dx||dy||was)mvSend();}
 $('pad').querySelectorAll('button[data-d]').forEach(b=>{const [dx,dy]=b.dataset.d.split(',').map(Number);
   b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('dn');setMv(dx,dy);});
   const up=()=>{b.classList.remove('dn');setMv(0,0);};b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up);});
 const KM={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
 function keyMv(){let x=0,y=0;for(const k of mvKeys){x+=KM[k][0];y+=KM[k][1];}setMv(Math.sign(x),Math.sign(y));}
 document.addEventListener('keydown',e=>{if($('app').style.display==='none'||/INPUT|SELECT/.test(document.activeElement.tagName))return;const k=e.key.length===1?e.key.toLowerCase():e.key;
-  if(KM[k]){e.preventDefault();if(!mvKeys.has(k)){mvKeys.add(k);keyMv();}return;}if(k===' '){e.preventDefault();adm({a:'skill'});}if(k==='b')adm({a:'smash'});if(k==='r')$('kjRoar').click();});
+  if(KM[k]){e.preventDefault();if(!mvKeys.has(k)){mvKeys.add(k);keyMv();}return;}if(k===' '){e.preventDefault();adm({a:'skill'});}if(k==='b')adm({a:'smash'});if(k==='e'||k==='f')$('kjMagic').click();if(k==='r')$('kjRoar').click();});
 document.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;if(KM[k]){mvKeys.delete(k);keyMv();}});
 $('kjGo').onclick=()=>{if(live()||(D.kjw&&D.kjw.on)){alert('もう かいじゅうが でています（さきに「かえる」で かえらせてね）');return;}
   if(!confirm($('kjT').selectedOptions[0].text+' に '+$('kjK').selectedOptions[0].text+' を しゅつげき させますか？'))return;
   const sid='a'+Date.now(),T=KJT[$('kjT').value]||KJT.hajimari;kjwPub({on:1,sid,k:$('kjK').value,hpx:+$('kjH').value,x:T[0]+12,y:T[1]+2,hpf:1});const n=adm({a:'spawn',sid,k:$('kjK').value,town:$('kjT').value,hpx:+$('kjH').value});D.kjWait=Date.now();setTimeout(()=>{if(confirm('かいじゅうの がめんに うつって そうさ しますか？'))location.href='index.html?kaiju=1';},300);addEv('かんりしゃが '+$('kjK').selectedOptions[0].text+' を '+$('kjT').selectedOptions[0].text+' に しゅつげき させた','👹');if(!n)alert('サーバーに つながっていません');};
 $('kjView').onclick=()=>{location.href='index.html?kaiju=1';};
 $('kjAtk').onclick=()=>adm({a:'skill'});
+$('kjMagic').onclick=()=>adm({a:'magic',dx:LD[0],dy:LD[1]});
 $('kjSmash').onclick=()=>adm({a:'smash'});
 $('kjRoar').onclick=()=>adm({a:'roar',t:$('kjRT').value.trim()||'ガオーーーッ！'});
 $('kjLeave').onclick=()=>{if(confirm('かいじゅうを かえらせますか？')){adm({a:'leave'});kjwPub({on:0});}};
