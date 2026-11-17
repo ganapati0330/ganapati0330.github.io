@@ -68,7 +68,7 @@ dl{display:grid;grid-template-columns:110px 1fr;gap:4px 8px;font-size:13px;margi
       <div class="kjrow">かいじゅう <select id="kjK"><option value="gansekin">ガンセキング</option><option value="ikarigani">イカリガニ</option><option value="morinonushi">モリノヌシ</option></select>
         つよさ <select id="kjH"><option value="1">ふつう</option><option value="2">つよい（HP×2）</option><option value="3">すごく つよい（HP×3）</option></select></div>
       <div class="kjrow">おそう まち <select id="kjT"><option value="hajimari">はじまりの まち</option><option value="home">みんなの家・はたけ</option><option value="capital">おうと フテリア</option><option value="dwarf">ドワーフの むら</option><option value="elf">エルフの むら</option><option value="vtown">ひのしまの まち</option><option value="wvil">にしのはての むら</option><option value="svil">みなみのおかの むら</option></select>
-        <button id="kjGo">👹 しゅつげき！</button></div>
+        <button id="kjGo">👹 しゅつげき！</button> <button id="kjView" style="background:#c0302a">🎮 かいじゅうの がめんで そうさ</button></div>
       <div id="kjst" class="card" style="background:#faf3e6;box-shadow:none">かいじゅうは いません</div>
       <div class="small" style="margin-top:6px">※ だれも いなくても しゅつげき できます。そのときは まちの そばで まちかまえて、プレイヤーが くると あらわれます（v4.06 いこう）。プレイヤーに たおされると おわり。キーボード：やじるし／WASD で いどう、スペース＝こうげき、B＝たてものを こわす、R＝ほえる</div>
     </div><div>
@@ -186,7 +186,8 @@ document.addEventListener('keydown',e=>{if($('app').style.display==='none'||/INP
 document.addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;if(KM[k]){mvKeys.delete(k);keyMv();}});
 $('kjGo').onclick=()=>{if(live()||(D.kjw&&D.kjw.on)){alert('もう かいじゅうが でています（さきに「かえる」で かえらせてね）');return;}
   if(!confirm($('kjT').selectedOptions[0].text+' に '+$('kjK').selectedOptions[0].text+' を しゅつげき させますか？'))return;
-  const sid='a'+Date.now(),T=KJT[$('kjT').value]||KJT.hajimari;kjwPub({on:1,sid,k:$('kjK').value,hpx:+$('kjH').value,x:T[0]+12,y:T[1]+2,hpf:1});const n=adm({a:'spawn',sid,k:$('kjK').value,town:$('kjT').value,hpx:+$('kjH').value});D.kjWait=Date.now();addEv('かんりしゃが '+$('kjK').selectedOptions[0].text+' を '+$('kjT').selectedOptions[0].text+' に しゅつげき させた','👹');if(!n)alert('サーバーに つながっていません');};
+  const sid='a'+Date.now(),T=KJT[$('kjT').value]||KJT.hajimari;kjwPub({on:1,sid,k:$('kjK').value,hpx:+$('kjH').value,x:T[0]+12,y:T[1]+2,hpf:1});const n=adm({a:'spawn',sid,k:$('kjK').value,town:$('kjT').value,hpx:+$('kjH').value});D.kjWait=Date.now();setTimeout(()=>{if(confirm('かいじゅうの がめんに うつって そうさ しますか？'))location.href='index.html?kaiju=1';},300);addEv('かんりしゃが '+$('kjK').selectedOptions[0].text+' を '+$('kjT').selectedOptions[0].text+' に しゅつげき させた','👹');if(!n)alert('サーバーに つながっていません');};
+$('kjView').onclick=()=>{location.href='index.html?kaiju=1';};
 $('kjAtk').onclick=()=>adm({a:'skill'});
 $('kjSmash').onclick=()=>adm({a:'smash'});
 $('kjRoar').onclick=()=>adm({a:'roar',t:$('kjRT').value.trim()||'ガオーーーッ！'});
@@ -197,8 +198,8 @@ function start(wc){D.rb=(wc?BASE+'k/'+hashStr(wc)+'/':BASE)+'m5/';$('room').text
 async function login(){const pw=$('pw').value.trim();if(!pw){$('lerr').textContent='パスワードを いれてね';return;}
   let h='';try{h=await sha(META.salt+':'+pw);}catch(e){$('lerr').textContent='この ブラウザでは つかえません';return;}
   if(h!==META.h){$('lerr').textContent='パスワードが ちがいます';$('pw').value='';return;}
-  try{sessionStorage.setItem('fwadm',h);sessionStorage.setItem('fwadmwc',$('wc').value.trim());}catch(e){}start($('wc').value.trim());}
+  try{sessionStorage.setItem('fwadm',h);sessionStorage.setItem('fwadmwc',$('wc').value.trim());localStorage.setItem('fwadm',h);localStorage.setItem('fwadmwc',$('wc').value.trim());}catch(e){}start($('wc').value.trim());}
 $('go').onclick=login;$('pw').onkeydown=e=>{if(e.key==='Enter')login();};
-$('logout').onclick=()=>{try{sessionStorage.removeItem('fwadm');}catch(e){}location.reload();};
-try{if(sessionStorage.getItem('fwadm')===META.h)start(sessionStorage.getItem('fwadmwc')||'');}catch(e){}
+$('logout').onclick=()=>{try{sessionStorage.removeItem('fwadm');localStorage.removeItem('fwadm');}catch(e){}location.reload();};
+try{if(sessionStorage.getItem('fwadm')===META.h||localStorage.getItem('fwadm')===META.h){localStorage.setItem('fwadm',META.h);start(sessionStorage.getItem('fwadmwc')||localStorage.getItem('fwadmwc')||'');}}catch(e){}
 </script></body></html>
