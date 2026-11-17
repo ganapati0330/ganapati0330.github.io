@@ -2983,6 +2983,7 @@ function cqQuest(L){const q=cqState();if(S.car)return;if(!(q.e||q.st===1||S.cqSe
   const S7=[['ボルトに はなしを きく',e>=1?1:2],['ふなのりから せっけいず',e>2?1:e>=1?2:0],['エルフの ちょうろうから せいれいの いし',e>4?1:e>=3?2:0],['てつの ざいりょうと '+CQ_G+'G',e>5?1:e===5?2:0],['たびびとから ぎんの ハンドル',e>7?1:e>=6?2:0],['ボルトに とどけて かんせい',e===7?2:0]];
   L.push({key:'cq',ic:'🚙',kind:'ドワーフの まちの いらい（おつかい）',t,h:'まおうの しろの まわりは りゅうせいだんが ふって とおれない。てつの くるま「そうこうしゃ」が ひつようだ',rw:'🚙そうこうしゃ',st:S7,nav:()=>e===0||e===2||e===4||e===5||e===7?cqEng():cqWho(e)});}
 /* v3.69 そうこうしゃが ないと りゅうせいだんの ちたいには はいれない */
+function metGateFix(p,ox,oy){if(!metGate())return;const inNow=metZone(Math.floor(p.x/TS),Math.floor(p.y/TS));if(!inNow)return;if(metZone(Math.floor(ox/TS),Math.floor(oy/TS)))return;p.x=ox;p.y=oy;p.kbx=p.kby=0;metBlocked();}
 function metGate(){return G.scene==='out'&&!(S&&S.car)&&!bossBeat('daimaou');}
 function metBlocked(){const now=performance.now();if(!G.metBlkT||now-G.metBlkT>3500){G.metBlkT=now;S.cqSeen=1;const p=G.player;const [dx,dy]=DIRV[p.dir]||[0,-1];const bx=p.x+dx*70,by=p.y+dy*60;burst(bx,by,'#ff9a2a',26);burst(bx,by,'#ffd23f',14);noise(.4,.25,500);G.shake=Math.max(G.shake||0,0.25);floatText(p.x,p.y-60,'☄️ ドカーン！','#ff6a3a',16);
     toast('☄️ りゅうせいだんが はげしくて ちかづけない！ ドワーフの まちの きかいし ボルトに「そうこうしゃ」を つくって もらおう');updateHud(true);}return true;}
@@ -4383,7 +4384,7 @@ function initWorld(){for(const k in WPN_EL)if(ITEMS[k])Object.assign(ITEMS[k],WP
 }
 function collide(x,y,r){
   if(G.scene==='in'){const f=isSolidIn;return f(Math.floor((x-r)/TS),Math.floor((y-r)/TS))||f(Math.floor((x+r)/TS),Math.floor((y-r)/TS))||f(Math.floor((x-r)/TS),Math.floor(y/TS))||f(Math.floor((x+r)/TS),Math.floor(y/TS));}
-  const sf0=G.boatMove?boatSolid:(G.riding&&!G.boatMove)?rideSolid:isSolid;const sf=(G.pMove&&metGate())?((tx,ty)=>sf0(tx,ty)||(metZone(tx,ty)&&!G.pInMet&&metBlocked())):sf0;return sf(Math.floor((x-r)/TS),Math.floor((y-r)/TS))||sf(Math.floor((x+r)/TS),Math.floor((y-r)/TS))||sf(Math.floor((x-r)/TS),Math.floor(y/TS))||sf(Math.floor((x+r)/TS),Math.floor(y/TS));
+  const sf=G.boatMove?boatSolid:(G.riding&&!G.boatMove)?rideSolid:isSolid;return sf(Math.floor((x-r)/TS),Math.floor((y-r)/TS))||sf(Math.floor((x+r)/TS),Math.floor((y-r)/TS))||sf(Math.floor((x-r)/TS),Math.floor(y/TS))||sf(Math.floor((x+r)/TS),Math.floor(y/TS));
 }
 function moveEnt(e,dx,dy,r){
   if(dx&&!collide(e.x+dx,e.y,r))e.x+=dx;
@@ -6417,12 +6418,12 @@ function update(dt){
     if(len>1){mx/=len;my/=len;}
     if(G.pslow>0)G.pslow-=dt;const sp=p.boat?170:G.riding?260:(G.pslow>0?75:120)*(1+eqV('x','spd')/100)*fbMul('spd');
     if(G.scene==='in'&&!(G.rix|0)&&my>0.3){const [,RH]=roomSize();const cx=(doorX()+0.5)*TS;if(p.y>(RH-1)*TS&&Math.abs(p.x-cx)<TS*1.2&&Math.abs(p.x-cx)>1){const st=Math.min(Math.abs(p.x-cx),sp*dt);p.x+=Math.sign(cx-p.x)*st;}}/* v2.16 でぐちに よせる */
-    if(mx||my)p.hd=Math.atan2(my,mx);G.boatMove=!!p.boat;if(!G.onTower)G.pMove=1;G.pInMet=metZone(Math.floor(p.x/TS),Math.floor(p.y/TS));moveEnt(p,mx*sp*dt,my*sp*dt,8);G.pMove=0;G.boatMove=false;
+    if(mx||my)p.hd=Math.atan2(my,mx);G.boatMove=!!p.boat;if(!G.onTower){const ox0=p.x,oy0=p.y;moveEnt(p,mx*sp*dt,my*sp*dt,8);metGateFix(p,ox0,oy0);if(Math.abs(p.x-ox0)+Math.abs(p.y-oy0)<0.01){G.stuckT=(G.stuckT||0)+dt;if(G.stuckT>1.2&&G.scene==='out'&&!p.boat&&!G.riding&&collide(p.x,p.y,8)){G.stuckT=0;const [fx,fy]=freeNear(Math.floor(p.x/TS),Math.floor((p.y-6)/TS));p.x=fx*TS+16;p.y=fy*TS+20;toast('🙌 うごけなく なって いたので、ちかくの ばしょに うごかしたよ');}}else G.stuckT=0;}G.boatMove=false;
     if(p.atkT<=0)p.dir=Math.abs(mx)>Math.abs(my)?(mx>0?'right':'left'):(my>0?'down':'up');
     p.moving=true;p.anim+=dt;
   }else p.moving=false;
   if(G.onTower){p.kbx=p.kby=0;}
-  if(p.kbx||p.kby){G.boatMove=!!p.boat;G.pMove=1;G.pInMet=metZone(Math.floor(p.x/TS),Math.floor(p.y/TS));moveEnt(p,p.kbx*dt,p.kby*dt,8);G.pMove=0;G.boatMove=false;p.kbx*=Math.pow(0.001,dt);p.kby*=Math.pow(0.001,dt);if(Math.abs(p.kbx)<5&&Math.abs(p.kby)<5){p.kbx=p.kby=0;}}
+  if(p.kbx||p.kby){G.boatMove=!!p.boat;{const ox1=p.x,oy1=p.y;moveEnt(p,p.kbx*dt,p.kby*dt,8);metGateFix(p,ox1,oy1);}G.boatMove=false;p.kbx*=Math.pow(0.001,dt);p.kby*=Math.pow(0.001,dt);if(Math.abs(p.kbx)<5&&Math.abs(p.kby)<5){p.kbx=p.kby=0;}}
   p.cd=Math.max(0,p.cd-dt);p.atkT=Math.max(0,p.atkT-dt);p.toolT=Math.max(0,p.toolT-dt);p.inv=Math.max(0,p.inv-dt);statusTick(dt);if(G.barT>0)G.barT-=dt;if(G.regenT>0&&!G.dead){G.regenT-=dt;G.regAcc=(G.regAcc||0)+dt*(2+mag()*0.15);if(G.regAcc>=1){const k=Math.floor(G.regAcc);G.regAcc-=k;if(S.hp<maxHp()){S.hp=Math.min(maxHp(),S.hp+k);if(Math.random()<0.3)G.parts.push({x:p.x+rnd(-10,10),y:p.y-rnd(10,40),vx:0,vy:-30,life:.6,col:'#bff5a0',sz:3,g:-10});}}}
   if(G.held){G.heldT-=dt;if(G.heldT<=0){doAction();G.heldT=0.34;}}
   if(G.scene==='in'){
