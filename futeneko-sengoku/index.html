@@ -24,10 +24,10 @@ button{font-family:inherit;cursor:pointer;}
 .big:active{transform:translateY(4px);box-shadow:0 2px 0 #9a5a08;}
 .ver{position:absolute;bottom:.6%;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,.75);text-shadow:0 1px 2px #000;pointer-events:none;}
 /* セットアップ */
-#setupScreen{flex-direction:column;background:#f6ead2;overflow:hidden;}
-#setupScreen .head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#5a2a1a;color:#ffe8b0;font-weight:bold;font-size:18px;}
-#setupScreen .head button{background:#8a4a2a;color:#fff;border:0;border-radius:10px;padding:8px 14px;font-size:14px;}
-#setupScreen .body{flex:1;overflow-y:auto;padding:12px 14px 90px;touch-action:pan-y;}
+#setupScreen,#clanScreen{flex-direction:column;background:#f6ead2;overflow:hidden;}
+#setupScreen .head,#clanScreen .head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#5a2a1a;color:#ffe8b0;font-weight:bold;font-size:18px;}
+#setupScreen .head button,#clanScreen .head button{background:#8a4a2a;color:#fff;border:0;border-radius:10px;padding:8px 14px;font-size:14px;}
+#setupScreen .body,#clanScreen .body{flex:1;overflow-y:auto;padding:12px 14px 90px;touch-action:pan-y;}
 .sec{background:#fff;border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.08);}
 .sec h3{margin:0 0 8px;font-size:16px;color:#7a3a1a;}
 .row{display:flex;gap:8px;flex-wrap:wrap;}
@@ -96,8 +96,54 @@ button{font-family:inherit;cursor:pointer;}
 .actlbl{font-size:12px;color:#fff;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:8px;}
 .act{background:#2f6fe0;color:#fff;border:0;border-radius:10px;padding:8px 14px;font-size:14px;font-weight:bold;}
 .act.sub{background:#777;}
-#banner{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%) scale(.8);background:rgba(40,25,15,.9);color:#ffe8b0;font-size:clamp(22px,6vw,34px);font-weight:bold;padding:14px 30px;border-radius:16px;opacity:0;pointer-events:none;transition:all .25s;z-index:8;white-space:nowrap;}
+#banner{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) scale(.8);background:rgba(40,25,15,.9);color:#ffe8b0;font-size:clamp(22px,6vw,34px);font-weight:bold;padding:14px 30px;border-radius:16px;opacity:0;pointer-events:none;transition:all .25s;z-index:30;white-space:nowrap;}
 #banner.on{opacity:1;transform:translate(-50%,-50%) scale(1);}
+
+/* 国取り */
+.kmode{display:flex;flex-direction:column;gap:12px;margin:14px 0;}
+.kmode .big{display:flex;flex-direction:column;align-items:center;padding:12px 20px;}
+.kmode .big small{font-size:12px;font-weight:normal;margin-top:2px;}
+.big.alt{background:linear-gradient(#9fd27a,#5aa14a);color:#163a10;box-shadow:0 6px 0 #2f6a28,0 10px 20px rgba(0,0,0,.3);}
+.big.alt2{background:linear-gradient(#e8e0d0,#bfae90);color:#3a2a1a;box-shadow:0 6px 0 #7a6a50,0 10px 20px rgba(0,0,0,.3);}
+.kclan{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:3px solid #ddd;background:#fafafa;border-radius:12px;padding:8px;margin-bottom:8px;position:relative;}
+.kclan.sel{border-color:#e8841e;background:#fff3df;}
+.kcrest{display:inline-flex;align-items:center;justify-content:center;flex:none;width:52px;height:52px;border-radius:50%;border:3px solid #999;background:#fff;color:#fff;font-weight:bold;font-family:serif;font-size:26px;overflow:hidden;}
+.kcrest img{width:120%;margin-top:18%;}
+.kci{flex:1;line-height:1.3;}
+.kci small{display:block;color:#888;font-size:12px;}
+.kci em{display:block;font-style:normal;font-size:12px;color:#555;margin-top:2px;}
+.krec{position:absolute;top:6px;right:8px;background:#e8841e;color:#fff;font-size:11px;padding:1px 8px;border-radius:999px;}
+#mapScreen{background:#3f7fb8;}
+#kcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+#khud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top));background:rgba(40,25,15,.9);color:#fff;font-size:14px;z-index:5;}
+#khud .hrow span{font-size:13px;color:#ffe8b0;}
+#kEndBtn{background:linear-gradient(#ffcf5a,#e8941e);color:#3a2000;}
+#kEndBtn:disabled{opacity:.4;}
+#kbottom{position:absolute;left:0;right:0;bottom:0;z-index:5;background:rgba(40,25,15,.92);color:#fff;padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
+#kLog{font-size:12px;cursor:pointer;background:rgba(255,255,255,.07);border-radius:8px;padding:3px 8px;margin-bottom:6px;min-height:18px;}
+#kLog .lg{padding-right:0;}
+#kInfo{font-size:13px;}
+.kirow{display:flex;align-items:center;gap:8px;}
+.kirow .kcrest{width:34px;height:34px;font-size:18px;}
+.kirow small{color:#ddd;}
+.kunits{color:#ffe8b0;font-size:12px;margin-top:4px;}
+#kActs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+#kActs .act{flex:1;min-width:70px;}
+.act:disabled{opacity:.4;}
+.act.katk{background:#d9452f;}
+.act.kdev{background:#5aa14a;}
+#kBody{text-align:left;font-size:14px;}
+#kBody h4{margin:10px 0 4px;color:#7a3a1a;}
+#kBody .small,.small{font-size:12px;color:#777;}
+.kodds{margin:8px 0;padding:6px 10px;background:#f3ead6;border-radius:8px;font-size:14px;}
+.kodds .g{color:#2f8a2f;}.kodds .y{color:#b08a00;}.kodds .r{color:#d9452f;}
+.kintro{display:flex;gap:12px;align-items:center;}
+.kintro .kcrest{width:72px;height:72px;}
+.khelp{font-size:13px;padding-left:18px;line-height:1.6;}
+.kres{text-align:center;}
+.kres img{height:130px;object-fit:contain;}
+#kBtns{margin-top:12px;}
+#kBtns .act{flex:1;}
 /* 結果・ヘルプ */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;align-items:center;justify-content:center;padding:16px;}
 .modal.on{display:flex;}
@@ -156,6 +202,58 @@ button{font-family:inherit;cursor:pointer;}
   <div class="foot"><button class="big" id="goBtn">しゅつじん！</button></div>
 </div>
 
+
+<div class="modal" id="modeBox"><div class="card">
+  <h2 style="font-size:24px;color:#7a3a1a">あそびかたを えらぶ</h2>
+  <div class="kmode">
+    <button class="big" id="ngBtn">🗾 国取り<small>中国地方を 統一せよ！</small></button>
+    <button class="big alt" id="contBtn">▶ つづきから</button>
+    <button class="big alt2" id="quickBtn">⚔ いっぱつ合戦<small>城を 1つ えらんで すぐ たたかう</small></button>
+  </div>
+  <button class="close" id="modeClose">とじる</button>
+</div></div>
+
+<div id="clanScreen" class="screen">
+  <div class="head"><span>大名を えらぶ（1554年 春）</span><button id="kBackBtn">もどる</button></div>
+  <div class="body">
+    <div class="sec"><h3>① どの 大名で 国取りする？</h3><div id="clanList"></div></div>
+    <div class="sec"><h3>② あなたの かお</h3><div class="row" id="faceList"></div><p class="desc">えらんだ 大名の 大将として 合戦に でます。</p></div>
+    <div class="sec"><h3>③ つよさ</h3>
+      <div class="row">
+        <button class="opt" id="kdif_easy"><b>かんたん</b><small>お金 おおめ・てき おとなしい</small></button>
+        <button class="opt" id="kdif_normal"><b>ふつう</b></button>
+        <button class="opt" id="kdif_hard"><b>むずかしい</b><small>てき つよい・すぐ せめてくる</small></button>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><button class="big" id="kGoBtn">国取り かいし！</button></div>
+</div>
+
+<div id="mapScreen" class="screen">
+  <canvas id="kcv"></canvas>
+  <div id="khud">
+    <div class="hrow"><b id="kDate"></b><span id="kGold"></span><span id="kKoku"></span><span id="kProv"></span></div>
+    <div class="hrow right">
+      <button class="hb" id="kFitBtn" title="ぜんたい">⤢</button>
+      <button class="hb" id="kLogBtn">📜</button>
+      <button class="hb" id="kHelpBtn">?</button>
+      <button class="hb" id="kQuitBtn">✕</button>
+      <button class="hb" id="kEndBtn">きせつを おわる ▶</button>
+    </div>
+  </div>
+  <div id="kbottom">
+    <div id="kLog"></div>
+    <div id="kInfo"></div>
+    <div id="kActs"></div>
+  </div>
+</div>
+
+<div class="modal" id="kBox"><div class="card">
+  <h2 id="kTitle" style="font-size:22px;color:#7a3a1a"></h2>
+  <div id="kBody"></div>
+  <div class="row" id="kBtns"></div>
+</div></div>
+
 <div id="gameScreen" class="screen">
   <canvas id="cv"></canvas>
   <div id="hud">
@@ -167,7 +265,6 @@ button{font-family:inherit;cursor:pointer;}
       <button class="hb" id="endTurnBtn">ターンおわり ▶</button>
     </div>
   </div>
-  <div id="banner"></div>
   <div id="bottom">
     <div id="logLine"></div>
     <div id="infoBox"></div>
@@ -175,11 +272,14 @@ button{font-family:inherit;cursor:pointer;}
   </div>
 </div>
 
+<div id="banner"></div>
+
 <div class="modal" id="resultBox"><div class="card">
   <h2 id="resultTitle"></h2>
   <img id="resultImg" alt="">
   <p id="resultReason"></p>
-  <div class="row"><button class="act" id="againBtn">もういちど</button><button class="act sub" id="toSetupBtn">さくせん</button><button class="act sub" id="toTitleBtn">タイトル</button></div>
+  <div class="row" id="resultBtns"><button class="act" id="againBtn">もういちど</button><button class="act sub" id="toSetupBtn">さくせん</button><button class="act sub" id="toTitleBtn">タイトル</button></div>
+  <div class="row" id="resultBtnsK" style="display:none"><button class="act" id="backMapBtn">🗾 ちずに もどる</button></div>
 </div></div>
 
 <div class="modal" id="logBox"><div class="card">
@@ -197,7 +297,13 @@ button{font-family:inherit;cursor:pointer;}
 
 <div class="modal" id="helpBox"><div class="card help">
   <h2 style="text-align:center;font-size:24px;color:#7a3a1a">あそびかた</h2>
-  <h3>もくてき</h3>
+  <h3>国取り（くにとり）</h3>
+  <ul><li>1554年、中国地方。大名を えらんで、13か国を ぜんぶ とれば <b>統一</b>！ じぶんの 国が なくなると まけ。</li>
+      <li>きせつ（はる・なつ・あき・ふゆ）ごとに、じぶんの 国 1つに つき 1回 めいれい できる：<b>出陣</b>（となりを せめる）・<b>徴兵</b>（お金で へいを ふやす）・<b>内政</b>（石高 +1）・<b>移動</b>（へいを となりの じぶんの 国へ）。</li>
+      <li>お金は まいきせつ 石高ぶん はいる。<b>あきは ねんぐで 3ばい</b>。石見の 銀山は お金が ふえる。</li>
+      <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
+      <li>へったへいは きせつごとに すこし（+2）げんきに なる。1つの 国には 19たいまで。すすみは じどうで ほぞん される。</li></ul>
+  <h3>もくてき（合戦）</h3>
   <ul><li><b>せめる</b>：てきの <b>ほんまる</b>（しろの まんなか）に へいを のせるか、てきの <b>大将</b>を たおせば かち。</li>
       <li><b>まもる</b>：さいごの ターンまで まもりきるか、せめての 大将を たおせば かち。</li>
       <li>ターンの かずは ちずの おおきさで かわる（ちいさい 15・ふつう 20・おおきい 25）。ひきわけは ありません。</li></ul>
@@ -242,7 +348,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v1.7';
+var VERSION = 'v2.0';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -838,16 +944,28 @@ function newGame(opts) {
             chars: {} };
   G.chars[opts.playerSide] = opts.playerChar;
   G.chars[G.cpuSide] = opts.cpuChar;
-  function addArmy(side, army, charId) {
+  function addArmy(side, army, charId, list) {
     G.units.push(makeUnit('taisho', side, charId));
+    if (list) {
+      // 国取り：兵の かず（hp）を ひきついだ へい
+      list.forEach(function (it) { var u = makeUnit(it.type, side, null); u.hp = Math.max(1, Math.min(10, it.hp || 10)); u.ref = it.uid; G.units.push(u); });
+      return;
+    }
     for (var k in army) for (var i = 0; i < army[k]; i++) G.units.push(makeUnit(k, side, null));
   }
-  addArmy(opts.playerSide, opts.playerArmy, opts.playerChar);
-  addArmy(G.cpuSide, opts.cpuArmy, opts.cpuChar);
+  addArmy(opts.playerSide, opts.playerArmy, opts.playerChar, opts.playerUnits);
+  addArmy(G.cpuSide, opts.cpuArmy, opts.cpuChar, opts.cpuUnits);
+  G.generals = opts.generals || null;   // {atk:{name,charId,crest,color}, def:{...}}
+  G.campaign = !!opts.campaign;
   placeArmies(G);
   return G;
 }
 
+// 合戦のあと：生きのこった へい（国取りへ もどす）
+function survivors(G, side) {
+  return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.hp > 0; })
+    .map(function (u) { return { uid: u.ref, type: u.type, hp: u.hp }; });
+}
 function unitsOf(G, side) { return G.units.filter(function (u) { return u.hp > 0 && u.side === side; }); }
 function general(G, side) { for (var i = 0; i < G.units.length; i++) { var u = G.units[i]; if (u.side === side && u.type === 'taisho') return u; } return null; }
 
@@ -1068,6 +1186,370 @@ function aiOrder(G, side) {
 }
 
 
+/* ===== フテ猫 戦国合戦 : 国取り（DOM非依存） ===== */
+
+
+// ---- 大名家（1554年 天文23年 春） ----
+var CLANS = {
+  mori:    { id:'mori',    name:'毛利家', lord:'毛利元就', crest:'毛', color:'#3f9a4a', face:'fute', aggr:1.0,
+             desc:'安芸の 吉田郡山城を 本拠に する 知将。「三本の矢」の おしえで 有名。ここから 中国地方の 統一を めざす！' },
+  sue:     { id:'sue',     name:'陶家（大内）', lord:'陶晴賢', crest:'陶', color:'#7a4aa8', face:'chap', aggr:1.1,
+             desc:'大内家の 実権を にぎる 猛将。周防・長門を おさえる 中国地方 最大の 勢力。' },
+  amago:   { id:'amago',   name:'尼子家', lord:'尼子晴久', crest:'尼', color:'#c9403a', face:'kuro', aggr:1.1,
+             desc:'出雲の 月山富田城に いる 山陰の 雄。かたい 城と 多くの 兵を もつ。' },
+  yoshimi: { id:'yoshimi', name:'吉見家', lord:'吉見正頼', crest:'吉', color:'#a07040', face:null, aggr:0.7,
+             desc:'石見 津和野の 小さな 大名。陶家と 対立している。' },
+  mimura:  { id:'mimura',  name:'三村家', lord:'三村家親', crest:'三', color:'#3a90c0', face:null, aggr:0.8,
+             desc:'備中松山城の 大名。備中を まとめつつある。' },
+  urakami: { id:'urakami', name:'浦上家', lord:'浦上宗景', crest:'浦', color:'#e0902a', face:null, aggr:0.8,
+             desc:'備前 天神山城の 大名。東の いりぐちを まもる。' },
+  yamana:  { id:'yamana',  name:'山名家', lord:'山名豊定', crest:'山', color:'#707a8a', face:null, aggr:0.6,
+             desc:'因幡の 守護。名門だが 力は おとろえ気味。' }
+};
+var CLAN_ORDER = ['mori', 'sue', 'amago', 'yoshimi', 'mimura', 'urakami', 'yamana'];
+
+// ---- 国（地図用の 経度・緯度は めやす） ----
+// castle: CASTLES の id、koku: 石高（万石・めやす）
+var PROVS = [
+  { id:'nagato',  name:'長門',     castleName:'且山城',       castle:'umi',   koku:13, seed:[131.02, 34.24], pin:[130.97, 34.05] },
+  { id:'suo',     name:'周防',     castleName:'大内館',       castle:'hira',   koku:17, seed:[131.62, 34.12], pin:[131.47, 34.18] },
+  { id:'akiw',    name:'安芸西部', castleName:'桜尾城',       castle:'toride',    koku:8,  seed:[132.22, 34.40], pin:[132.33, 34.35] },
+  { id:'aki',     name:'安芸',     castleName:'吉田郡山城',   castle:'yama',   koku:12, seed:[132.72, 34.58], pin:[132.70, 34.67] },
+  { id:'bingo',   name:'備後',     castleName:'神辺城',       castle:'hira',   koku:19, seed:[133.10, 34.70], pin:[133.37, 34.55] },
+  { id:'iwamiw',  name:'石見西部', castleName:'三本松城',     castle:'yama',   koku:6,  seed:[131.92, 34.60], pin:[131.77, 34.47] },
+  { id:'iwamie',  name:'石見東部', castleName:'山吹城',       castle:'toride', koku:5,  seed:[132.42, 34.98], pin:[132.43, 35.11], silver:15 },
+  { id:'izumo',   name:'出雲',     castleName:'月山富田城',   castle:'oo',     koku:19, seed:[132.88, 35.28], pin:[133.19, 35.37] },
+  { id:'hoki',    name:'伯耆',     castleName:'尾高城',       castle:'mizu',   koku:10, seed:[133.62, 35.40], pin:[133.39, 35.40] },
+  { id:'inaba',   name:'因幡',     castleName:'布勢天神山城', castle:'hira',   koku:9,  seed:[134.20, 35.36], pin:[134.17, 35.50] },
+  { id:'mimasaka',name:'美作',     castleName:'高田城',       castle:'nino',   koku:19, seed:[133.86, 35.10], pin:[133.69, 35.09] },
+  { id:'bitchu',  name:'備中',     castleName:'備中松山城',   castle:'yama',   koku:18, seed:[133.64, 34.76], pin:[133.62, 34.81] },
+  { id:'bizen',   name:'備前',     castleName:'天神山城',     castle:'yama',   koku:22, seed:[134.10, 34.82], pin:[134.21, 34.90] }
+];
+var ADJ = {
+  nagato:  ['suo', 'iwamiw'],
+  suo:     ['nagato', 'iwamiw', 'akiw'],
+  iwamiw:  ['nagato', 'suo', 'akiw', 'aki', 'iwamie'],
+  akiw:    ['suo', 'iwamiw', 'aki'],
+  aki:     ['akiw', 'iwamiw', 'iwamie', 'bingo'],
+  iwamie:  ['iwamiw', 'aki', 'bingo', 'izumo'],
+  bingo:   ['aki', 'iwamie', 'izumo', 'hoki', 'bitchu'],
+  izumo:   ['iwamie', 'bingo', 'hoki'],
+  hoki:    ['izumo', 'bingo', 'bitchu', 'mimasaka', 'inaba'],
+  inaba:   ['hoki', 'mimasaka'],
+  mimasaka:['inaba', 'hoki', 'bitchu', 'bizen'],
+  bitchu:  ['bingo', 'hoki', 'mimasaka', 'bizen'],
+  bizen:   ['bitchu', 'mimasaka']
+};
+// 海岸線（めやす）: 中国地方の 本州部分
+var COAST = [
+  [130.92,33.96],[130.86,34.20],[130.88,34.34],[131.10,34.40],[131.40,34.43],[131.60,34.63],[131.84,34.69],[132.08,34.90],[132.22,35.02],
+  [132.45,35.20],[132.63,35.40],[132.70,35.44],[133.00,35.52],[133.32,35.56],[133.33,35.46],[133.65,35.51],[133.98,35.53],
+  [134.23,35.55],[134.36,35.61],[134.50,35.62],[134.52,35.30],[134.42,35.05],[134.36,34.76],[134.30,34.72],[134.13,34.62],[133.95,34.47],
+  [133.65,34.52],[133.50,34.48],[133.38,34.38],[133.20,34.40],[133.08,34.39],[132.92,34.33],[132.55,34.22],[132.45,34.35],[132.30,34.30],
+  [132.22,34.17],[132.10,33.95],[132.08,33.84],[131.90,33.95],[131.57,34.03],[131.25,33.94],[130.97,33.95]
+];
+var PROV_BY = {}; PROVS.forEach(function (p, i) { p.idx = i; PROV_BY[p.id] = p; });
+
+// 開始時の 配置
+var START = {
+  mori:    { gold:150, provs:{ aki:{ ashigaru:6, yumi:2, kiba:1, kosaku:1, ninja:1 }, bingo:{ ashigaru:3, yumi:1, kiba:1 } } },
+  sue:     { gold:200, provs:{ suo:{ ashigaru:5, yumi:2, kiba:2, teppo:1, kosaku:1 }, nagato:{ ashigaru:3, yumi:1, kiba:1 }, akiw:{ ashigaru:3, yumi:2, kosaku:1 }, iwamie:{ ashigaru:3, yumi:1 } } },
+  amago:   { gold:150, provs:{ izumo:{ ashigaru:5, yumi:2, kiba:2, teppo:1, kosaku:1, ninja:1 }, hoki:{ ashigaru:3, yumi:1, kiba:1 }, mimasaka:{ ashigaru:3, yumi:1 } } },
+  yoshimi: { gold:60,  provs:{ iwamiw:{ ashigaru:3, yumi:2, kosaku:1 } } },
+  mimura:  { gold:70,  provs:{ bitchu:{ ashigaru:4, yumi:1, kiba:1 } } },
+  urakami: { gold:80,  provs:{ bizen:{ ashigaru:4, yumi:1, kiba:1, teppo:1 } } },
+  yamana:  { gold:60,  provs:{ inaba:{ ashigaru:3, yumi:2 } } }
+};
+var SEASONS = ['はる', 'なつ', 'あき', 'ふゆ'];
+var SEASONS_K = ['春', '夏', '秋', '冬'];
+var GOLD_PER_COST = 10;      // へいの コスト1 あたりの 金
+var DEVELOP_COST = 50;       // 内政
+var PROV_CAP = 19;           // 1つの 国に おける へいの かず
+var HEAL_PER_SEASON = 2;
+var LUCK_SPREAD = 3.2;
+var CASTLE_MULT = { hira:1.35, toride:1.3, yama:1.45, mizu:1.4, nino:1.45, umi:1.4, oo:1.6 };
+
+function eraName(year) {
+  if (year <= 1554) return '天文' + (year - 1531);
+  if (year <= 1557) return year === 1555 ? '弘治元' : '弘治' + (year - 1554);
+  if (year <= 1569) return year === 1558 ? '永禄元' : '永禄' + (year - 1557);
+  if (year <= 1572) return year === 1570 ? '元亀元' : '元亀' + (year - 1569);
+  return year === 1573 ? '天正元' : '天正' + (year - 1572);
+}
+
+// ---- 乱数 ----
+function cRand(S) { S.rng = (S.rng * 1103515245 + 12345) & 0x7fffffff; return S.rng / 0x7fffffff; }
+
+// ---- 作成 ----
+function newCampaign(opts) {
+  var S = { v: 1, year: 1554, season: 0, turn: 1, player: opts.clan || 'mori', face: opts.face || 'fute', difficulty: opts.difficulty || 'normal',
+            seed: opts.seed || (1 + Math.floor(Math.random() * 1e9)), rng: 0, uid: 1, clans: {}, provs: {}, log: [], over: false, winner: null,
+            phase: 'player', cpu: null };
+  S.rng = S.seed & 0x7fffffff;
+  CLAN_ORDER.forEach(function (cid) {
+    var st = START[cid];
+    var gold = st.gold;
+    if (cid === S.player) gold += S.difficulty === 'easy' ? 100 : S.difficulty === 'hard' ? -40 : 0;
+    S.clans[cid] = { gold: gold, alive: true };
+  });
+  PROVS.forEach(function (p) { S.provs[p.id] = { owner: null, koku: p.koku, units: [], acted: false }; });
+  CLAN_ORDER.forEach(function (cid) {
+    var st = START[cid];
+    for (var pid in st.provs) {
+      var P = S.provs[pid]; P.owner = cid;
+      var a = st.provs[pid];
+      for (var t in a) for (var i = 0; i < a[t]; i++) P.units.push(newUnit(S, t));
+    }
+  });
+  logC(S, eraName(S.year) + '年（' + S.year + '）' + SEASONS_K[S.season] + '。' + CLANS[S.player].lord + 'の 国取りが はじまった！', 'sys');
+  return S;
+}
+function newUnit(S, type) { return { uid: S.uid++, type: type, hp: 10 }; }
+function logC(S, text, kind) { S.log.push({ y: S.year, s: S.season, text: text, kind: kind || 'sys' }); if (S.log.length > 400) S.log.shift(); }
+
+// ---- 便利関数 ----
+function provsOf(S, cid) { return PROVS.filter(function (p) { return S.provs[p.id].owner === cid; }).map(function (p) { return p.id; }); }
+function strength(units) { var s = 0; units.forEach(function (u) { var T = UNIT_TYPES[u.type]; s += (T.atk * 0.6 + T.def * 0.4) * u.hp / 10; }); return s; }
+function defStrength(S, pid) { return strength(S.provs[pid].units) * CASTLE_MULT[PROV_BY[pid].castle] + 1; }
+function isFrontier(S, pid) { var o = S.provs[pid].owner; return ADJ[pid].some(function (q) { return S.provs[q].owner !== o; }); }
+function income(S, cid) {
+  var g = 0;
+  provsOf(S, cid).forEach(function (pid) { g += S.provs[pid].koku * (S.season === 2 ? 3 : 1) + (PROV_BY[pid].silver || 0); });
+  if (cid !== S.player) { if (S.difficulty === 'hard') g = Math.round(g * 1.3); if (S.difficulty === 'easy') g = Math.round(g * 0.8); }
+  return g;
+}
+function totalKoku(S, cid) { var k = 0; provsOf(S, cid).forEach(function (pid) { k += S.provs[pid].koku; }); return k; }
+function totalUnits(S, cid) { var n = 0; provsOf(S, cid).forEach(function (pid) { n += S.provs[pid].units.length; }); return n; }
+function unitCost(type) { return UNIT_TYPES[type].cost * GOLD_PER_COST; }
+function maxKoku(pid) { return Math.round(PROV_BY[pid].koku * 1.5); }
+
+// ---- 季節のはじめ ----
+function seasonStart(S) {
+  CLAN_ORDER.forEach(function (cid) {
+    if (!S.clans[cid].alive) return;
+    S.clans[cid].gold += income(S, cid);
+  });
+  PROVS.forEach(function (p) {
+    var P = S.provs[p.id]; P.acted = false;
+    P.units.forEach(function (u) { u.hp = Math.min(10, u.hp + HEAL_PER_SEASON); });
+  });
+  S.phase = 'player';
+}
+
+// ---- 命令 ----
+function canCommand(S, pid) { var P = S.provs[pid]; return !S.over && S.phase === 'player' && P.owner === S.player && !P.acted; }
+function recruit(S, pid, order) {   // order: {type: count}
+  var P = S.provs[pid], cid = P.owner, cost = 0, n = 0;
+  for (var t in order) { cost += unitCost(t) * order[t]; n += order[t]; }
+  if (n <= 0) return { ok: false, msg: 'へいを えらんでね' };
+  if (cost > S.clans[cid].gold) return { ok: false, msg: 'お金が たりない' };
+  if (P.units.length + n > PROV_CAP) return { ok: false, msg: 'この国には もう はいれない（' + PROV_CAP + 'たいまで）' };
+  S.clans[cid].gold -= cost;
+  for (var t2 in order) for (var i = 0; i < order[t2]; i++) P.units.push(newUnit(S, t2));
+  P.acted = true;
+  return { ok: true, cost: cost, n: n };
+}
+function develop(S, pid) {
+  var P = S.provs[pid], cid = P.owner;
+  if (S.clans[cid].gold < DEVELOP_COST) return { ok: false, msg: 'お金が たりない（' + DEVELOP_COST + '金）' };
+  if (P.koku >= maxKoku(pid)) return { ok: false, msg: 'これいじょう ふやせない' };
+  S.clans[cid].gold -= DEVELOP_COST; P.koku += 1; P.acted = true;
+  return { ok: true };
+}
+function moveUnits(S, from, to, uids) {
+  var A = S.provs[from], B = S.provs[to];
+  if (A.owner !== B.owner || ADJ[from].indexOf(to) < 0) return { ok: false, msg: 'となりの じぶんの 国にだけ うごかせる' };
+  var mv = A.units.filter(function (u) { return uids.indexOf(u.uid) >= 0; });
+  if (!mv.length) return { ok: false, msg: 'へいを えらんでね' };
+  if (B.units.length + mv.length > PROV_CAP) return { ok: false, msg: PROV_CAP + 'たいを こえてしまう' };
+  A.units = A.units.filter(function (u) { return uids.indexOf(u.uid) < 0; });
+  B.units = B.units.concat(mv); A.acted = true;
+  return { ok: true, n: mv.length };
+}
+// 出陣の じゅんび（へいを 国から とりだす）
+function makeBattle(S, from, to, uids) {
+  var A = S.provs[from], B = S.provs[to];
+  var atk = A.units.filter(function (u) { return uids.indexOf(u.uid) >= 0; });
+  return { from: from, to: to, atkClan: A.owner, defClan: B.owner, atkUnits: atk.map(cloneU), defUnits: B.units.map(cloneU), castle: PROV_BY[to].castle };
+}
+function cloneU(u) { return { uid: u.uid, type: u.type, hp: u.hp }; }
+function startBattle(S, b) {
+  var A = S.provs[b.from];
+  var ids = b.atkUnits.map(function (u) { return u.uid; });
+  A.units = A.units.filter(function (u) { return ids.indexOf(u.uid) < 0; });
+  A.acted = true;
+  S.pendingBattle = b;
+}
+// 合戦の けっか を 国に もどす
+function applyBattle(S, b, res) {
+  var A = S.provs[b.from], B = S.provs[b.to];
+  var atkName = CLANS[b.atkClan].name, defName = b.defClan ? CLANS[b.defClan].name : '';
+  if (res.winner === 'atk') {
+    B.owner = b.atkClan; B.units = res.atkSurv.slice(0, PROV_CAP); B.acted = true;
+    // まけた がわの 生きのこりは となりの 自分の国へ にげる
+    if (b.defClan) {
+      var esc = ADJ[b.to].filter(function (q) { return S.provs[q].owner === b.defClan; });
+      if (esc.length && res.defSurv.length) {
+        var dst = S.provs[esc[0]]; var room = PROV_CAP - dst.units.length;
+        dst.units = dst.units.concat(res.defSurv.slice(0, Math.max(0, room)));
+      }
+    }
+    logC(S, atkName + 'が ' + PROV_BY[b.to].name + '（' + PROV_BY[b.to].castleName + '）を 攻め落とした！', b.atkClan === S.player ? 'good' : (b.defClan === S.player ? 'bad' : 'sys'));
+  } else {
+    B.units = res.defSurv.slice(0, PROV_CAP);
+    if (A.owner === b.atkClan) { var room2 = PROV_CAP - A.units.length; A.units = A.units.concat(res.atkSurv.slice(0, Math.max(0, room2))); }
+    logC(S, defName + 'が ' + PROV_BY[b.to].name + 'を まもりきった（' + atkName + 'は ひきあげた）', b.defClan === S.player ? 'good' : (b.atkClan === S.player ? 'bad' : 'sys'));
+  }
+  S.pendingBattle = null;
+  checkClans(S);
+}
+function checkClans(S) {
+  CLAN_ORDER.forEach(function (cid) {
+    if (S.clans[cid].alive && provsOf(S, cid).length === 0) {
+      S.clans[cid].alive = false;
+      logC(S, CLANS[cid].name + 'は ほろびた…', cid === S.player ? 'bad' : 'sys');
+    }
+  });
+  if (!S.clans[S.player].alive) { S.over = true; S.winner = null; S.phase = 'over'; }
+  else if (provsOf(S, S.player).length === PROVS.length) { S.over = true; S.winner = S.player; S.phase = 'over'; logC(S, '中国地方を 統一した！', 'good'); }
+}
+
+// ---- おまかせ合戦（すばやく けっかを きめる） ----
+function autoResolve(S, b) {
+  var atk = b.atkUnits.map(cloneU), def = b.defUnits.map(cloneU);
+  var mult = CASTLE_MULT[b.castle] || 1.5;
+  if (!def.length) return { winner: 'atk', atkSurv: atk, defSurv: [] };
+  var start = atk.reduce(function (s, u) { return s + u.hp; }, 0);
+  function power(list) { var p = 0; list.forEach(function (u) { p += UNIT_TYPES[u.type].atk * u.hp / 10; }); return p; }
+  function hit(list, dmg) {
+    while (dmg > 0) {
+      var alive = list.filter(function (u) { return u.hp > 0; }); if (!alive.length) return;
+      var u = alive[Math.floor(cRand(S) * alive.length)];
+      var d = Math.min(u.hp, Math.max(1, Math.round(dmg > 3 ? 3 : dmg))); u.hp -= d; dmg -= d;
+    }
+  }
+  // その合戦の 運・士気（攻め手の いきおい）
+  var luck = Math.exp(((cRand(S) + cRand(S) + cRand(S)) / 3 - 0.5) * LUCK_SPREAD);
+  for (var round = 0; round < 10; round++) {
+    var pa = power(atk) * luck * (0.85 + cRand(S) * 0.3), pd = power(def) * (0.85 + cRand(S) * 0.3);
+    hit(def, pa * 0.55 / mult);
+    hit(atk, pd * 0.55);
+    atk = atk.filter(function (u) { return u.hp > 0; }); def = def.filter(function (u) { return u.hp > 0; });
+    if (!def.length) return { winner: 'atk', atkSurv: atk, defSurv: [] };
+    var now = atk.reduce(function (s, u) { return s + u.hp; }, 0);
+    if (!atk.length || now < start * 0.35) return { winner: 'def', atkSurv: atk, defSurv: def };
+  }
+  return { winner: 'def', atkSurv: atk, defSurv: def };
+}
+
+// ---- CPU 大名 ----
+function cpuThreshold(S, cid) {
+  var base = S.difficulty === 'hard' ? 1.0 : S.difficulty === 'easy' ? 1.4 : 1.22;
+  // お金が あまっている 大名は すこし むりしてでも せめる（にらみあいを やぶる）
+  var rich = Math.max(0.7, 1 - S.clans[cid].gold / 2500);
+  return base * rich / (CLANS[cid].aggr || 1);
+}
+// プレイヤーを せめはじめる ターン（さいしょの ゆうよ）
+function truceTurns(S) { return S.difficulty === 'easy' ? 6 : S.difficulty === 'hard' ? 2 : 4; }
+// 1つの 国の 行動を きめる（返り値: {kind, ...}）
+function cpuDecide(S, pid) {
+  var P = S.provs[pid], cid = P.owner, C = S.clans[cid];
+  var neigh = ADJ[pid];
+  var enemies = neigh.filter(function (q) { return S.provs[q].owner !== cid; });
+  // こうげき
+  if (enemies.length && P.units.length >= 4) {
+    var keepN = Math.max(1, Math.round(P.units.length * 0.25));
+    var sorted = P.units.slice().sort(function (a, b) { return strength([b]) - strength([a]); });
+    var send = sorted.slice(0, P.units.length - keepN);
+    var best = null;
+    enemies.forEach(function (q) {
+      if (S.provs[q].owner === S.player && S.turn <= truceTurns(S)) return;
+      var ratio = strength(send) / defStrength(S, q);
+      var sc = ratio + PROV_BY[q].koku / 60 + (S.provs[q].owner === S.player && S.difficulty === 'hard' ? 0.15 : 0) + cRand(S) * 0.2;
+      if (ratio >= cpuThreshold(S, cid) && (!best || sc > best.sc)) best = { q: q, sc: sc };
+    });
+    // さいしょの 1年は すこし おとなしく
+    if (best && (S.turn > 2 || cRand(S) < 0.4)) return { kind: 'attack', to: best.q, uids: send.map(function (u) { return u.uid; }) };
+  }
+  // 徴兵（前線を 優先）
+  var front = enemies.length > 0;
+  if (P.units.length < PROV_CAP && C.gold >= 20 && (front || P.units.length < 4)) {
+    var budget = Math.floor(C.gold * (front ? 0.7 : 0.4)), order = {}, room = PROV_CAP - P.units.length, cnt = 0;
+    var pref = ['ashigaru', 'yumi', 'ashigaru', 'kiba', 'teppo', 'ashigaru', 'kosaku', 'yumi'];
+    if (cid === 'amago' || cid === 'sue') pref.push('kiba', 'teppo');
+    var guard = 0;
+    while (room > 0 && guard++ < 30) {
+      var t = pref[Math.floor(cRand(S) * pref.length)];
+      if (unitCost(t) > budget) { if (unitCost('ashigaru') > budget) break; t = 'ashigaru'; }
+      order[t] = (order[t] || 0) + 1; budget -= unitCost(t); room--; cnt++;
+    }
+    if (cnt) return { kind: 'recruit', order: order };
+  }
+  // 後方の兵を 前線へ
+  if (!front && P.units.length > 2) {
+    var fr = neigh.filter(function (q) { return S.provs[q].owner === cid && isFrontier(S, q) && S.provs[q].units.length < PROV_CAP - 2; });
+    if (fr.length) {
+      var dst = fr[0], n = Math.min(P.units.length - 2, PROV_CAP - S.provs[dst].units.length);
+      if (n > 0) return { kind: 'move', to: dst, uids: P.units.slice(0, n).map(function (u) { return u.uid; }) };
+    }
+  }
+  if (C.gold >= DEVELOP_COST + 30 && P.koku < maxKoku(pid)) return { kind: 'develop' };
+  return { kind: 'wait' };
+}
+// CPU フェーズ：プレイヤーへの 攻撃が おきたら そこで とまる
+function cpuBegin(S) {
+  S.phase = 'cpu';
+  var queue = [];
+  CLAN_ORDER.forEach(function (cid) {
+    if (cid === S.player || !S.clans[cid].alive) return;
+    provsOf(S, cid).forEach(function (pid) { queue.push(pid); });
+  });
+  // まぜる
+  for (var i = queue.length - 1; i > 0; i--) { var j = Math.floor(cRand(S) * (i + 1)); var tmp = queue[i]; queue[i] = queue[j]; queue[j] = tmp; }
+  S.cpu = { queue: queue };
+}
+function cpuNext(S) {
+  if (S.over) return { type: 'over' };
+  while (S.cpu && S.cpu.queue.length) {
+    var pid = S.cpu.queue.shift();
+    var P = S.provs[pid];
+    if (!P.owner || P.owner === S.player || P.acted || !S.clans[P.owner].alive) continue;
+    var d = cpuDecide(S, pid);
+    if (d.kind === 'attack') {
+      var b = makeBattle(S, pid, d.to, d.uids);
+      startBattle(S, b);
+      if (b.defClan === S.player) {
+        logC(S, CLANS[b.atkClan].lord + 'が ' + PROV_BY[pid].name + 'から ' + PROV_BY[d.to].name + 'に せめてきた！（' + b.atkUnits.length + 'たい）', 'bad');
+        return { type: 'battle', battle: b };
+      }
+      applyBattle(S, b, autoResolve(S, b));
+      if (S.over) return { type: 'over' };
+    } else if (d.kind === 'recruit') recruit(S, pid, d.order);
+    else if (d.kind === 'develop') develop(S, pid);
+    else if (d.kind === 'move') moveUnits(S, pid, d.to, d.uids);
+    P.acted = true;
+  }
+  return { type: 'done' };
+}
+function seasonEnd(S) {
+  S.cpu = null;
+  S.season++; S.turn++;
+  if (S.season > 3) { S.season = 0; S.year++; }
+  seasonStart(S);
+  logC(S, '―― ' + eraName(S.year) + '年 ' + SEASONS_K[S.season] + ' ――', 'sys');
+}
+
+// ---- 合戦の 大きさ・地形のたね ----
+function battleSizeIndex(b) { var m = Math.max(b.atkUnits.length, b.defUnits.length); return m <= 9 ? 0 : m <= 14 ? 1 : 2; }
+function battleSeed(S, pid) { return (S.seed % 100000) * 31 + PROV_BY[pid].idx * 7919 + 1; }
+function castleIndexOf(id) { for (var i = 0; i < CASTLES.length; i++) if (CASTLES[i].id === id) return i; return 0; }
+
+// ---- 保存 ----
+var SAVE_KEY = 'futeneko-sengoku-kunitori-v1';
+function serialize(S) { return JSON.stringify(S); }
+function deserialize(txt) { var S = JSON.parse(txt); if (!S || S.v !== 1) return null; return S; }
+
+
 /* ===== フテ猫 戦国合戦 : UI ===== */
 
 var $ = function (id) { return document.getElementById(id); };
@@ -1079,7 +1561,11 @@ var IMGS = {};
 (function () {
   Object.keys(SPR).forEach(function (k) { var im = new Image(); im.src = SPR[k]; IMGS[k] = im; });
 })();
-function charById(id) { for (var i = 0; i < CHARS.length; i++) if (CHARS[i].id === id) return CHARS[i]; return CHARS[0]; }
+function charById(id) {
+  if (id && id.indexOf('clan:') === 0 && typeof CLANS !== 'undefined') { var c = CLANS[id.slice(5)]; return { id: id, name: c.lord, spr: null, crest: c.crest, color: c.color, win: null, lose: null }; }
+  for (var i = 0; i < CHARS.length; i++) if (CHARS[i].id === id) return CHARS[i]; return CHARS[0];
+}
+function generalName(u) { return (G && G.generals && G.generals[u.side]) ? G.generals[u.side].name : charById(u.charId).name; }
 
 // ---- サウンド（Web Audio） ----
 var AC = null;
@@ -1132,7 +1618,7 @@ var hoverInfo = null;
 
 // ---- 画面切替 ----
 function show(id) {
-  ['title', 'setupScreen', 'gameScreen'].forEach(function (s) { $(s).classList.toggle('on', s === id); });
+  ['title', 'setupScreen', 'gameScreen', 'clanScreen', 'mapScreen'].forEach(function (s) { $(s).classList.toggle('on', s === id); });
 }
 
 // ---- セットアップ画面 ----
@@ -1227,9 +1713,12 @@ function startGame() {
   if (setup.difficulty === 'hard') { cpuArmy.ashigaru += 1; cpuArmy.yumi += 1; }
   G = newGame({ mapIndex: setup.mapIndex, sizeIndex: setup.sizeIndex, mapSeed: setup.mapSeed, playerSide: setup.side, playerChar: setup.playerChar, cpuChar: setup.cpuChar,
                 playerArmy: setup.army, cpuArmy: cpuArmy, difficulty: setup.difficulty });
-  sel = null; reach = null; targets = []; anim = []; phase = 'idle'; hoverInfo = null; LOG = [];
+  beginBattle('かっせん はじまり！ ' + (G.playerSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.castle.name + '・' + G.turnLimit + 'ターン）');
+}
+function beginBattle(intro) {
+  sel = null; reach = null; targets = []; anim = []; phase = 'idle'; hoverInfo = null; LOG = []; undoPos = null; moveAnim = null;
   show('gameScreen');
-  logMsg('かっせん はじまり！ ' + (G.playerSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.castle.name + '・' + G.turnLimit + 'ターン）', 'sys');
+  logMsg(intro, 'sys');
   resize(); startCamera(); lastPanelH = $('bottom').offsetHeight;
   updateHud();
   if (G.side !== G.playerSide) setTimeout(cpuTurn, 600);
@@ -1413,8 +1902,11 @@ function drawUnit(u, x, y) {
     var ch = charById(u.charId);
     ctx.beginPath(); ctx.arc(x, y, rad + 3, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
     ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fillStyle = '#fff6e0'; ctx.fill();
-    var im = IMGS[ch.spr];
-    if (im && im.complete && im.naturalWidth) {
+    var im = ch.spr ? IMGS[ch.spr] : null;
+    if (!ch.spr) {
+      ctx.beginPath(); ctx.arc(x, y, rad - 2, 0, Math.PI * 2); ctx.fillStyle = ch.color || '#888'; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold ' + Math.round(rad * 1.1) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ch.crest || '将', x, y + 1);
+    } else if (im && im.complete && im.naturalWidth) {
       ctx.save(); ctx.beginPath(); ctx.arc(x, y, rad - 1, 0, Math.PI * 2); ctx.clip();
       var sc = (rad * 2.2) / im.naturalHeight, iw = im.naturalWidth * sc, ih = im.naturalHeight * sc;
       ctx.drawImage(im, x - iw / 2, y - rad + 2, iw, ih); ctx.restore();
@@ -1499,7 +1991,7 @@ function updateHud() {
   $('countLbl').textContent = '⚔ せめて ' + ca + '　🏯 まもり ' + cd;
   updateInfo();
 }
-function unitName(u) { return u.type === 'taisho' ? charById(u.charId).name + '（大将）' : UNIT_TYPES[u.type].name; }
+function unitName(u) { return u.type === 'taisho' ? generalName(u) + '（大将）' : UNIT_TYPES[u.type].name; }
 function updateInfo() {
   var box = $('infoBox');
   var u = hoverInfo || sel;
@@ -1795,8 +2287,14 @@ function gameOver() {
   var box = $('resultBox');
   $('resultTitle').textContent = win ? 'しょうり！' : 'はいぼく…';
   $('resultTitle').className = win ? 'win' : 'lose';
-  $('resultImg').src = SPR[win ? ch.win : ch.lose];
+  $('resultImg').src = SPR[(win ? ch.win : ch.lose) || 'fute_joy'];
   $('resultReason').textContent = G.reason + '（ターン ' + G.turn + '）';
+  $('resultBtns').style.display = G.campaign ? 'none' : '';
+  $('resultBtnsK').style.display = G.campaign ? '' : 'none';
+  if (G.campaign) {
+    var me = survivors(G, G.playerSide).length, en = survivors(G, G.cpuSide).length;
+    $('resultReason').textContent += '　のこった へい：みかた ' + me + '／てき ' + en;
+  }
   setTimeout(function () { box.classList.add('on'); (win ? SFX.win : SFX.lose)(); }, 700);
 }
 
@@ -1842,7 +2340,7 @@ function initInput() {
 window.addEventListener('load', function () {
   canvas = $('cv'); ctx = canvas.getContext('2d');
   $('verLbl').textContent = VERSION;
-  $('startBtn').onclick = function () { SFX.tap(); audio(); show('setupScreen'); initSetup(); };
+  $('startBtn').onclick = function () { SFX.tap(); audio(); openModeBox(); };
   $('helpBtn').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
   $('helpBtn2').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
   $('helpClose').onclick = function () { SFX.tap(); $('helpBox').classList.remove('on'); };
@@ -1868,15 +2366,553 @@ window.addEventListener('load', function () {
   $('logLine').onclick = function () { SFX.tap(); openLog(); };
   $('logClose').onclick = function () { SFX.tap(); $('logBox').classList.remove('on'); };
   $('fitBtn').onclick = function () { SFX.tap(); toggleCamera(); };
-  $('quitBtn').onclick = function () { SFX.tap(); if (confirm('タイトルに もどりますか？')) { G = null; show('title'); } };
+  $('quitBtn').onclick = function () {
+    SFX.tap();
+    if (G && G.campaign) {
+      if (G.over) return;
+      if (confirm('ひきあげますか？（この 合戦は まけに なります）')) { G.over = true; G.winner = G.cpuSide; G.reason = 'ひきあげた'; gameOver(); }
+      return;
+    }
+    if (confirm('タイトルに もどりますか？')) { G = null; show('title'); }
+  };
   $('againBtn').onclick = function () { SFX.tap(); $('resultBox').classList.remove('on'); startGame(); };
   $('toTitleBtn').onclick = function () { SFX.tap(); $('resultBox').classList.remove('on'); G = null; show('title'); };
   $('toSetupBtn').onclick = function () { SFX.tap(); $('resultBox').classList.remove('on'); G = null; show('setupScreen'); renderSetup(); };
   initInput();
+  kInit();
   window.addEventListener('resize', function () { if (G) { resize(); fitCamera(); } });
   requestAnimationFrame(loop);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 });
+
+/* ===== フテ猫 戦国合戦 : 国取り 画面 ===== */
+
+var KS = null;            // 国取りの 状態
+var kSel = null;          // えらんでいる 国
+var kMode = 'idle';       // idle / attack / move
+var kMap = { cv: null, ctx: null, W: 0, H: 0, dpr: 1, grid: null, gw: 0, gh: 0, cell: 3, s: 1, x: 0, y: 0, img: null };
+var KK = 260, KLAT = 1.22, KLON0 = 130.75, KLAT0 = 35.72; // 地図の 投影
+var kNew = { clan: 'mori', face: 'fute', difficulty: 'normal' };
+var kCpuRunning = false;
+
+function kProj(lon, lat) { return [(lon - KLON0) * KK, (KLAT0 - lat) * KK * KLAT]; }
+function kSave() { if (!KS) return; try { localStorage.setItem(SAVE_KEY, serialize(KS)); } catch (e) {} }
+function kLoad() { try { var t = localStorage.getItem(SAVE_KEY); return t ? deserialize(t) : null; } catch (e) { return null; } }
+function kHasSave() { var s = kLoad(); return !!(s && !s.over); }
+function kClear() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+function faceOf(cid) {
+  if (cid === KS.player) return KS.face;
+  var f = CLANS[cid].face;
+  if (!f || f === KS.face) return 'clan:' + cid;
+  return f;
+}
+function clanSpr(cid) { var f = faceOf(cid); if (f.indexOf('clan:') === 0) return null; return SPR[charById(f).spr]; }
+function crestHtml(cid, size) {
+  var C = CLANS[cid], sp = KS ? clanSpr(cid) : (C.face ? SPR[charById(C.face).spr] : null);
+  size = size || 40;
+  if (sp) return '<span class="kcrest" style="width:' + size + 'px;height:' + size + 'px;border-color:' + C.color + '"><img src="' + sp + '" alt=""></span>';
+  return '<span class="kcrest" style="width:' + size + 'px;height:' + size + 'px;background:' + C.color + ';border-color:' + C.color + ';font-size:' + Math.round(size * 0.55) + 'px">' + C.crest + '</span>';
+}
+
+// ---- はじめる（モード選び） ----
+function openModeBox() {
+  $('contBtn').style.display = kHasSave() ? '' : 'none';
+  $('modeBox').classList.add('on');
+}
+
+// ---- 大名えらび ----
+function openClanScreen() {
+  $('modeBox').classList.remove('on');
+  show('clanScreen'); renderClanScreen();
+}
+function renderClanScreen() {
+  var box = $('clanList'); box.innerHTML = '';
+  CLAN_ORDER.forEach(function (cid) {
+    var C = CLANS[cid], st = START[cid], np = Object.keys(st.provs).length, nu = 0;
+    for (var p in st.provs) for (var t in st.provs[p]) nu += st.provs[p][t];
+    var b = document.createElement('button'); b.className = 'kclan' + (kNew.clan === cid ? ' sel' : '');
+    var face = cid === kNew.clan ? SPR[charById(kNew.face).spr] : (C.face ? SPR[charById(C.face).spr] : null);
+    b.innerHTML = (face ? '<span class="kcrest" style="border-color:' + C.color + '"><img src="' + face + '" alt=""></span>' : '<span class="kcrest" style="background:' + C.color + ';border-color:' + C.color + '">' + C.crest + '</span>') +
+      '<span class="kci"><b>' + C.lord + '</b><small>' + C.name + '・' + np + 'か国・へい ' + nu + '</small><em>' + C.desc + '</em></span>' +
+      (cid === 'mori' ? '<span class="krec">おすすめ</span>' : '');
+    b.onclick = function () { SFX.tap(); kNew.clan = cid; renderClanScreen(); };
+    box.appendChild(b);
+  });
+  var fb = $('faceList'); fb.innerHTML = '';
+  CHARS.forEach(function (ch) {
+    var b = document.createElement('button'); b.className = 'charbtn small' + (kNew.face === ch.id ? ' sel' : '');
+    b.innerHTML = '<img src="' + SPR[ch.spr] + '" alt=""><span>' + ch.name + '</span>';
+    b.onclick = function () { SFX.tap(); kNew.face = ch.id; renderClanScreen(); };
+    fb.appendChild(b);
+  });
+  ['easy', 'normal', 'hard'].forEach(function (d) { $('kdif_' + d).classList.toggle('sel', kNew.difficulty === d); });
+}
+function startCampaign() {
+  KS = newCampaign({ clan: kNew.clan, face: kNew.face, difficulty: kNew.difficulty });
+  kSel = provsOf(KS, KS.player)[0]; kMode = 'idle';
+  kSave(); openMap();
+  kIntro();
+}
+function kIntro() {
+  var C = CLANS[KS.player];
+  kModal(eraName(KS.year) + '年（' + KS.year + '）はる',
+    '<div class="kintro">' + crestHtml(KS.player, 72) + '<p><b>' + C.lord + '</b>（' + C.name + '）<br>' + C.desc + '</p></div>' +
+    '<ul class="khelp"><li>きせつ ごとに、じぶんの 国に 1つずつ めいれい できる。</li>' +
+    '<li><b>出陣</b>：となりの 国を せめる（合戦 か おまかせ）。<b>徴兵</b>：お金で へいを ふやす。<b>内政</b>：石高を ふやす。<b>移動</b>：へいを となりの 国へ。</li>' +
+    '<li>あきは ねんぐで お金が 3ばい！ 中国地方 13か国を ぜんぶ とれば 統一！</li></ul>',
+    [{ label: 'はじめる', cls: 'act', fn: kCloseModal }]);
+}
+function continueCampaign() {
+  $('modeBox').classList.remove('on');
+  KS = kLoad(); if (!KS) return;
+  kSel = provsOf(KS, KS.player)[0] || null; kMode = 'idle';
+  openMap();
+  if (KS.pendingBattle) kResumeBattle(KS.pendingBattle);
+  else if (KS.phase === 'cpu') kRunCpu();
+}
+
+// ---- 地図 ----
+function openMap() {
+  show('mapScreen');
+  kMap.cv = $('kcv'); kMap.ctx = kMap.cv.getContext('2d');
+  if (!kMap.grid) kBuildGrid();
+  kUpdate(); kResize(); kFit(kWhole); kRender();
+}
+function kBuildGrid() {
+  var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+  var poly = COAST.map(function (p) { var q = kProj(p[0], p[1]); minX = Math.min(minX, q[0]); maxX = Math.max(maxX, q[0]); minY = Math.min(minY, q[1]); maxY = Math.max(maxY, q[1]); return q; });
+  var seeds = PROVS.map(function (p) { return kProj(p.seed[0], p.seed[1]); });
+  var cell = kMap.cell, gw = Math.ceil((maxX + 40) / cell), gh = Math.ceil((maxY + 40) / cell);
+  var grid = new Int8Array(gw * gh).fill(-1);
+  function inside(x, y) { var c = false; for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) { var a = poly[i], b = poly[j]; if (((a[1] > y) !== (b[1] > y)) && (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])) c = !c; } return c; }
+  for (var gy = 0; gy < gh; gy++) for (var gx = 0; gx < gw; gx++) {
+    var x = gx * cell + cell / 2, y = gy * cell + cell / 2;
+    if (!inside(x, y)) continue;
+    var bi = 0, bd = 1e18;
+    for (var k = 0; k < seeds.length; k++) { var dx = x - seeds[k][0], dy = y - seeds[k][1], d = dx * dx + dy * dy; if (d < bd) { bd = d; bi = k; } }
+    grid[gy * gw + gx] = bi;
+  }
+  kMap.grid = grid; kMap.gw = gw; kMap.gh = gh; kMap.poly = poly; kMap.bw = gw * cell; kMap.bh = gh * cell;
+}
+function kResize() {
+  var cv = kMap.cv; kMap.dpr = Math.min(2, window.devicePixelRatio || 1);
+  kMap.W = cv.offsetWidth; kMap.H = cv.offsetHeight;
+  cv.width = Math.round(kMap.W * kMap.dpr); cv.height = Math.round(kMap.H * kMap.dpr);
+}
+function kAvail() { var top = ($('khud').offsetHeight || 60) + 4, bot = ($('kbottom').offsetHeight || 120) + 4; return { top: top, h: Math.max(80, kMap.H - top - bot) }; }
+function kFit(whole) {
+  var a = kAvail(), bw = kMap.bw - 40, bh = kMap.bh - 30;
+  var sFit = Math.min(kMap.W / bw, a.h / bh) * 0.98;
+  kMap.s = sFit;
+  kMap.x = (kMap.W - bw * kMap.s) / 2 - 10 * kMap.s; kMap.y = a.top + (a.h - bh * kMap.s) / 2 - 10 * kMap.s;
+  // たて長の 画面では 大きめに して じぶんの 国を まんなかに
+  if (!whole && KS && kMap.W < a.h * 1.2) {
+    kMap.s = Math.min(a.h / bh * 0.95, sFit * 2.2);
+    var mine = provsOf(KS, KS.player), cx = 0, cy = 0;
+    (mine.length ? mine : [PROVS[0].id]).forEach(function (pid) { var q = kProj(PROV_BY[pid].seed[0], PROV_BY[pid].seed[1]); cx += q[0]; cy += q[1]; });
+    var n = Math.max(1, mine.length); cx /= n; cy /= n;
+    kMap.x = kMap.W / 2 - cx * kMap.s; kMap.y = a.top + a.h / 2 - cy * kMap.s;
+  }
+}
+var kWhole = false;
+function kColorOf(pid) { var o = KS.provs[pid].owner; return o ? CLANS[o].color : '#ccc'; }
+function kTargets() {
+  if (!kSel) return [];
+  if (kMode === 'attack') return ADJ[kSel].filter(function (q) { return KS.provs[q].owner !== KS.player; });
+  if (kMode === 'move') return ADJ[kSel].filter(function (q) { return KS.provs[q].owner === KS.player; });
+  return [];
+}
+function kRender() {
+  if (!KS || !kMap.ctx) return;
+  var c = kMap.ctx, g = kMap.grid, gw = kMap.gw, cell = kMap.cell;
+  c.setTransform(kMap.dpr, 0, 0, kMap.dpr, 0, 0);
+  // 海
+  var grd = c.createLinearGradient(0, 0, 0, kMap.H); grd.addColorStop(0, '#5d9fd0'); grd.addColorStop(1, '#3f7fb8');
+  c.fillStyle = grd; c.fillRect(0, 0, kMap.W, kMap.H);
+  c.save(); c.translate(kMap.x, kMap.y); c.scale(kMap.s, kMap.s);
+  // なみ
+  c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 1.5 / kMap.s;
+  for (var wy = 0; wy < kMap.bh; wy += 34) for (var wx = (wy / 34 % 2) * 30; wx < kMap.bw; wx += 60) { c.beginPath(); c.arc(wx, wy, 8, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }
+  var tg = kTargets();
+  // 国の いろ
+  for (var gy = 0; gy < kMap.gh; gy++) for (var gx = 0; gx < gw; gx++) {
+    var i = g[gy * gw + gx]; if (i < 0) continue;
+    var pid = PROVS[i].id;
+    c.fillStyle = kColorOf(pid);
+    c.fillRect(gx * cell, gy * cell, cell + 0.6, cell + 0.6);
+  }
+  // 国ざかい
+  c.fillStyle = 'rgba(40,25,15,0.55)';
+  for (gy = 0; gy < kMap.gh; gy++) for (gx = 0; gx < gw; gx++) {
+    var a = g[gy * gw + gx]; if (a < 0) continue;
+    var r1 = gx + 1 < gw ? g[gy * gw + gx + 1] : -1, d1 = gy + 1 < kMap.gh ? g[(gy + 1) * gw + gx] : -1;
+    if ((r1 >= 0 && r1 !== a) || (d1 >= 0 && d1 !== a)) c.fillRect(gx * cell, gy * cell, cell, cell);
+  }
+  // えらんだ国・行き先の 光
+  for (gy = 0; gy < kMap.gh; gy++) for (gx = 0; gx < gw; gx++) {
+    var b = g[gy * gw + gx]; if (b < 0) continue;
+    var id = PROVS[b].id;
+    if (id === kSel) { c.fillStyle = 'rgba(255,255,255,0.35)'; c.fillRect(gx * cell, gy * cell, cell, cell); }
+    else if (tg.indexOf(id) >= 0) { c.fillStyle = ((gx + gy) % 4 < 2) ? (kMode === 'attack' ? 'rgba(255,60,40,0.45)' : 'rgba(60,140,255,0.45)') : 'rgba(255,255,255,0.12)'; c.fillRect(gx * cell, gy * cell, cell, cell); }
+  }
+  // 海岸線
+  c.beginPath(); kMap.poly.forEach(function (p, k) { if (k) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.closePath();
+  c.strokeStyle = '#f3e7c6'; c.lineWidth = 3 / kMap.s + 1; c.stroke();
+  // 城・ラベル
+  var fs = Math.max(11, 13 / Math.sqrt(kMap.s));
+  PROVS.forEach(function (p) {
+    var P = KS.provs[p.id], pin = kProj(p.pin[0], p.pin[1]), lab = kProj(p.seed[0], p.seed[1]);
+    // 城
+    c.fillStyle = '#fbf8ef'; c.strokeStyle = '#3d2a1a'; c.lineWidth = 1.5;
+    c.fillRect(pin[0] - 7, pin[1] - 4, 14, 8); c.strokeRect(pin[0] - 7, pin[1] - 4, 14, 8);
+    c.fillStyle = '#3d4f63'; c.beginPath(); c.moveTo(pin[0] - 10, pin[1] - 4); c.lineTo(pin[0], pin[1] - 12); c.lineTo(pin[0] + 10, pin[1] - 4); c.closePath(); c.fill();
+    // 家紋
+    var cr = 15, cx = lab[0], cy = lab[1] - 6;
+    c.beginPath(); c.arc(cx, cy, cr, 0, Math.PI * 2); c.fillStyle = '#fff'; c.fill(); c.lineWidth = 3; c.strokeStyle = CLANS[P.owner].color; c.stroke();
+    var sp = clanSpr(P.owner), im = null;
+    if (sp) { im = kImg(sp); }
+    if (im && im.complete && im.naturalWidth) { c.save(); c.beginPath(); c.arc(cx, cy, cr - 2, 0, Math.PI * 2); c.clip(); var sc = (cr * 2.3) / im.naturalHeight; c.drawImage(im, cx - im.naturalWidth * sc / 2, cy - cr + 1, im.naturalWidth * sc, im.naturalHeight * sc); c.restore(); }
+    else { c.fillStyle = CLANS[P.owner].color; c.font = 'bold 17px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(CLANS[P.owner].crest, cx, cy + 1); }
+    // 国名と 兵の かず
+    c.font = 'bold ' + fs + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'top';
+    c.lineWidth = 4; c.strokeStyle = 'rgba(255,255,255,0.9)'; c.strokeText(p.name, cx, cy + cr + 2); c.fillStyle = '#2b1d14'; c.fillText(p.name, cx, cy + cr + 2);
+    var n = P.units.length;
+    c.beginPath(); c.arc(cx + cr * 0.85, cy - cr * 0.75, 9, 0, Math.PI * 2); c.fillStyle = '#2b1d14'; c.fill();
+    c.fillStyle = '#fff'; c.font = 'bold 11px sans-serif'; c.textBaseline = 'middle'; c.fillText(n, cx + cr * 0.85, cy - cr * 0.75 + 0.5);
+    // まだ めいれい していない じぶんの 国
+    if (P.owner === KS.player && !P.acted && KS.phase === 'player') { c.beginPath(); c.arc(cx - cr * 0.85, cy - cr * 0.75, 6, 0, Math.PI * 2); c.fillStyle = '#ffe24a'; c.fill(); c.strokeStyle = '#7a5a00'; c.lineWidth = 1.5; c.stroke(); }
+  });
+  c.restore();
+}
+var kImgs = {};
+function kImg(src) { if (!kImgs[src]) { var im = new Image(); im.onload = function () { kRender(); }; im.src = src; kImgs[src] = im; } return kImgs[src]; }
+
+// ---- 画面の 情報 ----
+function kUpdate() {
+  if (!KS) return;
+  var me = KS.clans[KS.player];
+  $('kDate').textContent = eraName(KS.year) + '年 ' + SEASONS_K[KS.season];
+  $('kGold').textContent = '💰 ' + me.gold;
+  $('kKoku').textContent = '🌾 ' + totalKoku(KS, KS.player) + '万石';
+  $('kProv').textContent = '🏯 ' + provsOf(KS, KS.player).length + '/' + PROVS.length;
+  $('kEndBtn').disabled = KS.phase !== 'player' || KS.over;
+  var last = KS.log.slice(-2);
+  $('kLog').innerHTML = last.map(function (e) { return '<div class="lg ' + kLogCls(e.kind) + '">' + e.text + '</div>'; }).join('');
+  kInfo();
+  kRender();
+}
+function kLogCls(k) { return k === 'good' ? 'me' : k === 'bad' ? 'cpu' : 'sys'; }
+function unitSummary(units) {
+  var cnt = {}; units.forEach(function (u) { cnt[u.type] = (cnt[u.type] || 0) + 1; });
+  var order = ['ashigaru', 'yumi', 'kiba', 'teppo', 'kosaku', 'ninja'];
+  var s = order.filter(function (t) { return cnt[t]; }).map(function (t) { return UNIT_TYPES[t].name + cnt[t]; }).join(' ');
+  return s || 'へい なし';
+}
+function avgHp(units) { if (!units.length) return 0; return Math.round(units.reduce(function (s, u) { return s + u.hp; }, 0) / units.length * 10) / 10; }
+function kInfo() {
+  var box = $('kInfo');
+  if (KS.phase === 'cpu') { box.innerHTML = '<p class="hint">ほかの 大名が うごいています…</p>'; $('kActs').innerHTML = ''; return; }
+  if (!kSel) { box.innerHTML = '<p class="hint">国を クリックして えらぼう。きいろい ● は まだ めいれい していない 国。</p>'; $('kActs').innerHTML = ''; return; }
+  var p = PROV_BY[kSel], P = KS.provs[kSel], C = CLANS[P.owner];
+  var mine = P.owner === KS.player;
+  var html = '<div class="kirow">' + crestHtml(P.owner, 34) + '<div><b>' + p.name + '</b>　' + p.castleName + '（' + CASTLES[castleIndexOf(p.castle)].kana + '）<br><small>' + C.lord + '（' + C.name + '）・石高 ' + P.koku + '万石' + (p.silver ? '・銀山' : '') + '</small></div></div>';
+  html += '<div class="kunits">へい ' + P.units.length + 'たい（' + unitSummary(P.units) + '）' + (P.units.length ? '　げんき ' + avgHp(P.units) + '/10' : '') + '</div>';
+  if (kMode === 'attack') html += '<p class="hint">あかく 光る 国を クリックして せめる 国を えらぶ</p>';
+  else if (kMode === 'move') html += '<p class="hint">あおく 光る じぶんの 国を クリックして いどう先を えらぶ</p>';
+  else if (mine && P.acted) html += '<p class="hint">この 国は もう めいれい した</p>';
+  box.innerHTML = html;
+  var acts = $('kActs'); acts.innerHTML = '';
+  function btn(label, fn, cls, dis) { var b = document.createElement('button'); b.className = 'act ' + (cls || ''); b.textContent = label; b.disabled = !!dis; b.onclick = function () { SFX.tap(); fn(); }; acts.appendChild(b); }
+  if (kMode !== 'idle') { btn('やめる', function () { kMode = 'idle'; kUpdate(); }, 'sub'); return; }
+  if (mine && !P.acted && KS.phase === 'player') {
+    var canAtk = ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }) && P.units.length > 0;
+    var canMv = ADJ[kSel].some(function (q) { return KS.provs[q].owner === KS.player; }) && P.units.length > 0;
+    btn('⚔ 出陣', function () { kMode = 'attack'; kUpdate(); }, 'katk', !canAtk);
+    btn('🪖 徴兵', kRecruitBox, '', P.units.length >= PROV_CAP);
+    btn('🌾 内政', kDevelopBox, 'kdev');
+    btn('🚶 移動', function () { kMode = 'move'; kUpdate(); }, 'sub', !canMv);
+  }
+}
+
+// ---- 地図の 操作 ----
+function kTap(sx, sy) {
+  if (!KS || KS.over) return;
+  var wx = (sx - kMap.x) / kMap.s, wy = (sy - kMap.y) / kMap.s;
+  var gx = Math.floor(wx / kMap.cell), gy = Math.floor(wy / kMap.cell), i = -1;
+  if (gx >= 0 && gy >= 0 && gx < kMap.gw && gy < kMap.gh) i = kMap.grid[gy * kMap.gw + gx];
+  if (i < 0) { // 海：いちばん ちかい 家紋
+    var bd = 40 * 40;
+    PROVS.forEach(function (p, k) { var q = kProj(p.seed[0], p.seed[1]), dx = q[0] - wx, dy = q[1] - 6 - wy, d = dx * dx + dy * dy; if (d < bd) { bd = d; i = k; } });
+  }
+  if (i < 0) return;
+  var pid = PROVS[i].id;
+  if (KS.phase !== 'player') { kSel = pid; kUpdate(); return; }
+  if (kMode === 'attack') { if (kTargets().indexOf(pid) >= 0) { SFX.tap(); kAttackBox(kSel, pid); } else { kMode = 'idle'; kSel = pid; kUpdate(); } return; }
+  if (kMode === 'move') { if (kTargets().indexOf(pid) >= 0) { SFX.tap(); kMoveBox(kSel, pid); } else { kMode = 'idle'; kSel = pid; kUpdate(); } return; }
+  SFX.tap(); kSel = pid; kUpdate();
+}
+function kInitInput() {
+  var cv = $('kcv'), ptrs = {}, start = null, cam0 = null, moved = false, pinch = null;
+  cv.addEventListener('pointerdown', function (e) {
+    ptrs[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(ptrs);
+    if (ids.length === 1) { start = [e.clientX, e.clientY]; cam0 = [kMap.x, kMap.y]; moved = false; }
+    else if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: kMap.s, mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }; moved = true; }
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (!ptrs[e.pointerId]) return; ptrs[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(ptrs);
+    if (ids.length === 2 && pinch) {
+      var a = ptrs[ids[0]], b = ptrs[ids[1]], d = Math.hypot(a[0] - b[0], a[1] - b[1]), ns = Math.max(0.3, Math.min(4, pinch.s * d / pinch.d));
+      var wx = (pinch.mid[0] - kMap.x) / kMap.s, wy = (pinch.mid[1] - kMap.y) / kMap.s, mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      kMap.s = ns; kMap.x = mid[0] - wx * ns; kMap.y = mid[1] - wy * ns; kRender();
+    } else if (ids.length === 1 && start) {
+      var dx = e.clientX - start[0], dy = e.clientY - start[1];
+      if (Math.hypot(dx, dy) > 8) moved = true;
+      if (moved) { kMap.x = cam0[0] + dx; kMap.y = cam0[1] + dy; kRender(); }
+    }
+  });
+  function up(e) {
+    if (!ptrs[e.pointerId]) return; delete ptrs[e.pointerId];
+    if (!Object.keys(ptrs).length) { if (!moved && start) { var rc = cv.getBoundingClientRect(); kTap(e.clientX - rc.left, e.clientY - rc.top); } start = null; pinch = null; }
+  }
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up); cv.addEventListener('pointerleave', up);
+  cv.addEventListener('wheel', function (e) { e.preventDefault(); var rc = cv.getBoundingClientRect(), mx = e.clientX - rc.left, my = e.clientY - rc.top; var wx = (mx - kMap.x) / kMap.s, wy = (my - kMap.y) / kMap.s; var ns = Math.max(0.3, Math.min(4, kMap.s * (e.deltaY < 0 ? 1.1 : 0.9))); kMap.s = ns; kMap.x = mx - wx * ns; kMap.y = my - wy * ns; kRender(); }, { passive: false });
+}
+
+// ---- モーダル ----
+function kModal(title, body, btns) {
+  $('kTitle').textContent = title; $('kBody').innerHTML = body;
+  var bb = $('kBtns'); bb.innerHTML = '';
+  (btns || []).forEach(function (b) { var e = document.createElement('button'); e.className = b.cls || 'act'; e.textContent = b.label; e.disabled = !!b.disabled; if (b.id) e.id = b.id; e.onclick = function () { SFX.tap(); b.fn(); }; bb.appendChild(e); });
+  $('kBox').classList.add('on');
+}
+function kCloseModal() { $('kBox').classList.remove('on'); }
+
+// へいの かずを えらぶ ぶひん（type ごとに ＋−）
+function pickerHtml(units, init) {
+  var by = {}; units.forEach(function (u) { (by[u.type] = by[u.type] || []).push(u); });
+  var order = ['ashigaru', 'yumi', 'kiba', 'teppo', 'kosaku', 'ninja'], h = '';
+  order.forEach(function (t) {
+    if (!by[t]) return;
+    var n = init === 'all' ? by[t].length : 0;
+    h += '<div class="arow"><span class="uic blue">' + UNIT_TYPES[t].ch + '</span><span class="uname"><b>' + UNIT_TYPES[t].name + '</b><small>いる：' + by[t].length + 'たい・げんき ' + avgHp(by[t]) + '</small></span>' +
+      '<button class="pm" data-t="' + t + '" data-d="-1">－</button><span class="num" id="pk_' + t + '" data-max="' + by[t].length + '">' + n + '</span><button class="pm" data-t="' + t + '" data-d="1">＋</button></div>';
+  });
+  return h;
+}
+function pickerBind(onChange) {
+  Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
+    b.onclick = function () { SFX.tap(); var t = b.getAttribute('data-t'), el = $('pk_' + t), v = +el.textContent + (+b.getAttribute('data-d')); v = Math.max(0, Math.min(+el.getAttribute('data-max'), v)); el.textContent = v; if (onChange) onChange(); };
+  });
+}
+function pickerUids(units) {
+  var out = [], by = {};
+  units.slice().sort(function (a, b) { return b.hp - a.hp; }).forEach(function (u) { (by[u.type] = by[u.type] || []).push(u); });
+  for (var t in by) { var el = $('pk_' + t); var n = el ? +el.textContent : 0; by[t].slice(0, n).forEach(function (u) { out.push(u.uid); }); }
+  return out;
+}
+
+// ---- 出陣 ----
+function kAttackBox(from, to) {
+  var A = KS.provs[from], B = KS.provs[to], p = PROV_BY[to];
+  var body = '<p>' + PROV_BY[from].name + ' → <b>' + p.name + '</b>（' + p.castleName + '・' + CASTLES[castleIndexOf(p.castle)].kana + '）</p>' +
+    '<p class="small">まもり：' + CLANS[B.owner].lord + '　へい ' + B.units.length + 'たい（' + unitSummary(B.units) + '）</p>' +
+    '<h4>つれていく へい</h4>' + pickerHtml(A.units, 'all') + '<div id="kOdds" class="kodds"></div>' +
+    '<p class="small">のこした へいは ' + PROV_BY[from].name + 'を まもる。大将は ' + CLANS[KS.player].lord + '。</p>';
+  function odds() {
+    var ids = pickerUids(A.units), us = A.units.filter(function (u) { return ids.indexOf(u.uid) >= 0; });
+    var r = strength(us) / defStrength(KS, to), t = r >= 1.3 ? ['かなり ゆうり', 'g'] : r >= 1.0 ? ['ゆうり', 'g'] : r >= 0.8 ? ['ごかく', 'y'] : r >= 0.6 ? ['ふり', 'r'] : ['とても ふり', 'r'];
+    var left = A.units.length - us.length;
+    $('kOdds').innerHTML = 'かちめ：<b class="' + t[1] + '">' + t[0] + '</b>（' + us.length + 'たい）' +
+      (left === 0 && isFrontier(KS, from) ? '<br><span class="r">⚠ ' + PROV_BY[from].name + 'が からっぽに なる！ てきに とられるかも</span>' : '　るすばん ' + left + 'たい');
+    $('kFight').disabled = $('kAuto').disabled = us.length === 0;
+  }
+  kModal('出陣', body, [
+    { label: '⚔ 合戦する', cls: 'act', id: 'kFight', fn: function () { kLaunch(from, to, 'fight'); } },
+    { label: '🎲 おまかせ', cls: 'act sub', id: 'kAuto', fn: function () { kLaunch(from, to, 'auto'); } },
+    { label: 'やめる', cls: 'act sub', fn: kCloseModal }
+  ]);
+  pickerBind(odds); odds();
+}
+function kLaunch(from, to, how) {
+  var ids = pickerUids(KS.provs[from].units); if (!ids.length) return;
+  kCloseModal(); kMode = 'idle';
+  var b = makeBattle(KS, from, to, ids);
+  b.playerSide = 'atk';
+  startBattle(KS, b); kSave();
+  logC(KS, CLANS[KS.player].lord + 'が ' + PROV_BY[to].name + 'へ 出陣！（' + b.atkUnits.length + 'たい）', 'good');
+  if (how === 'auto' || !b.defUnits.length) kAutoBattle(b);
+  else kFightBattle(b);
+}
+
+// ---- 合戦（じっさいに たたかう） ----
+function kFightBattle(b) {
+  var pSide = b.playerSide, cSide = pSide === 'atk' ? 'def' : 'atk';
+  var pUnits = pSide === 'atk' ? b.atkUnits : b.defUnits, cUnits = pSide === 'atk' ? b.defUnits : b.atkUnits;
+  var cClan = pSide === 'atk' ? b.defClan : b.atkClan;
+  var gens = {}; gens[pSide] = { name: CLANS[KS.player].lord }; gens[cSide] = { name: CLANS[cClan].lord };
+  G = newGame({ mapIndex: castleIndexOf(b.castle), sizeIndex: battleSizeIndex(b), mapSeed: battleSeed(KS, b.to), playerSide: pSide,
+                playerChar: KS.face, cpuChar: faceOf(cClan), playerUnits: pUnits, cpuUnits: cUnits, difficulty: KS.difficulty,
+                generals: gens, campaign: true });
+  G.kBattle = b;
+  beginBattle(PROV_BY[b.to].castleName + 'の 合戦！ ' + (pSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.turnLimit + 'ターン）');
+}
+function kBattleFinished() {
+  var b = G.kBattle, pSide = G.playerSide;
+  var res = { winner: G.winner, atkSurv: survivors(G, 'atk'), defSurv: survivors(G, 'def') };
+  // 大将を うしなった がわは、のこりの へいも すこし にげる
+  G = null;
+  $('resultBox').classList.remove('on');
+  kFinishBattle(b, res);
+}
+function kAutoBattle(b) {
+  var res = autoResolve(KS, b);
+  kFinishBattle(b, res, true);
+}
+function kFinishBattle(b, res, auto) {
+  var pSide = b.playerSide || (b.defClan === KS.player ? 'def' : 'atk');
+  var before = (pSide === 'atk' ? b.atkUnits : b.defUnits).length, after = (pSide === 'atk' ? res.atkSurv : res.defSurv).length;
+  var eBefore = (pSide === 'atk' ? b.defUnits : b.atkUnits).length, eAfter = (pSide === 'atk' ? res.defSurv : res.atkSurv).length;
+  applyBattle(KS, b, res); kSave();
+  openMap();
+  var win = res.winner === pSide, p = PROV_BY[b.to];
+  var txt = pSide === 'atk' ? (win ? p.name + 'を 攻め落とした！' : p.name + 'を 落とせなかった…') : (win ? p.name + 'を まもりきった！' : p.name + 'を うばわれた…');
+  (win ? SFX.win : SFX.lose)();
+  var img = SPR[(win ? charById(KS.face).win : charById(KS.face).lose) || 'fute_joy'];
+  kModal(win ? 'しょうり！' : 'はいぼく…', '<div class="kres"><img src="' + img + '" alt=""><p><b>' + txt + '</b>' + (auto ? '（おまかせ）' : '') + '</p>' +
+    '<p class="small">みかた ' + before + ' → ' + after + 'たい　／　てき ' + eBefore + ' → ' + eAfter + 'たい</p></div>',
+    [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); kAfterBattle(); } }]);
+}
+function kAfterBattle() {
+  if (KS.over) return kGameOver();
+  if (KS.phase === 'cpu') kRunCpu();
+  else kUpdate();
+}
+function kResumeBattle(b) {
+  // 中断していた 合戦を もう一度
+  var pSide = b.playerSide || (b.defClan === KS.player ? 'def' : 'atk');
+  b.playerSide = pSide;
+  kModal('合戦の とちゅう', '<p>' + PROV_BY[b.to].name + 'での 合戦が とちゅうでした。</p>', [
+    { label: '⚔ 合戦する', cls: 'act', fn: function () { kCloseModal(); kFightBattle(b); } },
+    { label: '🎲 おまかせ', cls: 'act sub', fn: function () { kCloseModal(); kAutoBattle(b); } }
+  ]);
+}
+
+// ---- 徴兵 ----
+function kRecruitBox() {
+  var P = KS.provs[kSel], gold = KS.clans[KS.player].gold, order = {};
+  var h = '<p class="small">お金 💰' + gold + '　この国の へい ' + P.units.length + '/' + PROV_CAP + '</p>';
+  BUY_ORDER.forEach(function (t) {
+    var T = UNIT_TYPES[t];
+    h += '<div class="arow"><span class="uic blue">' + T.ch + '</span><span class="uname"><b>' + T.name + '</b><small>💰' + unitCost(t) + '　攻' + T.atk + ' 守' + T.def + ' 移' + T.mov + '</small></span>' +
+      '<button class="pm" data-t="' + t + '" data-d="-1">－</button><span class="num" id="rc_' + t + '">0</span><button class="pm" data-t="' + t + '" data-d="1">＋</button></div>';
+  });
+  h += '<div id="kCost" class="kodds"></div>';
+  function upd() {
+    var cost = 0, n = 0; for (var t in order) { cost += unitCost(t) * order[t]; n += order[t]; }
+    $('kCost').innerHTML = 'ごうけい 💰<b>' + cost + '</b>（' + n + 'たい）　のこり 💰' + (gold - cost);
+    $('kRecOk').disabled = n === 0;
+    Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
+      var t = b.getAttribute('data-t'), d = +b.getAttribute('data-d');
+      b.disabled = d < 0 ? !(order[t] > 0) : (cost + unitCost(t) > gold || P.units.length + n >= PROV_CAP);
+    });
+  }
+  kModal('徴兵（' + PROV_BY[kSel].name + '）', h, [
+    { label: '🪖 やとう', cls: 'act', id: 'kRecOk', fn: function () { var r = recruit(KS, kSel, order); if (r.ok) { logC(KS, PROV_BY[kSel].name + 'で へいを ' + r.n + 'たい やとった', 'good'); kCloseModal(); kSave(); kUpdate(); } } },
+    { label: 'やめる', cls: 'act sub', fn: kCloseModal }
+  ]);
+  Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
+    b.onclick = function () { SFX.tap(); var t = b.getAttribute('data-t'); order[t] = Math.max(0, (order[t] || 0) + (+b.getAttribute('data-d'))); $('rc_' + t).textContent = order[t]; upd(); };
+  });
+  upd();
+}
+// ---- 内政 ----
+function kDevelopBox() {
+  var P = KS.provs[kSel], mx = Math.round(PROV_BY[kSel].koku * 1.5);
+  var ok = KS.clans[KS.player].gold >= DEVELOP_COST && P.koku < mx;
+  kModal('内政（' + PROV_BY[kSel].name + '）', '<p>💰' + DEVELOP_COST + ' つかって 田畑を ひらき、石高を <b>+1万石</b> ふやします。</p><p class="small">いまの 石高 ' + P.koku + '万石（さいだい ' + mx + '）。石高が ふえると まいきせつの お金が ふえる（あきは 3ばい）。</p>',
+    [{ label: '🌾 内政する', cls: 'act', disabled: !ok, fn: function () { var r = develop(KS, kSel); if (r.ok) { logC(KS, PROV_BY[kSel].name + 'の 石高が ' + P.koku + '万石に ふえた', 'good'); kSave(); } kCloseModal(); kUpdate(); } },
+     { label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
+}
+// ---- 移動 ----
+function kMoveBox(from, to) {
+  var A = KS.provs[from];
+  kModal('移動 ' + PROV_BY[from].name + ' → ' + PROV_BY[to].name, '<p class="small">' + PROV_BY[to].name + 'の へい ' + KS.provs[to].units.length + '/' + PROV_CAP + '</p>' + pickerHtml(A.units, 'none'),
+    [{ label: '🚶 うごかす', cls: 'act', fn: function () { var r = moveUnits(KS, from, to, pickerUids(A.units)); if (r.ok) { logC(KS, PROV_BY[from].name + 'から ' + PROV_BY[to].name + 'へ ' + r.n + 'たい いどう', 'good'); kMode = 'idle'; kCloseModal(); kSave(); kUpdate(); } else banner(r.msg, 1200); } },
+     { label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
+  pickerBind();
+}
+
+// ---- 季節を おわる → CPU ----
+function kEndSeason() {
+  if (!KS || KS.phase !== 'player') return;
+  var left = provsOf(KS, KS.player).filter(function (pid) { return !KS.provs[pid].acted; }).length;
+  function go() { kCloseModal(); kMode = 'idle'; cpuBegin(KS); kSave(); kRunCpu(); }
+  if (left > 0) kModal('きせつを おわる？', '<p>まだ めいれい していない 国が ' + left + 'か国 あります。</p>', [{ label: 'おわる', cls: 'act', fn: go }, { label: 'もどる', cls: 'act sub', fn: kCloseModal }]);
+  else go();
+}
+function kRunCpu() {
+  if (kCpuRunning) return; kCpuRunning = true;
+  kUpdate();
+  setTimeout(function () {
+    kCpuRunning = false;
+    var r = cpuNext(KS); kSave();
+    if (r.type === 'battle') {
+      var b = r.battle; b.playerSide = 'def'; kSave(); kUpdate();
+      if (!b.defUnits.length) { kAutoBattle(b); return; }
+      kSel = b.to;
+      var A = CLANS[b.atkClan];
+      kModal('てきが せめてきた！', '<div class="kintro">' + crestHtml(b.atkClan, 60) + '<p><b>' + A.lord + '</b>が ' + PROV_BY[b.from].name + 'から <b>' + PROV_BY[b.to].name + '</b>に せめてきた！<br>' +
+        'てき ' + b.atkUnits.length + 'たい（' + unitSummary(b.atkUnits) + '）<br>みかた ' + b.defUnits.length + 'たい（' + unitSummary(b.defUnits) + '）</p></div>',
+        [{ label: '⚔ じぶんで まもる', cls: 'act', fn: function () { kCloseModal(); kFightBattle(b); } },
+         { label: '🎲 おまかせ', cls: 'act sub', fn: function () { kCloseModal(); kAutoBattle(b); } }]);
+      return;
+    }
+    if (r.type === 'over') return kGameOver();
+    // きせつ おわり
+    seasonEnd(KS); kSave();
+    kUpdate();
+    banner(eraName(KS.year) + '年 ' + SEASONS_K[KS.season] + (KS.season === 2 ? '（ねんぐ）' : ''), 1400);
+    SFX.turn();
+  }, 350);
+}
+function kGameOver() {
+  kUpdate();
+  var win = KS.winner === KS.player;
+  var img = SPR[(win ? charById(KS.face).win : charById(KS.face).lose) || 'fute_joy'];
+  kClear();
+  (win ? SFX.win : SFX.lose)();
+  kModal(win ? '中国地方 統一！' : 'ほろびて しまった…',
+    '<div class="kres"><img src="' + img + '" alt=""><p><b>' + (win ? CLANS[KS.player].lord + 'は ' + KS.year + '年 ' + SEASONS_K[KS.season] + 'に 中国地方を 統一した！' : CLANS[KS.player].name + 'は ' + KS.year + '年に ほろびた…') + '</b></p></div>',
+    [{ label: 'タイトルへ', cls: 'act', fn: function () { kCloseModal(); KS = null; show('title'); } }]);
+}
+function openKLog() {
+  var h = KS.log.slice().reverse().map(function (e) { return '<div class="lg ' + kLogCls(e.kind) + '"><span class="lt">' + e.y + SEASONS_K[e.s] + '</span>' + e.text + '</div>'; }).join('');
+  $('logFull').innerHTML = h; $('logBox').classList.add('on');
+}
+
+function kInit() {
+  $('ngBtn').onclick = function () { SFX.tap(); openClanScreen(); };
+  $('contBtn').onclick = function () { SFX.tap(); continueCampaign(); };
+  $('quickBtn').onclick = function () { SFX.tap(); $('modeBox').classList.remove('on'); show('setupScreen'); initSetup(); };
+  $('modeClose').onclick = function () { SFX.tap(); $('modeBox').classList.remove('on'); };
+  $('kBackBtn').onclick = function () { SFX.tap(); show('title'); };
+  $('kGoBtn').onclick = function () {
+    SFX.tap();
+    if (kHasSave()) { kModal('あたらしく はじめる？', '<p>まえの つづきは きえて しまいます。</p>', [{ label: 'はじめる', cls: 'act', fn: function () { kCloseModal(); startCampaign(); } }, { label: 'もどる', cls: 'act sub', fn: kCloseModal }]); }
+    else startCampaign();
+  };
+  ['easy', 'normal', 'hard'].forEach(function (d) { $('kdif_' + d).onclick = function () { SFX.tap(); kNew.difficulty = d; renderClanScreen(); }; });
+  $('kEndBtn').onclick = function () { SFX.tap(); kEndSeason(); };
+  $('kFitBtn').onclick = function () { SFX.tap(); kWhole = !kWhole; kFit(kWhole); kRender(); };
+  $('kLogBtn').onclick = function () { SFX.tap(); openKLog(); };
+  $('kLog').onclick = function () { SFX.tap(); openKLog(); };
+  $('kHelpBtn').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
+  $('kQuitBtn').onclick = function () { SFX.tap(); kModal('タイトルに もどる', '<p>ここまでの すすみは ほぞん されています。「はじめる → つづきから」で また あそべます。</p>', [{ label: 'もどる', cls: 'act', fn: function () { kCloseModal(); show('title'); } }, { label: 'やめる', cls: 'act sub', fn: kCloseModal }]); };
+  $('backMapBtn').onclick = function () { SFX.tap(); kBattleFinished(); };
+  kInitInput();
+  window.addEventListener('resize', function () { if ($('mapScreen').classList.contains('on')) { kResize(); kFit(); kRender(); } });
+}
 
 </script>
 </body>
