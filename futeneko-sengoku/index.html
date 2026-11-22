@@ -395,7 +395,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v2.8';
+var VERSION = 'v2.9';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2545,12 +2545,13 @@ function startGame() {
   beginBattle('かっせん はじまり！ ' + (G.playerSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.castle.name + '・' + G.turnLimit + 'ターン）');
 }
 function beginBattle(intro) {
-  sel = null; reach = null; targets = []; anim = []; phase = 'idle'; hoverInfo = null; LOG = []; undoPos = null; moveAnim = null;
+  sel = null; reach = null; targets = []; anim = []; FX = []; FALLEN = []; STAMP = null; terrCache = null; phase = 'idle'; hoverInfo = null; LOG = []; undoPos = null; moveAnim = null;
   show('gameScreen');
   logMsg(intro, 'sys');
   resize(); startCamera(); lastPanelH = $('bottom').offsetHeight;
   updateHud();
   if (G.side !== G.playerSide) setTimeout(cpuTurn, 600);
+  else if (gx('shutsujin')) { stamp('shutsujin', 1.5); setTimeout(function () { banner(G.playerSide === 'atk' ? 'しろを せめろ！' : 'しろを まもれ！', 1400); }, 1300); }
   else banner(G.playerSide === 'atk' ? 'しろを せめろ！' : 'しろを まもれ！', 1400);
   $('resultBox').classList.remove('on');
 }
@@ -2716,6 +2717,121 @@ function drawTile(t) {
   }
   ctx.restore();
 }
+// ---- 画像グラフィック（img/ フォルダ。読めないときは 上の 図形描画に もどる） ----
+var GFX_NAMES = ['t_grass', 't_court', 't_water', 't_sea', 'forest', 'sakura', 'bamboo', 'hill', 'mount', 'snow', 'bridge', 'wall', 'dorui', 'gate', 'gateopen', 'gatebroken', 'rubble', 'yagura',
+  'ashi_stand_b', 'ashi_stand_r', 'ashi_atk_b', 'ashi_atk_r', 'ashi_down_b', 'ashi_down_r', 'arrow', 'smoke', 'spark', 'dust', 'crumble', 'shutsujin', 'kachidoki'];
+var GFX = {};
+GFX_NAMES.forEach(function (n) { var im = new Image(); im.onload = function () { terrCache = null; }; im.src = 'img/' + n + '.webp'; GFX[n] = im; });
+function gx(n) { var im = GFX[n]; return im && im.complete && im.naturalWidth ? im : null; }
+function gfxOn() { return !!(gx('t_grass') && gx('t_court') && gx('t_water')); }
+function thash(c, r, k) { var h = (c * 374761393 + r * 668265263 + (k || 0) * 2246822519) >>> 0; h = ((h ^ (h >>> 13)) * 1274126177) >>> 0; return (h ^ (h >>> 16)) >>> 0; }
+// 下の 中心を (x, by) に そろえて、幅 w で 絵を おく
+function putSpr(im, x, by, w, flip) {
+  var h = w * im.naturalHeight / im.naturalWidth;
+  if (flip) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(im, -w / 2, by - h, w, h); ctx.restore(); }
+  else ctx.drawImage(im, x - w / 2, by - h, w, h);
+}
+function groundTexOf(t) { return t.ch === 'r' || t.ch === 'b' ? 't_water' : t.ch === 's' ? (gx('t_sea') ? 't_sea' : 't_water') : (t.ch === 'C' || t.ch === 'K' || t.ch === 'G' || t.ch === 'W' || t.ch === '=') ? 't_court' : 't_grass'; }
+function drawGround(t) {
+  var p = hexCenter(t.c, t.r), x = p[0], y = p[1], im = gx(groundTexOf(t)), h = thash(t.c, t.r);
+  ctx.save(); hexPath(x, y, R + 0.6); ctx.clip();
+  var sw = Math.min(im.naturalWidth, im.naturalHeight) * 0.62, sx = (h % 1000) / 1000 * (im.naturalWidth - sw), sy = ((h >>> 10) % 1000) / 1000 * (im.naturalHeight - sw);
+  ctx.drawImage(im, sx, sy, sw, sw, x - R, y - R, R * 2, R * 2);
+  if (t.ch === '=') { ctx.fillStyle = 'rgba(214,180,120,0.45)'; ctx.fill(); }
+  if (t.ch === 'h') { ctx.fillStyle = 'rgba(190,190,90,0.18)'; ctx.fill(); }
+  if (t.ch === 'm') { ctx.fillStyle = 'rgba(120,110,100,0.25)'; ctx.fill(); }
+  ctx.restore();
+  hexPath(x, y, R); ctx.strokeStyle = 'rgba(40,30,10,0.22)'; ctx.lineWidth = 1.2; ctx.stroke();
+}
+function drawNature(t) {
+  var p = hexCenter(t.c, t.r), x = p[0], y = p[1], h = thash(t.c, t.r, 7), im;
+  if (t.ch === 'f') { var k = h % 20; im = gx(k < 3 ? 'sakura' : k < 6 ? 'bamboo' : 'forest') || gx('forest'); if (im) putSpr(im, x + ((h >>> 8) % 7 - 3), y + R * 0.72, R * 1.85, (h >>> 4) & 1); }
+  else if (t.ch === 'h') { im = gx('hill'); if (im) putSpr(im, x, y + R * 0.6, R * 1.9, h & 1); }
+  else if (t.ch === 'm') { im = gx(h % 7 === 0 ? 'snow' : 'mount') || gx('mount'); if (im) putSpr(im, x, y + R * 0.78, R * 2.0, (h >>> 3) & 1); }
+  else if (t.ch === 'b') { im = gx('bridge'); if (im) putSpr(im, x, y + R * 0.62, R * 1.95); }
+}
+// 城の 部品（こわれる・ひらくので 毎回 かく）
+function drawCastlePart(t) {
+  var p = hexCenter(t.c, t.r), x = p[0], y = p[1], im;
+  if (t.ch === 'W') {
+    im = gx(t.broken ? 'rubble' : t.wood ? 'dorui' : 'wall');
+    if (im) putSpr(im, x, y + R * 0.66, t.broken ? R * 1.8 : R * 1.95, (t.c + t.r) & 1);
+    if (!t.broken && t.hp < t.maxHp) hpBar(x, y + 24, t.hp / t.maxHp);
+  } else if (t.ch === 'G') {
+    im = gx(t.broken ? 'gatebroken' : t.open ? 'gateopen' : 'gate');
+    if (im) putSpr(im, x, y + R * 0.7, R * 1.95);
+    if (!t.broken && t.hp < t.maxHp) hpBar(x, y + 26, t.hp / t.maxHp);
+  } else if (t.ch === 'K') { im = gx('yagura'); if (im) putSpr(im, x, y + R * 0.72, R * 2.1); }
+}
+// 地面と 自然は 変化が すくないので 1枚の 絵に まとめて おく
+var terrCache = null;
+function terrainKey() { var s = ''; for (var r = 0; r < G.map.h; r++) for (var c = 0; c < G.map.w; c++) s += G.map.tiles[r][c].ch; return s; }
+function drawTerrainLayer() {
+  var key = terrainKey();
+  if (!terrCache || terrCache.map !== G.map || terrCache.key !== key) {
+    var b = mapBounds(), sc = Math.min(1.5, 3000 / Math.max(b[0], b[1]));
+    var cv = terrCache && terrCache.cv && terrCache.sc === sc ? terrCache.cv : document.createElement('canvas');
+    cv.width = Math.ceil(b[0] * sc); cv.height = Math.ceil(b[1] * sc);
+    var c2 = cv.getContext('2d'), keep = ctx; ctx = c2;
+    try {
+      ctx.setTransform(sc, 0, 0, sc, 0, 0); ctx.clearRect(0, 0, b[0], b[1]);
+      var r, c;
+      for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) drawGround(G.map.tiles[r][c]);
+      for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) drawNature(G.map.tiles[r][c]);
+    } finally { ctx = keep; }
+    terrCache = { cv: cv, sc: sc, map: G.map, key: key, w: b[0], h: b[1] };
+  }
+  ctx.drawImage(terrCache.cv, 0, 0, terrCache.w, terrCache.h);
+  for (var r2 = 0; r2 < G.map.h; r2++) for (var c3 = 0; c3 < G.map.w; c3++) { var t = G.map.tiles[r2][c3]; if (t.ch === 'W' || t.ch === 'G' || t.ch === 'K') drawCastlePart(t); }
+}
+// 演出（矢・けむり・火花・土けむり）
+var FX = [], FALLEN = [], STAMP = null;
+function nowMs() { return (typeof performance !== 'undefined' ? performance.now() : Date.now()); }
+function fxAdd(name, x, y, opt) { if (!gx(name)) return; opt = opt || {}; FX.push({ n: name, x: x, y: y, x2: opt.x2, y2: opt.y2, w: opt.w || R * 1.1, dur: opt.dur || 0.5, delay: opt.delay || 0, t: 0, rise: opt.rise || 0 }); }
+function fxAttack(u, tc, tr, isWall) {
+  var a = hexCenter(u.c, u.r), b = hexCenter(tc, tr);
+  u._face = b[0] < a[0] - 1 ? -1 : b[0] > a[0] + 1 ? 1 : (u._face || 1);
+  u._atk = nowMs() + 450;
+  if (u.type === 'yumi') { fxAdd('arrow', a[0], a[1] - 18, { x2: b[0], y2: b[1] - 10, dur: 0.35, w: R * 0.9 }); }
+  if (u.type === 'teppo') { fxAdd('smoke', a[0] + 16 * u._face, a[1] - 14, { dur: 0.9, w: R * 1.2, rise: 14 }); }
+  if (isWall) { fxAdd('dust', b[0], b[1] - 8, { dur: 0.8, w: R * 1.3, delay: 0.1, rise: 10 }); fxAdd('crumble', b[0], b[1], { dur: 0.6, w: R * 1.1, delay: 0.15 }); }
+  else fxAdd('spark', b[0], b[1] - 12, { dur: 0.45, w: R * 1.15, delay: u.type === 'yumi' ? 0.3 : 0.12 });
+}
+function fxFall(u) { FALLEN.push({ type: u.type, side: u.side, c: u.c, r: u.r, face: u._face || 1, t: 0 }); }
+function stamp(name, sec) { if (gx(name)) STAMP = { n: name, t: 0, dur: sec || 1.5 }; }
+function stepFx(dt) {
+  FX.forEach(function (f) { if (f.delay > 0) f.delay -= dt; else f.t += dt / f.dur; }); FX = FX.filter(function (f) { return f.t < 1; });
+  FALLEN.forEach(function (f) { f.t += dt / 1.3; }); FALLEN = FALLEN.filter(function (f) { return f.t < 1; });
+  if (STAMP) { STAMP.t += dt / STAMP.dur; if (STAMP.t >= 1) STAMP = null; }
+}
+function drawFx() {
+  FALLEN.forEach(function (f) {
+    if (f.type !== 'ashigaru') return; var im = gx('ashi_down_' + (f.side === G.playerSide ? 'b' : 'r')); if (!im) return;
+    var p = hexCenter(f.c, f.r); ctx.globalAlpha = Math.min(1, (1 - f.t) * 2); putSpr(im, p[0], p[1] + R * 0.62, R * 1.55, f.face < 0); ctx.globalAlpha = 1;
+  });
+  FX.forEach(function (f) {
+    if (f.delay > 0) return; var im = gx(f.n), x = f.x, y = f.y - f.rise * f.t, h = f.w * im.naturalHeight / im.naturalWidth;
+    ctx.save();
+    if (f.x2 !== undefined) { x = f.x + (f.x2 - f.x) * f.t; y = f.y + (f.y2 - f.y) * f.t - Math.sin(f.t * Math.PI) * 18; ctx.translate(x, y); ctx.rotate(Math.atan2(f.y2 - f.y, f.x2 - f.x) + Math.PI * 0.08); ctx.drawImage(im, -f.w / 2, -h / 2, f.w, h); }
+    else { ctx.globalAlpha = f.t < 0.7 ? 1 : (1 - f.t) / 0.3; var s = 0.8 + f.t * 0.4; ctx.translate(x, y); ctx.scale(s, s); ctx.drawImage(im, -f.w / 2, -h / 2, f.w, h); }
+    ctx.restore();
+  });
+}
+function drawStamp() {
+  if (!STAMP) return; var im = gx(STAMP.n); if (!im) return;
+  var t = STAMP.t, w = Math.min(W * 0.8, 520), h = w * im.naturalHeight / im.naturalWidth;
+  var s = t < 0.15 ? 1.6 - t / 0.15 * 0.6 : 1, a = t < 0.15 ? t / 0.15 : t > 0.8 ? (1 - t) / 0.2 : 1;
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, H * 0.42); ctx.scale(s, s); ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore();
+}
+function drawAshigaru(u, x, y, col) {
+  var pose = u._atk && u._atk > nowMs() ? 'atk' : 'stand', im = gx('ashi_' + pose + '_' + (u.side === G.playerSide ? 'b' : 'r'));
+  if (!im) return false;
+  var face = u._face || (u.side === G.playerSide ? 1 : -1);
+  ctx.fillStyle = col; ctx.globalAlpha *= 0.55; ctx.beginPath(); ctx.ellipse(x, y + R * 0.5, R * 0.55, R * 0.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha /= 0.55;
+  ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(x, y + R * 0.5, R * 0.55, R * 0.2, 0, 0, Math.PI * 2); ctx.stroke();
+  putSpr(im, x + (pose === 'atk' ? 6 * face : 0), y + R * 0.58, pose === 'atk' ? R * 1.6 : R * 0.98, face < 0);
+  return true;
+}
 function hpBar(x, y, f) {
   ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x - 22, y, 44, 6);
   ctx.fillStyle = f > 0.5 ? '#6fd36f' : f > 0.25 ? '#f0c040' : '#e85040'; ctx.fillRect(x - 21, y + 1, 42 * f, 4);
@@ -2741,6 +2857,8 @@ function drawUnit(u, x, y) {
       else { var sc = (rad * 2.2) / im.naturalHeight, iw = im.naturalWidth * sc, ih = im.naturalHeight * sc; ctx.drawImage(im, x - iw / 2, y - rad + 2, iw, ih); }
       ctx.restore();
     }
+  } else if (u.type === 'ashigaru' && drawAshigaru(u, x, y, col)) {
+    // 絵で かいた
   } else {
     ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2.5; ctx.stroke();
@@ -2765,7 +2883,8 @@ function render() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.fillStyle = '#6f8f5a'; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.translate(cam.x, cam.y); ctx.scale(cam.s, cam.s);
-  for (var r = 0; r < G.map.h; r++) for (var c = 0; c < G.map.w; c++) drawTile(G.map.tiles[r][c]);
+  if (gfxOn()) drawTerrainLayer();
+  else for (var r = 0; r < G.map.h; r++) for (var c = 0; c < G.map.w; c++) drawTile(G.map.tiles[r][c]);
   // ハイライト
   if (reach && sel && phase === 'idle') {
     for (var k in reach) { if (k === '__from') continue; var p = k.split(',').map(Number); var hc = hexCenter(p[0], p[1]); hexPath(hc[0], hc[1], R - 3); ctx.fillStyle = 'rgba(40,110,255,0.42)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2.5; ctx.stroke(); }
@@ -2790,6 +2909,7 @@ function render() {
     var vis = isVisibleTo(G, moveAnim.unit, G.playerSide) || moveAnim.unit.side === G.playerSide;
     if (vis) drawUnit(moveAnim.unit, a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f - Math.sin(f * Math.PI) * 10);
   }
+  drawFx();
   if (sel && phase !== 'cpu') { var sp = hexCenter(sel.c, sel.r); hexPath(sp[0], sp[1], R - 1); ctx.strokeStyle = '#ffe24a'; ctx.lineWidth = 4; ctx.stroke(); }
   // フロート
   anim.forEach(function (a) {
@@ -2800,11 +2920,13 @@ function render() {
     ctx.globalAlpha = 1;
   });
   ctx.restore();
+  drawStamp();
 }
 var lastT = 0;
 function loop(ts) {
   var dt = Math.min(0.05, (ts - lastT) / 1000 || 0); lastT = ts;
   anim.forEach(function (a) { a.t += dt * 0.9; }); anim = anim.filter(function (a) { return a.t < 1; });
+  stepFx(dt);
   if (moveAnim) { moveAnim.t += dt / Math.max(0.25, moveAnim.path.length * 0.12); if (moveAnim.t >= 1) { var cb = moveAnim.cb; moveAnim = null; if (cb) cb(); } }
   keepAbovePanel();
   render();
@@ -2971,7 +3093,8 @@ function performTarget(t) {
   }
   phase = 'anim'; hideActions();
   if (t.kind === 'attack') {
-    var e = t.unit; var res = doAttack(G, u, e);
+    var e = t.unit; fxAttack(u, e.c, e.r); var res = doAttack(G, u, e);
+    if (res.killed) fxFall(e); if (res.counterKilled) fxFall(u);
     (u.type === 'teppo' ? SFX.gun : u.type === 'yumi' ? SFX.arrow : SFX.hit)();
     floatText(e.c, e.r, '-' + dmgMen(e, res.dmg), '#ffd24a', true);
     var msg = unitName(u) + ' の こうげき！ ' + unitName(e) + ' が ' + dmgMen(e, res.dmg) + menUnit(e.type) + ' うちとられた';
@@ -2979,7 +3102,7 @@ function performTarget(t) {
     else if (res.counter) { msg += '　はんげきで ' + dmgMen(u, res.counter) + menUnit(u.type) + ' うしなった'; setTimeout(function () { floatText(u.c, u.r, '-' + dmgMen(u, res.counter), '#ff8a8a'); SFX.hit(); }, 350); if (res.counterKilled) msg += '　やられた…'; }
     logMsg(msg);
   } else if (t.kind === 'wall') {
-    var dmg = doHitWall(G, u, t.tile); SFX.wall(); floatText(t.tile.c, t.tile.r, '-' + dmg, '#ffb060', true);
+    fxAttack(u, t.tile.c, t.tile.r, true); var dmg = doHitWall(G, u, t.tile); SFX.wall(); floatText(t.tile.c, t.tile.r, '-' + dmg, '#ffb060', true);
     logMsg((t.tile.ch === 'G' ? 'もん' : 'じょうへき') + ' に ' + dmg + ' ダメージ' + (t.tile.broken ? '　こわした！' : '　（のこり ' + t.tile.hp + '）'));
   } else if (t.kind === 'open') { doOpenGate(G, u, t.tile); SFX.gate(); floatText(t.tile.c, t.tile.r, 'ひらいた！', '#a0ffb0'); logMsg('忍者が もんを あけた！'); }
   else if (t.kind === 'close') { doCloseGate(G, u, t.tile); SFX.gate(); floatText(t.tile.c, t.tile.r, 'しめた！', '#a0ffb0'); logMsg('もんを しめた！'); }
@@ -3082,13 +3205,14 @@ function cpuTurn() {
         if (ev.kind === 'move') return;
         delay = 650;
         if (ev.kind === 'attack') {
+          fxAttack(u, ev.target.c, ev.target.r); if (ev.res.killed) fxFall(ev.target); if (ev.res.counterKilled) fxFall(u);
           (u.type === 'teppo' ? SFX.gun : u.type === 'yumi' ? SFX.arrow : SFX.hit)();
           floatText(ev.target.c, ev.target.r, '-' + dmgMen(ev.target, ev.res.dmg), '#ff7070', true);
           var m = 'てきの ' + unitName(u) + ' が みかたの ' + unitName(ev.target) + ' を こうげき！ ' + dmgMen(ev.target, ev.res.dmg) + menUnit(ev.target.type) + ' うちとられた';
           if (ev.res.killed) { m += '　やられた…'; setTimeout(SFX.kill, 200); }
           else if (ev.res.counter) { m += '　はんげきで ' + dmgMen(u, ev.res.counter) + menUnit(u.type) + ' うちとった'; setTimeout(function () { floatText(u.c, u.r, '-' + dmgMen(u, ev.res.counter), '#ffd24a'); SFX.hit(); }, 350); if (ev.res.counterKilled) m += '　たおした！'; }
           logMsg(m);
-        } else if (ev.kind === 'wall') { SFX.wall(); floatText(ev.tile.c, ev.tile.r, '-' + ev.dmg, '#ffb060', true); logMsg('てきが ' + (ev.tile.ch === 'G' ? 'もん' : 'じょうへき') + ' を こうげき！' + (ev.tile.broken ? ' こわされた！' : ' のこり ' + ev.tile.hp)); }
+        } else if (ev.kind === 'wall') { fxAttack(u, ev.tile.c, ev.tile.r, true); SFX.wall(); floatText(ev.tile.c, ev.tile.r, '-' + ev.dmg, '#ffb060', true); logMsg('てきが ' + (ev.tile.ch === 'G' ? 'もん' : 'じょうへき') + ' を こうげき！' + (ev.tile.broken ? ' こわされた！' : ' のこり ' + ev.tile.hp)); }
         else if (ev.kind === 'open') { SFX.gate(); floatText(ev.tile.c, ev.tile.r, 'ひらいた！', '#ffb0b0'); logMsg('てきの 忍者が もんを あけた！'); }
         else if (ev.kind === 'close') { SFX.gate(); floatText(ev.tile.c, ev.tile.r, 'しめた！', '#ffb0b0'); logMsg('てきが もんを しめた'); }
         else if (ev.kind === 'bridge') { SFX.repair(); floatText(ev.tile.c, ev.tile.r, 'はし！', '#ffb0b0'); logMsg('てきの 工作が 川に はしを かけた！'); }
@@ -3128,7 +3252,8 @@ function gameOver() {
     var me = survivors(G, G.playerSide).length, en = survivors(G, G.cpuSide).length;
     $('resultReason').textContent += '　のこった へい：みかた ' + me + '／てき ' + en;
   }
-  setTimeout(function () { box.classList.add('on'); (win ? SFX.win : SFX.lose)(); }, 700);
+  var showK = win && gx('kachidoki'); if (showK) setTimeout(function () { stamp('kachidoki', 1.6); }, 300);
+  setTimeout(function () { box.classList.add('on'); (win ? SFX.win : SFX.lose)(); }, showK ? 1800 : 700);
 }
 
 // ---- 入力（タップ／ドラッグ／ピンチ） ----
