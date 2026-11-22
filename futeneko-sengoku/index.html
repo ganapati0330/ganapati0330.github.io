@@ -54,6 +54,10 @@ button{font-family:inherit;cursor:pointer;}
 .uname{flex:1;line-height:1.2;}
 .uname small{display:block;color:#888;font-size:11px;}
 .pm{width:40px;height:40px;border-radius:50%;border:0;background:#e8841e;color:#fff;font-size:22px;font-weight:bold;}
+.pm.big{width:auto;border-radius:20px;padding:0 8px;font-size:14px;margin-left:3px;background:#c0602a;}
+@media (max-width:480px){.arow .pm{width:34px;height:34px;font-size:19px;}.arow .pm.big{width:auto;font-size:13px;padding:0 7px;}.num.rcn{min-width:46px;font-size:14px;}}
+.pm.big{white-space:nowrap;}
+.num.rcn{min-width:56px;font-size:15px;}
 .pm:disabled{background:#ddd;color:#aaa;}
 .num{width:28px;text-align:center;font-size:20px;font-weight:bold;}
 #ptsInfo{font-size:13px;color:#7a3a1a;font-weight:bold;margin-bottom:6px;}
@@ -426,7 +430,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.8';
+var VERSION = 'v3.9';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1971,6 +1975,37 @@ function cmdCount(P) { return P.done ? Object.keys(P.done).length : 0; }
 var MAX_CMDS = 3;   // プレイヤーは 1つの 国で きせつごとに 3つまで
 function cmdFull(P) { return cmdCount(P) >= MAX_CMDS; }
 function canCommand(S, pid) { var P = S.provs[pid]; return !S.over && S.phase === 'player' && P.owner === S.player && !P.acted; }
+// こまかく やとう：pts = {type: 1/10隊の かず}。へった 隊を さきに うめて、のこりで 新しい 隊を つくる
+function planRecruit(S, pid, pts) {
+  var P = S.provs[pid], cost = 0, newN = 0, fill = 0, plan = {};
+  for (var t in pts) {
+    var k = Math.max(0, Math.round(pts[t] || 0)); if (!k) continue;
+    cost += recruitCost(S, pid, t) * k / 10;
+    var room = 0; P.units.forEach(function (u) { if (u.type === t) room += 10 - u.hp; });
+    var f = Math.min(room, k), rest = k - f;
+    fill += f; newN += Math.ceil(rest / 10); plan[t] = { fill: f, rest: rest };
+  }
+  return { cost: Math.ceil(cost), newN: newN, fill: fill, plan: plan };
+}
+function recruitPts(S, pid, pts) {
+  var P = S.provs[pid], cid = P.owner, pl = planRecruit(S, pid, pts);
+  if (!pl.fill && !pl.newN) return { ok: false, msg: 'へいを えらんでね' };
+  if (pts.teppo && !teppoOk(S)) return { ok: false, msg: '鉄砲は ' + TEPPO_YEAR + '年に 伝わるまで つかえない' };
+  if (pl.cost > S.clans[cid].gold) return { ok: false, msg: 'お金が たりない' };
+  if (P.units.length + pl.newN > PROV_CAP) return { ok: false, msg: 'この国には もう はいれない（' + PROV_CAP + 'たいまで）' };
+  S.clans[cid].gold -= pl.cost;
+  var men = 0;
+  for (var t in pl.plan) {
+    var f = pl.plan[t].fill, rest = pl.plan[t].rest;
+    men += (f + rest) * UNIT_TYPES[t].men / 10;
+    // へっている 隊から（すくない じゅん）
+    P.units.filter(function (u) { return u.type === t && u.hp < 10; }).sort(function (a, b) { return a.hp - b.hp; })
+      .forEach(function (u) { var add = Math.min(10 - u.hp, f); u.hp += add; f -= add; });
+    while (rest > 0) { var nu = newUnit(S, t); nu.hp = Math.min(10, rest); rest -= nu.hp; P.units.push(nu); }
+  }
+  markCmd(P, 'recruit');
+  return { ok: true, cost: pl.cost, n: pl.newN, fill: pl.fill, men: Math.round(men) };
+}
 function recruit(S, pid, order) {   // order: {type: count}
   var P = S.provs[pid], cid = P.owner, cost = 0, n = 0;
   for (var t in order) { cost += recruitCost(S, pid, t) * order[t]; n += order[t]; }
@@ -4591,31 +4626,38 @@ function kResumeBattle(b) {
 
 // ---- 徴兵 ----
 function kRecruitBox() {
-  var P = KS.provs[kSel], gold = KS.clans[KS.player].gold, order = {};
-  var h = '<p class="small">お金 💰' + kan(gold) + '　この国の 隊 ' + P.units.length + '/' + PROV_CAP + (offP(officerAt(KS, kSel)) > 50 ? '　（城主の 政で わりびき）' : '') + '</p>';
+  var P = KS.provs[kSel], gold = KS.clans[KS.player].gold, pts = {};
+  var h = '<p class="small">お金 💰' + kan(gold) + '　この国の 隊 ' + P.units.length + '/' + PROV_CAP + (offP(officerAt(KS, kSel)) > 50 ? '　（城主の 政で わりびき）' : '') +
+    '<br>1隊の 1/10 ずつ やとえる。へっている 隊が あれば さきに うめる（補充）。</p>';
   BUY_ORDER.forEach(function (t) {
-    var T = UNIT_TYPES[t];
+    var T = UNIT_TYPES[t], step = T.men / 10;
     if (t === 'teppo' && !teppoOk(KS)) { h += '<div class="arow"><span class="uic blue" style="opacity:.4">' + T.ch + '</span><span class="uname"><b style="color:#aaa">' + T.name + '</b><small>' + TEPPO_YEAR + '年に 伝来するまで やとえない</small></span></div>'; return; }
-    h += '<div class="arow"><span class="uic blue">' + T.ch + '</span><span class="uname"><b>' + T.name + '隊（' + T.men + menUnit(t) + '）</b><small>💰' + kan(recruitCost(KS, kSel, t)) + '　攻' + T.atk + ' 守' + T.def + ' 移' + T.mov + '</small></span>' +
-      '<button class="pm" data-t="' + t + '" data-d="-1">－</button><span class="num" id="rc_' + t + '">0</span><button class="pm" data-t="' + t + '" data-d="1">＋</button></div>';
+    var room = 0; P.units.forEach(function (u) { if (u.type === t) room += 10 - u.hp; });
+    h += '<div class="arow"><span class="uic blue">' + T.ch + '</span><span class="uname"><b>' + T.name + '</b><small>' + step + menUnit(t) + 'ごとに 💰' + (recruitCost(KS, kSel, t) * KAN / 10).toLocaleString('ja-JP') + '貫' + (room ? '・補充できる ' + room * step + menUnit(t) : '') + '</small></span>' +
+      '<button class="pm" data-t="' + t + '" data-d="-1">－</button><span class="num rcn" id="rc_' + t + '">0</span><button class="pm" data-t="' + t + '" data-d="1">＋</button><button class="pm big" data-t="' + t + '" data-d="10">＋隊</button></div>';
   });
   h += '<div id="kCost" class="kodds"></div>';
   function upd() {
-    var cost = 0, n = 0; for (var t in order) { cost += recruitCost(KS, kSel, t) * order[t]; n += order[t]; }
-    var menAdd = 0; for (var t2 in order) menAdd += UNIT_TYPES[t2].men * order[t2];
-    $('kCost').innerHTML = 'ごうけい 💰<b>' + kan(cost) + '</b>（' + n + '隊・' + menAdd.toLocaleString('ja-JP') + '人）　のこり 💰' + kan(gold - cost);
-    $('kRecOk').disabled = n === 0;
+    var pl = planRecruit(KS, kSel, pts), menAdd = 0;
+    for (var t in pts) menAdd += pts[t] * UNIT_TYPES[t].men / 10;
+    BUY_ORDER.forEach(function (t) { var el = $('kBody').querySelector('#rc_' + t); if (el) el.textContent = ((pts[t] || 0) * UNIT_TYPES[t].men / 10) + menUnit(t); });
+    $('kCost').innerHTML = 'ごうけい 💰<b>' + kan(pl.cost) + '</b>（' + Math.round(menAdd).toLocaleString('ja-JP') + '人' + (pl.fill ? '・補充 ' + pl.fill + '/10隊ぶん' : '') + (pl.newN ? '・新しい 隊 ' + pl.newN : '') + '）　のこり 💰' + kan(gold - pl.cost) +
+      (P.units.length + pl.newN > PROV_CAP ? '<br><span class="r">隊が ' + PROV_CAP + 'を こえる</span>' : '');
+    $('kRecOk').disabled = (!pl.fill && !pl.newN) || pl.cost > gold || P.units.length + pl.newN > PROV_CAP;
     Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
       var t = b.getAttribute('data-t'), d = +b.getAttribute('data-d');
-      b.disabled = d < 0 ? !(order[t] > 0) : (cost + recruitCost(KS, kSel, t) > gold || P.units.length + n >= PROV_CAP);
+      if (d < 0) { b.disabled = !(pts[t] > 0); return; }
+      var tryP = {}; for (var k in pts) tryP[k] = pts[k]; tryP[t] = (tryP[t] || 0) + d;
+      var pl2 = planRecruit(KS, kSel, tryP); b.disabled = pl2.cost > gold || P.units.length + pl2.newN > PROV_CAP;
     });
   }
   kModal('徴兵（' + PROV_BY[kSel].name + '）', h, [
-    { label: '🪖 やとう', cls: 'act', id: 'kRecOk', fn: function () { kSnap('徴兵'); var r = recruit(KS, kSel, order); if (!r.ok) kUndoStack.pop(); if (r.ok) { logC(KS, PROV_BY[kSel].name + 'で へいを ' + r.n + '隊 やとった', 'good'); kCloseModal(); kSave(); kUpdate(); } } },
+    { label: '🪖 やとう', cls: 'act', id: 'kRecOk', fn: function () { kSnap('徴兵'); var r = recruitPts(KS, kSel, pts); if (!r.ok) { kUndoStack.pop(); banner(r.msg, 1200); return; }
+        logC(KS, PROV_BY[kSel].name + 'で へいを ' + r.men.toLocaleString('ja-JP') + '人 やとった' + (r.fill ? '（補充あり）' : ''), 'good'); kCloseModal(); kSave(); kUpdate(); } },
     { label: 'やめる', cls: 'act sub', fn: kCloseModal }
   ]);
   Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
-    b.onclick = function () { SFX.tap(); var t = b.getAttribute('data-t'); order[t] = Math.max(0, (order[t] || 0) + (+b.getAttribute('data-d'))); $('rc_' + t).textContent = order[t]; upd(); };
+    b.onclick = function () { SFX.tap(); var t = b.getAttribute('data-t'); pts[t] = Math.max(0, (pts[t] || 0) + (+b.getAttribute('data-d'))); upd(); };
   });
   upd();
 }
