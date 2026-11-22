@@ -344,7 +344,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>史実の できごと</b>：その 年に なると 武将たちが 話し、「📖 史実では」で ほんとうの 歴史を しょうかい。歴史が うごく できごとも（当主の 交代・養子・厳島の 戦い など）。📖ボタンで あとから 読みかえせる。</li>
       <li><b>同盟</b>（🤝）の あいてとは おたがい せめない。でも ときどき きれる。じぶんから せめると 同盟は きれる。</li>
       <li>鉄砲は <b>1543年</b>に 伝わるまで やとえない。石見の 銀山は <b>1527年</b>に みつかって お金が ふえる。</li>
-      <li>きせつ（はる・なつ・あき・ふゆ）ごとに、じぶんの 国 1つに つき 1回 めいれい できる：<b>出陣</b>（となりを せめる）・<b>徴兵</b>（お金で へいを ふやす）・<b>内政</b>（石高 +1）・<b>移動</b>（へいを となりの じぶんの 国へ）。</li>
+      <li>きせつ（はる・なつ・あき・ふゆ）ごとに、じぶんの 国 1つで <b>出陣</b>（となりを せめる）・<b>徴兵</b>（お金で へいを ふやす）・<b>内政</b>（石高 +1）・<b>移動</b>（へいを となりの じぶんの 国へ）・<b>調略</b> を <b>それぞれ 1回ずつ</b> できる（徴兵して から 出陣、なども できる）。うごいた へいは その きせつ もう 移動 できない。とったばかりの 国は その きせつ めいれい できない。</li>
       <li>お金の たんいは <b>貫</b>。石高からの <b>年貢は 秋に まとめて</b> はいる。ほかの きせつは 商いの 収入だけ。石見の 銀山は まいきせつ お金が ふえる。</li>
       <li>へいは <b>隊</b>で うごく。1隊の 人数：足軽 300人・弓 200人・騎馬 50騎・鉄砲 50挺・工作 150人・忍び 20人。騎馬と 鉄砲は 人数は すくないが 高くて つよい。数字は いまの 人数。</li>
       <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
@@ -399,7 +399,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.3';
+var VERSION = 'v3.4';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1926,13 +1926,18 @@ function seasonStart(S) {
     if (cid === S.player && S.season === 2) logC(S, '秋の 年貢が はいった！ ＋' + kan(inc), 'good');
   });
   PROVS.forEach(function (p) {
-    var P = S.provs[p.id]; P.acted = false;
+    var P = S.provs[p.id]; P.acted = false; P.done = {};
     P.units.forEach(function (u) { u.hp = Math.min(10, u.hp + HEAL_PER_SEASON); });
   });
   S.phase = 'player';
 }
 
 // ---- 命令 ----
+// 1つの 国で、きせつごとに 出陣・徴兵・内政・移動・調略を それぞれ 1回ずつ できる（acted＝とったばかりで うごけない）
+var CMD_KINDS = ['attack', 'recruit', 'develop', 'move', 'scheme'];
+function didCmd(P, k) { return !!(P.done && P.done[k]); }
+function markCmd(P, k) { if (!P.done) P.done = {}; P.done[k] = 1; }
+function cmdCount(P) { return P.done ? Object.keys(P.done).length : 0; }
 function canCommand(S, pid) { var P = S.provs[pid]; return !S.over && S.phase === 'player' && P.owner === S.player && !P.acted; }
 function recruit(S, pid, order) {   // order: {type: count}
   var P = S.provs[pid], cid = P.owner, cost = 0, n = 0;
@@ -1943,7 +1948,7 @@ function recruit(S, pid, order) {   // order: {type: count}
   if (P.units.length + n > PROV_CAP) return { ok: false, msg: 'この国には もう はいれない（' + PROV_CAP + 'たいまで）' };
   S.clans[cid].gold -= cost;
   for (var t2 in order) for (var i = 0; i < order[t2]; i++) P.units.push(newUnit(S, t2));
-  P.acted = true;
+  markCmd(P, 'recruit');
   return { ok: true, cost: cost, n: n };
 }
 function develop(S, pid) {
@@ -1951,17 +1956,19 @@ function develop(S, pid) {
   if (S.clans[cid].gold < DEVELOP_COST) return { ok: false, msg: 'お金が たりない（' + DEVELOP_COST + '金）' };
   if (P.koku >= maxKoku(pid)) return { ok: false, msg: 'これいじょう ふやせない' };
   var add = offP(officerAt(S, pid)) >= 80 ? 2 : 1;
-  S.clans[cid].gold -= DEVELOP_COST; P.koku = Math.min(maxKoku(pid), P.koku + add); P.acted = true;
+  S.clans[cid].gold -= DEVELOP_COST; P.koku = Math.min(maxKoku(pid), P.koku + add); markCmd(P, 'develop');
   return { ok: true, add: add };
 }
 function moveUnits(S, from, to, uids) {
   var A = S.provs[from], B = S.provs[to];
   if (A.owner !== B.owner || ADJ[from].indexOf(to) < 0) return { ok: false, msg: 'となりの じぶんの 国にだけ うごかせる' };
-  var mv = A.units.filter(function (u) { return uids.indexOf(u.uid) >= 0; });
-  if (!mv.length) return { ok: false, msg: 'へいを えらんでね' };
+  var mv = A.units.filter(function (u) { return uids.indexOf(u.uid) >= 0 && u.mv !== S.turn; });
+  if (!mv.length) return { ok: false, msg: uids.length ? 'この きせつに うごいた へいは もう うごけない' : 'へいを えらんでね' };
   if (B.units.length + mv.length > PROV_CAP) return { ok: false, msg: PROV_CAP + 'たいを こえてしまう' };
-  A.units = A.units.filter(function (u) { return uids.indexOf(u.uid) < 0; });
-  B.units = B.units.concat(mv); A.acted = true;
+  var ids2 = mv.map(function (u) { return u.uid; });
+  A.units = A.units.filter(function (u) { return ids2.indexOf(u.uid) < 0; });
+  mv.forEach(function (u) { u.mv = S.turn; });
+  B.units = B.units.concat(mv); markCmd(A, 'move');
   return { ok: true, n: mv.length };
 }
 // 出陣の じゅんび（へいを 国から とりだす）
@@ -1983,7 +1990,7 @@ function startBattle(S, b) {
   if (b.defClan && isAlly(S, b.atkClan, b.defClan)) breakAlliance(S, b.atkClan, b.defClan, CLANS[b.atkClan].name + 'が うらぎった');
   var ids = b.atkUnits.map(function (u) { return u.uid; });
   A.units = A.units.filter(function (u) { return ids.indexOf(u.uid) < 0; });
-  A.acted = true;
+  markCmd(A, 'attack');
   S.pendingBattle = b;
 }
 // 合戦の けっか を 国に もどす
@@ -2097,7 +2104,7 @@ function cpuDecide(S, pid) {
   var enemies = neigh.filter(function (q) { return S.provs[q].owner !== cid && !isAlly(S, cid, S.provs[q].owner); });
   var hostileBorder = neigh.some(function (q) { return S.provs[q].owner !== cid; });
   // こうげき
-  if (enemies.length && P.units.length >= 4) {
+  if (!didCmd(P, 'attack') && enemies.length && P.units.length >= 4) {
     var keepN = Math.max(1, Math.round(P.units.length * 0.25));
     var sorted = P.units.slice().sort(function (a, b) { return strength([b]) - strength([a]); });
     var send0 = sorted.slice(0, P.units.length - keepN);
@@ -2116,7 +2123,7 @@ function cpuDecide(S, pid) {
   }
   // 調略（智の 高い 城主が いれば ときどき）
   var myO = officerAt(S, pid);
-  if (S.officers && myO && offI(myO) >= 75 && C.gold >= SCHEME_COST + 40 && cRand(S) < 0.25) {
+  if (!didCmd(P, 'scheme') && S.officers && myO && offI(myO) >= 75 && C.gold >= SCHEME_COST + 40 && cRand(S) < 0.25) {
     var sc2 = null;
     neigh.forEach(function (q) { var oc = S.provs[q].owner; if (oc === cid || (oc === S.player && S.turn <= truceTurns(S))) return;
       var p2 = oc === S.player && S.difficulty === 'easy' ? 0 : schemeOdds(S, pid, q, 'submit'); if (p2 > 0.35 && (!sc2 || p2 > sc2.p)) sc2 = { q: q, p: p2, k: 'submit' };
@@ -2125,7 +2132,7 @@ function cpuDecide(S, pid) {
   }
   // 徴兵（前線を 優先）
   var front = hostileBorder;
-  if (P.units.length < PROV_CAP && C.gold >= 20 && (front || P.units.length < 4)) {
+  if (!didCmd(P, 'recruit') && P.units.length < PROV_CAP && C.gold >= 20 && (front || P.units.length < 4)) {
     var budget = Math.floor(C.gold * (front ? 0.7 : 0.4)), order = {}, room = PROV_CAP - P.units.length, cnt = 0;
     var pref = ['ashigaru', 'yumi', 'ashigaru', 'kiba', 'ashigaru', 'kosaku', 'yumi'];
     if (teppoOk(S)) pref.push('teppo');
@@ -2139,14 +2146,14 @@ function cpuDecide(S, pid) {
     if (cnt) return { kind: 'recruit', order: order };
   }
   // 後方の兵を 前線へ
-  if (!front && P.units.length > 2) {
+  if (!didCmd(P, 'move') && !front && P.units.length > 2) {
     var fr = neigh.filter(function (q) { return S.provs[q].owner === cid && isFrontier(S, q) && S.provs[q].units.length < PROV_CAP - 2; });
     if (fr.length) {
       var dst = fr[0], n = Math.min(P.units.length - 2, PROV_CAP - S.provs[dst].units.length);
       if (n > 0) return { kind: 'move', to: dst, uids: P.units.slice(0, n).map(function (u) { return u.uid; }) };
     }
   }
-  if (C.gold >= DEVELOP_COST + 30 && P.koku < maxKoku(pid)) return { kind: 'develop' };
+  if (!didCmd(P, 'develop') && C.gold >= DEVELOP_COST + 30 && P.koku < maxKoku(pid)) return { kind: 'develop' };
   return { kind: 'wait' };
 }
 // CPU フェーズ：プレイヤーへの 攻撃が おきたら そこで とまる
@@ -2161,13 +2168,17 @@ function cpuBegin(S) {
   for (var i = queue.length - 1; i > 0; i--) { var j = Math.floor(cRand(S) * (i + 1)); var tmp = queue[i]; queue[i] = queue[j]; queue[j] = tmp; }
   S.cpu = { queue: queue };
 }
+var CPU_CMDS = 0;   // 0＝むずかしさで きめる（CPU は 1つの 国で きせつごとに かんたん・ふつう 1つ、むずかしい 2つまで）
+function cpuCmds(S) { return CPU_CMDS || (S.difficulty === 'hard' ? 2 : 1); }
 function cpuNext(S) {
   if (S.over) return { type: 'over' };
   while (S.cpu && S.cpu.queue.length) {
     var pid = S.cpu.queue.shift();
     var P = S.provs[pid];
-    if (!P.owner || P.owner === S.player || P.acted || !S.clans[P.owner].alive) continue;
+    if (!P.owner || P.owner === S.player || P.acted || !S.clans[P.owner].alive || cmdCount(P) >= cpuCmds(S)) continue;
     var d = cpuDecide(S, pid);
+    if (d.kind === 'wait') continue;
+    if (d.kind !== 'attack' && cmdCount(P) + 1 < cpuCmds(S)) S.cpu.queue.unshift(pid);   // つづけて もう1つ
     if (d.kind === 'attack') {
       var b = makeBattle(S, pid, d.to, d.uids);
       startBattle(S, b);
@@ -2181,7 +2192,7 @@ function cpuNext(S) {
     else if (d.kind === 'develop') develop(S, pid);
     else if (d.kind === 'move') moveUnits(S, pid, d.to, d.uids);
     else if (d.kind === 'scheme') { var sr = scheme(S, pid, d.to, d.how); if (S.over) return { type: 'over' }; }
-    P.acted = true;
+    markCmd(P, d.kind);   // しっぱいしても 同じ めいれいは もう しない
   }
   return { type: 'done' };
 }
@@ -2375,7 +2386,7 @@ function scheme(S, from, to, kind) {
   if (S.clans[cid].gold < SCHEME_COST) return { ok: false, msg: 'お金が たりない（' + SCHEME_COST + '金）' };
   var p = schemeOdds(S, from, to, kind);
   if (p <= 0) return { ok: false, msg: kind === 'submit' ? 'あいてが 大きすぎて したがわない' : 'もう 同盟して いる' };
-  S.clans[cid].gold -= SCHEME_COST; A.acted = true;
+  S.clans[cid].gold -= SCHEME_COST; markCmd(A, 'scheme');
   var me = officerAt(S, from), who = me ? me.name : CLANS[cid].lord;
   var win = cRand(S) < p;
   if (!win) {
@@ -3884,7 +3895,7 @@ function kIntro() {
   kModal(eraName(KS.year) + '年（' + KS.year + '）' + SEASONS[KS.season],
     '<p class="small">' + sc.desc + '</p>' +
     '<div class="kintro">' + crestHtml(KS.player, 72) + '<p><b>' + C.lord + '</b>（' + C.name + '）<br>' + C.desc + (al.length ? '<br>🤝 同盟：' + al.join('・') : '') + '</p></div>' +
-    '<ul class="khelp"><li>きせつ ごとに、じぶんの 国に 1つずつ めいれい できる。</li>' +
+    '<ul class="khelp"><li>きせつ ごとに、じぶんの 国 1つで <b>出陣・徴兵・内政・移動・調略を それぞれ 1回ずつ</b> できる。</li>' +
     '<li><b>出陣</b>：となりを せめる。<b>徴兵</b>：へいを やとう。<b>内政</b>：石高を ふやす。<b>移動</b>：へいを となりへ。<b>調略</b>：家ごと したがわせる・内応・同盟。</li>' +
     '<li><b>家臣</b>を 城主に すると つよくなる（武＝合戦、政＝お金・内政、智＝守り・調略）。👥ボタンで 家臣を 見よう。</li>' +
     '<li>お金（貫）は <b>秋の 年貢</b>で まとめて はいる。ほかの きせつは 商いの 収入だけ。中国地方の ' + PROVS.length + 'の りょうちを ぜんぶ とれば 統一！</li>' + (teppoOk(KS) ? '' : '<li>鉄砲は ' + TEPPO_YEAR + '年に 伝わるまで やとえない。</li>') + '</ul>',
@@ -4108,7 +4119,7 @@ function kRender() {
     c.fillStyle = '#2b1d14'; c.beginPath(); if (c.roundRect) c.roundRect(cr * 0.85 - bw2 / 2 + 4, cy - cr * 0.75 - 8, bw2, 16, 8); else c.rect(cr * 0.85 - bw2 / 2 + 4, cy - cr * 0.75 - 8, bw2, 16); c.fill();
     c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(mtx, cr * 0.85 + 4, cy - cr * 0.75 + 0.5);
     if (isAlly(KS, KS.player, P.owner)) { c.font = '13px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🤝', -cr * 0.9, cy + cr * 0.7); }
-    if (P.owner === KS.player && !P.acted && KS.phase === 'player') { c.beginPath(); c.arc(-cr * 0.85, cy - cr * 0.75, 6, 0, Math.PI * 2); c.fillStyle = '#ffe24a'; c.fill(); c.strokeStyle = '#7a5a00'; c.lineWidth = 1.5; c.stroke(); }
+    if (P.owner === KS.player && !P.acted && cmdCount(P) === 0 && KS.phase === 'player') { c.beginPath(); c.arc(-cr * 0.85, cy - cr * 0.75, 6, 0, Math.PI * 2); c.fillStyle = '#ffe24a'; c.fill(); c.strokeStyle = '#7a5a00'; c.lineWidth = 1.5; c.stroke(); }
     c.restore();
   });
   c.restore();
@@ -4157,7 +4168,8 @@ function kInfo() {
   if (kMode === 'attack') html += '<p class="hint">あかく 光る 国を クリックして せめる 国を えらぶ</p>';
   else if (kMode === 'move') html += '<p class="hint">あおく 光る じぶんの 国を クリックして いどう先を えらぶ</p>';
   else if (kMode === 'scheme') html += '<p class="hint">むらさきに 光る 国を クリックして 調略する あいてを えらぶ</p>';
-  else if (mine && P.acted) html += '<p class="hint">この 国は もう めいれい した</p>';
+  else if (mine && P.acted) html += '<p class="hint">とったばかりの 国は この きせつ めいれい できない</p>';
+  else if (mine && cmdCount(P)) html += '<p class="hint">この きせつに した こと：' + CMD_KINDS.filter(function (k) { return didCmd(P, k); }).map(function (k) { return CMD_NAME[k]; }).join('・') + '（ほかの めいれいは まだ できる）</p>';
   box.innerHTML = html;
   var acts = $('kActs'); acts.innerHTML = '';
   function btn(label, fn, cls, dis) { var b = document.createElement('button'); b.className = 'act ' + (cls || ''); b.textContent = label; b.disabled = !!dis; b.onclick = function () { SFX.tap(); fn(); }; acts.appendChild(b); }
@@ -4165,11 +4177,12 @@ function kInfo() {
   if (mine && !P.acted && KS.phase === 'player') {
     var canAtk = ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }) && P.units.length > 0;
     var canMv = ADJ[kSel].some(function (q) { return KS.provs[q].owner === KS.player; }) && P.units.length > 0;
-    btn('⚔ 出陣', function () { kMode = 'attack'; kUpdate(); }, 'katk', !canAtk);
-    btn('🪖 徴兵', kRecruitBox, '', P.units.length >= PROV_CAP);
-    btn('🌾 内政', kDevelopBox, 'kdev');
-    btn('🚶 移動', function () { kMode = 'move'; kUpdate(); }, 'sub', !canMv);
-    btn('🦊 調略', function () { kMode = 'scheme'; kUpdate(); }, 'kscheme', !ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }));
+    canMv = canMv && P.units.some(function (u) { return u.mv !== KS.turn; });
+    btn('⚔ 出陣' + (didCmd(P, 'attack') ? '✓' : ''), function () { kMode = 'attack'; kUpdate(); }, 'katk', !canAtk || didCmd(P, 'attack'));
+    btn('🪖 徴兵' + (didCmd(P, 'recruit') ? '✓' : ''), kRecruitBox, '', P.units.length >= PROV_CAP || didCmd(P, 'recruit'));
+    btn('🌾 内政' + (didCmd(P, 'develop') ? '✓' : ''), kDevelopBox, 'kdev', didCmd(P, 'develop'));
+    btn('🚶 移動' + (didCmd(P, 'move') ? '✓' : ''), function () { kMode = 'move'; kUpdate(); }, 'sub', !canMv || didCmd(P, 'move'));
+    btn('🦊 調略' + (didCmd(P, 'scheme') ? '✓' : ''), function () { kMode = 'scheme'; kUpdate(); }, 'kscheme', didCmd(P, 'scheme') || !ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }));
   }
   if (mine && KS.phase === 'player') btn('👥 城主', function () { kAssignBox(kSel); }, 'sub');
   if (kUndoStack.length && KS.phase === 'player') btn('↩ もどす', kUndo, 'undo');
@@ -4291,6 +4304,7 @@ function kAttackBox(from, to) {
   ]);
   pickerBind(odds); odds();
 }
+var CMD_NAME = { attack: '出陣', recruit: '徴兵', develop: '内政', move: '移動', scheme: '調略' };
 function kRouteHtml(from, to) {
   var rt = routeOf(from, to); if (!rt) return '';
   var t = rt.type === 'sea' ? '⛵ <b>海路</b>：船で わたって 上陸する。<b>騎馬は つれていけない</b>（のこる）。攻め手 すこし ふり。'
@@ -4521,7 +4535,7 @@ function kSchemeBox(from, to) {
 // ---- 季節を おわる → CPU ----
 function kEndSeason() {
   if (!KS || KS.phase !== 'player') return;
-  var left = provsOf(KS, KS.player).filter(function (pid) { return !KS.provs[pid].acted; }).length;
+  var left = provsOf(KS, KS.player).filter(function (pid) { return !KS.provs[pid].acted && cmdCount(KS.provs[pid]) === 0; }).length;
   function go() { kCloseModal(); kMode = 'idle'; kUndoClear(); cpuBegin(KS); kSave(); kRunCpu(); }
   if (left > 0) kModal('きせつを おわる？', '<p>まだ めいれい していない 国が ' + left + 'か国 あります。</p>', [{ label: 'おわる', cls: 'act', fn: go }, { label: 'もどる', cls: 'act sub', fn: kCloseModal }]);
   else go();
