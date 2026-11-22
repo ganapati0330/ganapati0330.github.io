@@ -344,7 +344,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>史実の できごと</b>：その 年に なると 武将たちが 話し、「📖 史実では」で ほんとうの 歴史を しょうかい。歴史が うごく できごとも（当主の 交代・養子・厳島の 戦い など）。📖ボタンで あとから 読みかえせる。</li>
       <li><b>同盟</b>（🤝）の あいてとは おたがい せめない。でも ときどき きれる。じぶんから せめると 同盟は きれる。</li>
       <li>鉄砲は <b>1543年</b>に 伝わるまで やとえない。石見の 銀山は <b>1527年</b>に みつかって お金が ふえる。</li>
-      <li>きせつ（はる・なつ・あき・ふゆ）ごとに、じぶんの 国 1つで <b>出陣</b>（となりを せめる）・<b>徴兵</b>（お金で へいを ふやす）・<b>内政</b>（石高 +1）・<b>移動</b>（へいを となりの じぶんの 国へ）・<b>調略</b> を <b>それぞれ 1回ずつ</b> できる（徴兵して から 出陣、なども できる）。うごいた へいは その きせつ もう 移動 できない。とったばかりの 国は その きせつ めいれい できない。</li>
+      <li>きせつ（はる・なつ・あき・ふゆ）ごとに、じぶんの 国 1つで <b>出陣</b>（となりを せめる）・<b>徴兵</b>（お金で へいを ふやす）・<b>内政</b>（石高 +1）・<b>移動</b>（へいを となりの じぶんの 国へ）・<b>調略</b> から <b>3つまで</b> えらんで できる（おなじ めいれいは 1回ずつ。徴兵して から 出陣、なども できる）。うごいた へいは その きせつ もう 移動 できない。とったばかりの 国は その きせつ めいれい できない。</li>
       <li>お金の たんいは <b>貫</b>。石高からの <b>年貢は 秋に まとめて</b> はいる。ほかの きせつは 商いの 収入だけ。石見の 銀山は まいきせつ お金が ふえる。</li>
       <li>へいは <b>隊</b>で うごく。1隊の 人数：足軽 300人・弓 200人・騎馬 50騎・鉄砲 50挺・工作 150人・忍び 20人。騎馬と 鉄砲は 人数は すくないが 高くて つよい。数字は いまの 人数。</li>
       <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
@@ -399,7 +399,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.4';
+var VERSION = 'v3.5';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1938,6 +1938,8 @@ var CMD_KINDS = ['attack', 'recruit', 'develop', 'move', 'scheme'];
 function didCmd(P, k) { return !!(P.done && P.done[k]); }
 function markCmd(P, k) { if (!P.done) P.done = {}; P.done[k] = 1; }
 function cmdCount(P) { return P.done ? Object.keys(P.done).length : 0; }
+var MAX_CMDS = 3;   // プレイヤーは 1つの 国で きせつごとに 3つまで
+function cmdFull(P) { return cmdCount(P) >= MAX_CMDS; }
 function canCommand(S, pid) { var P = S.provs[pid]; return !S.over && S.phase === 'player' && P.owner === S.player && !P.acted; }
 function recruit(S, pid, order) {   // order: {type: count}
   var P = S.provs[pid], cid = P.owner, cost = 0, n = 0;
@@ -3895,7 +3897,7 @@ function kIntro() {
   kModal(eraName(KS.year) + '年（' + KS.year + '）' + SEASONS[KS.season],
     '<p class="small">' + sc.desc + '</p>' +
     '<div class="kintro">' + crestHtml(KS.player, 72) + '<p><b>' + C.lord + '</b>（' + C.name + '）<br>' + C.desc + (al.length ? '<br>🤝 同盟：' + al.join('・') : '') + '</p></div>' +
-    '<ul class="khelp"><li>きせつ ごとに、じぶんの 国 1つで <b>出陣・徴兵・内政・移動・調略を それぞれ 1回ずつ</b> できる。</li>' +
+    '<ul class="khelp"><li>きせつ ごとに、じぶんの 国 1つで <b>3つまで</b> めいれい できる（出陣・徴兵・内政・移動・調略から、おなじ ものは 1回ずつ）。</li>' +
     '<li><b>出陣</b>：となりを せめる。<b>徴兵</b>：へいを やとう。<b>内政</b>：石高を ふやす。<b>移動</b>：へいを となりへ。<b>調略</b>：家ごと したがわせる・内応・同盟。</li>' +
     '<li><b>家臣</b>を 城主に すると つよくなる（武＝合戦、政＝お金・内政、智＝守り・調略）。👥ボタンで 家臣を 見よう。</li>' +
     '<li>お金（貫）は <b>秋の 年貢</b>で まとめて はいる。ほかの きせつは 商いの 収入だけ。中国地方の ' + PROVS.length + 'の りょうちを ぜんぶ とれば 統一！</li>' + (teppoOk(KS) ? '' : '<li>鉄砲は ' + TEPPO_YEAR + '年に 伝わるまで やとえない。</li>') + '</ul>',
@@ -4169,12 +4171,12 @@ function kInfo() {
   else if (kMode === 'move') html += '<p class="hint">あおく 光る じぶんの 国を クリックして いどう先を えらぶ</p>';
   else if (kMode === 'scheme') html += '<p class="hint">むらさきに 光る 国を クリックして 調略する あいてを えらぶ</p>';
   else if (mine && P.acted) html += '<p class="hint">とったばかりの 国は この きせつ めいれい できない</p>';
-  else if (mine && cmdCount(P)) html += '<p class="hint">この きせつに した こと：' + CMD_KINDS.filter(function (k) { return didCmd(P, k); }).map(function (k) { return CMD_NAME[k]; }).join('・') + '（ほかの めいれいは まだ できる）</p>';
+  else if (mine && cmdCount(P)) html += '<p class="hint">この きせつに した こと：' + CMD_KINDS.filter(function (k) { return didCmd(P, k); }).map(function (k) { return CMD_NAME[k]; }).join('・') + '（あと ' + Math.max(0, MAX_CMDS - cmdCount(P)) + 'つ）</p>';
   box.innerHTML = html;
   var acts = $('kActs'); acts.innerHTML = '';
   function btn(label, fn, cls, dis) { var b = document.createElement('button'); b.className = 'act ' + (cls || ''); b.textContent = label; b.disabled = !!dis; b.onclick = function () { SFX.tap(); fn(); }; acts.appendChild(b); }
   if (kMode !== 'idle') { btn('やめる', function () { kMode = 'idle'; kUpdate(); }, 'sub'); return; }
-  if (mine && !P.acted && KS.phase === 'player') {
+  if (mine && !P.acted && !cmdFull(P) && KS.phase === 'player') {
     var canAtk = ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }) && P.units.length > 0;
     var canMv = ADJ[kSel].some(function (q) { return KS.provs[q].owner === KS.player; }) && P.units.length > 0;
     canMv = canMv && P.units.some(function (u) { return u.mv !== KS.turn; });
