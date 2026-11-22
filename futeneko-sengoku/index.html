@@ -399,7 +399,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.2';
+var VERSION = 'v3.3';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2855,7 +2855,7 @@ function startGame() {
   beginBattle('かっせん はじまり！ ' + (G.playerSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.castle.name + '・' + G.turnLimit + 'ターン）');
 }
 function beginBattle(intro) {
-  sel = null; reach = null; targets = []; anim = []; FX = []; FALLEN = []; STAMP = null; terrCache = null; phase = 'idle'; hoverInfo = null; LOG = []; undoPos = null; moveAnim = null;
+  sel = null; reach = null; targets = []; anim = []; FX = []; FALLEN = []; STAMP = null; terrCache = null; phase = 'idle'; hoverInfo = null; LOG = []; undoPos = null; moveAnim = null; clearUndo();
   show('gameScreen');
   logMsg(intro, 'sys');
   resize(); startCamera(); lastPanelH = $('bottom').offsetHeight;
@@ -3347,8 +3347,12 @@ function updateInfo() {
   if (!u) {
     if (G.side === G.playerSide) {
       var n = unitsOf(G, G.playerSide).filter(function (x) { return !x.acted; }).length;
-      box.innerHTML = '<div class="nextrow"><p class="hint">じぶんの へいを クリック。のこり ' + n + 'たい</p><button class="act" id="nextBtn">▶ つぎの へい</button></div>';
-      $('nextBtn').onclick = function () { SFX.tap(); nextUnit(); };
+      var ub = undoStack.length ? '<button class="act undo" id="undoBtn">↩ もどす</button>' : '';
+      if (n === 0) box.innerHTML = '<div class="nextrow"><p class="hint">ぜんぶ うごいた！</p>' + ub + '<button class="act" id="endBtn2">ターンおわり ▶</button></div>';
+      else box.innerHTML = '<div class="nextrow"><p class="hint">じぶんの へいを クリック。のこり ' + n + 'たい</p>' + ub + '<button class="act" id="nextBtn">▶ つぎの へい</button></div>';
+      if ($('nextBtn')) $('nextBtn').onclick = function () { SFX.tap(); nextUnit(); };
+      if ($('endBtn2')) $('endBtn2').onclick = function () { SFX.tap(); playerEndTurn(); };
+      if ($('undoBtn')) $('undoBtn').onclick = function () { SFX.tap(); undoLast(); };
     } else box.innerHTML = '<p class="hint">あいてが かんがえています…</p>';
     return;
   }
@@ -3440,6 +3444,7 @@ function showActions() {
   var w = document.createElement('button'); w.className = 'act'; w.textContent = '⏸ まつ'; w.onclick = function () { SFX.tap(); finishUnit(); }; bar.appendChild(w);
   var nx = document.createElement('button'); nx.className = 'act sub'; nx.textContent = '▶ つぎ'; nx.onclick = function () { SFX.tap(); nextUnit(); }; bar.appendChild(nx);
   if (phase === 'moved' && undoPos && undoPos.unit === sel) { var ub = document.createElement('button'); ub.className = 'act undo'; ub.textContent = '↩ もどす'; ub.onclick = function () { SFX.tap(); undoMove(); }; bar.appendChild(ub); }
+  if (phase === 'idle' && undoStack.length) { var ub2 = document.createElement('button'); ub2.className = 'act undo'; ub2.textContent = '↩ ひとつ前'; ub2.onclick = function () { SFX.tap(); undoLast(); }; bar.appendChild(ub2); }
   if (phase === 'idle') { var c = document.createElement('button'); c.className = 'act sub'; c.textContent = 'やめる'; c.onclick = function () { SFX.tap(); deselect(); }; bar.appendChild(c); }
   bar.classList.add('on');
 }
@@ -3447,16 +3452,32 @@ var confirmAct = null;
 function fleeUnit(ok) {
   var u = sel; if (!u || !canFlee(G, u)) return;
   if (u.type === 'taisho' && !ok) { confirmAct = function () { fleeUnit(true); }; $('confirmMsg').textContent = 'たいしょうが にげると この合戦は まけに なります。にげますか？'; $('confirmBox').classList.add('on'); return; }
-  var c = u.c, r = u.r, e = doFlee(G, u);
+  commitUndo(); var c = u.c, r = u.r, e = doFlee(G, u);
   floatText(c, r, e.name + 'へ', '#bfe0ff'); SFX.move();
   logMsg(unitName(u) + ' が ' + e.name + 'へ 退却した（' + menOf(u) + menUnit(u.type) + '）');
   deselect(); updateHud();
   if (checkVictory(G)) return gameOver();
 }
+// ---- ひとつ 前に もどす（移動・まつ・退却。こうげきなど 運の からむ 行動の あとは もどせない） ----
+var undoStack = [], pendingSnap = null;
+function snapUnits() {
+  return { log: LOG.length, units: G.units.filter(function (u) { return u.side === G.playerSide; }).map(function (u) {
+    return { u: u, c: u.c, r: u.r, moved: u.moved, acted: u.acted, fled: u.fled, fledTo: u.fledTo, fledName: u.fledName }; }) };
+}
+function commitUndo() { undoStack.push(pendingSnap || snapUnits()); pendingSnap = null; if (undoStack.length > 30) undoStack.shift(); }
+function clearUndo() { undoStack = []; pendingSnap = null; }
+function undoLast() {
+  if (!G || G.over || G.side !== G.playerSide || phase === 'anim' || phase === 'cpu' || moveAnim) return;
+  var sn = undoStack.pop(); if (!sn) return;
+  sn.units.forEach(function (o) { var u = o.u; u.c = o.c; u.r = o.r; u.moved = o.moved; u.acted = o.acted; u.fled = o.fled; u.fledTo = o.fledTo; u.fledName = o.fledName; });
+  LOG.length = Math.min(LOG.length, sn.log); if (typeof renderLog === 'function') renderLog();
+  undoPos = null; sel = null; reach = null; targets = []; phase = 'idle'; hideActions(); hoverInfo = null;
+  banner('ひとつ 前に もどした', 800); updateHud();
+}
 var undoPos = null;
 function undoMove() {
   if (!undoPos || !sel || undoPos.unit !== sel || phase !== 'moved') return;
-  var u = sel; u.c = undoPos.c; u.r = undoPos.r; u.moved = false; undoPos = null;
+  var u = sel; u.c = undoPos.c; u.r = undoPos.r; u.moved = false; undoPos = null; pendingSnap = null;
   selectUnit(u);
 }
 function hideActions() { $('actBar').classList.remove('on'); $('actBar').innerHTML = ''; }
@@ -3468,7 +3489,7 @@ function selectUnit(u) {
 }
 function nextUnit() {
   if (!G || G.over || G.side !== G.playerSide || phase === 'anim' || phase === 'cpu' || moveAnim) return;
-  if (phase === 'moved' && sel) { sel.acted = true; deselect(); updateHud(); if (checkVictory(G)) return gameOver(); }
+  if (phase === 'moved' && sel) { commitUndo(); sel.acted = true; deselect(); updateHud(); if (checkVictory(G)) return gameOver(); }
   var list = unitsOf(G, G.playerSide).filter(function (x) { return !x.acted && !x.moved; });
   if (!list.length) list = unitsOf(G, G.playerSide).filter(function (x) { return !x.acted; });
   if (!list.length) { afterPlayerAction(); return; }
@@ -3476,14 +3497,15 @@ function nextUnit() {
   hoverInfo = null; selectUnit(list[i]); ensureVisible(list[i]);
 }
 function finishUnit() {
-  if (sel) sel.acted = true;
+  if (sel) { commitUndo(); sel.acted = true; }
   deselect(); updateHud();
   afterPlayerAction();
 }
 function afterPlayerAction() {
   if (checkVictory(G)) { return gameOver(); }
   var left = unitsOf(G, G.playerSide).filter(function (u) { return !u.acted; });
-  if (left.length === 0) setTimeout(playerEndTurn, 350);
+  if (left.length === 0 && !undoStack.length) setTimeout(playerEndTurn, 350);
+  else if (left.length === 0) updateInfo();
 }
 function performTarget(t) {
   var u = sel; if (!u) return;
@@ -3496,7 +3518,7 @@ function performTarget(t) {
     } };
     return;
   }
-  phase = 'anim'; hideActions();
+  phase = 'anim'; hideActions(); clearUndo();
   if (t.kind === 'attack') {
     var e = t.unit; fxAttack(u, e.c, e.r); var res = doAttack(G, u, e);
     if (res.killed) fxFall(e); if (res.counterKilled) fxFall(u);
@@ -3533,7 +3555,7 @@ function onTapHex(c, r, snapUnit) {
   }
   if (sel && phase === 'idle' && reach && reach[key(c, r)] && !(c === sel.c && r === sel.r)) {
     // 移動
-    var path = pathTo(reach, c, r); var mv = sel; var from0 = [sel.c, sel.r];
+    var path = pathTo(reach, c, r); var mv = sel; var from0 = [sel.c, sel.r]; pendingSnap = snapUnits();
     SFX.move(); hideActions(); targets = []; reach = null; phase = 'anim';
     moveAnim = { unit: mv, path: path, t: 0, cb: function () {
       mv.c = c; mv.r = r; mv.moved = true; undoPos = { unit: mv, c: from0[0], r: from0[1] };
@@ -3546,7 +3568,7 @@ function onTapHex(c, r, snapUnit) {
   }
   if (phase === 'moved') {
     // 移動したあと：ほかの場所を クリック ＝ その兵は「まつ」
-    var cur = sel; cur.acted = true; deselect(); updateHud();
+    var cur = sel; commitUndo(); cur.acted = true; deselect(); updateHud();
     if (checkVictory(G)) return gameOver();
     if (u && u.side === G.playerSide && !u.acted && u !== cur) { SFX.tap(); selectUnit(u); return; }
     if (u && u !== cur) { hoverInfo = u; updateInfo(); }
@@ -3574,7 +3596,7 @@ function nearestTargetUnit(wx, wy) {
 function deselectKeep() { sel = null; reach = null; targets = []; phase = 'idle'; hideActions(); }
 function playerEndTurn() {
   if (!G || G.over || G.side !== G.playerSide) return;
-  deselect(); hoverInfo = null;
+  deselect(); hoverInfo = null; clearUndo();
   endTurn(G);
   if (G.over) return gameOver();
   updateHud(); SFX.turn(); banner('あいての ばん', 900);
@@ -3852,7 +3874,7 @@ function renderClanScreen() {
   ['easy', 'normal', 'hard'].forEach(function (d) { $('kdif_' + d).classList.toggle('sel', kNew.difficulty === d); });
 }
 function startCampaign() {
-  KS = newCampaign({ clan: kNew.clan, face: kNew.face, difficulty: kNew.difficulty, scenario: kNew.scenario });
+  kUndoClear(); KS = newCampaign({ clan: kNew.clan, face: kNew.face, difficulty: kNew.difficulty, scenario: kNew.scenario });
   kSel = provsOf(KS, KS.player)[0]; kMode = 'idle';
   kSave(); openMap();
   kIntro();
@@ -3870,7 +3892,7 @@ function kIntro() {
 }
 function continueCampaign() {
   $('modeBox').classList.remove('on');
-  KS = kLoad(); if (!KS) return;
+  KS = kLoad(); if (!KS) return; kUndoClear();
   kMap.grid = null;
   kSel = provsOf(KS, KS.player)[0] || null; kMode = 'idle';
   openMap();
@@ -4150,6 +4172,17 @@ function kInfo() {
     btn('🦊 調略', function () { kMode = 'scheme'; kUpdate(); }, 'kscheme', !ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }));
   }
   if (mine && KS.phase === 'player') btn('👥 城主', function () { kAssignBox(kSel); }, 'sub');
+  if (kUndoStack.length && KS.phase === 'player') btn('↩ もどす', kUndo, 'undo');
+}
+// ---- ひとつ 前に もどす（徴兵・内政・移動・城主 だけ。合戦・調略・きせつの おわりは もどせない） ----
+var kUndoStack = [];
+function kSnap(what) { kUndoStack.push({ s: serialize(KS), what: what, sel: kSel }); if (kUndoStack.length > 20) kUndoStack.shift(); }
+function kUndoClear() { kUndoStack = []; }
+function kUndo() {
+  var u = kUndoStack.pop(); if (!u) return;
+  var S2 = deserialize(u.s); if (!S2) return;
+  KS = S2; kSel = u.sel; kMode = 'idle'; kSave();
+  banner('「' + u.what + '」を とりけした', 1200); kUpdate();
 }
 
 // ---- 地図の 操作 ----
@@ -4269,7 +4302,7 @@ function kLaunch(from, to, how) {
   var ids = pickerUids(KS.provs[from].units); if (!ids.length) return;
   kCloseModal(); kMode = 'idle';
   var b = makeBattle(KS, from, to, ids);
-  b.playerSide = 'atk';
+  b.playerSide = 'atk'; kUndoClear();
   startBattle(KS, b); kSave();
   logC(KS, CLANS[KS.player].lord + 'が ' + PROV_BY[to].name + 'へ 出陣！（' + menStr(menTotal(b.atkUnits)) + '）', 'good');
   if (how === 'auto' || !b.defUnits.length) kAutoBattle(b);
@@ -4368,7 +4401,7 @@ function kRecruitBox() {
     });
   }
   kModal('徴兵（' + PROV_BY[kSel].name + '）', h, [
-    { label: '🪖 やとう', cls: 'act', id: 'kRecOk', fn: function () { var r = recruit(KS, kSel, order); if (r.ok) { logC(KS, PROV_BY[kSel].name + 'で へいを ' + r.n + '隊 やとった', 'good'); kCloseModal(); kSave(); kUpdate(); } } },
+    { label: '🪖 やとう', cls: 'act', id: 'kRecOk', fn: function () { kSnap('徴兵'); var r = recruit(KS, kSel, order); if (!r.ok) kUndoStack.pop(); if (r.ok) { logC(KS, PROV_BY[kSel].name + 'で へいを ' + r.n + '隊 やとった', 'good'); kCloseModal(); kSave(); kUpdate(); } } },
     { label: 'やめる', cls: 'act sub', fn: kCloseModal }
   ]);
   Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
@@ -4382,14 +4415,14 @@ function kDevelopBox() {
   var ok = KS.clans[KS.player].gold >= DEVELOP_COST && P.koku < mx;
   var add = offP(officerAt(KS, kSel)) >= 80 ? 2 : 1;
   kModal('内政（' + PROV_BY[kSel].name + '）', '<p>💰' + kan(DEVELOP_COST) + ' つかって 田畑を ひらき、石高を <b>+' + add + '万石</b> ふやします。' + (add > 1 ? '（城主の 政が 高いので 2ばい！）' : '') + '</p><p class="small">いまの 石高 ' + P.koku + '万石（さいだい ' + mx + '）。石高が ふえると 秋の 年貢が ふえる。</p>',
-    [{ label: '🌾 内政する', cls: 'act', disabled: !ok, fn: function () { var r = develop(KS, kSel); if (r.ok) { logC(KS, PROV_BY[kSel].name + 'の 石高が ' + KS.provs[kSel].koku + '万石に ふえた', 'good'); kSave(); } kCloseModal(); kUpdate(); } },
+    [{ label: '🌾 内政する', cls: 'act', disabled: !ok, fn: function () { kSnap('内政'); var r = develop(KS, kSel); if (!r.ok) kUndoStack.pop(); if (r.ok) { logC(KS, PROV_BY[kSel].name + 'の 石高が ' + KS.provs[kSel].koku + '万石に ふえた', 'good'); kSave(); } kCloseModal(); kUpdate(); } },
      { label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
 }
 // ---- 移動 ----
 function kMoveBox(from, to) {
   var A = KS.provs[from];
   kModal('移動 ' + PROV_BY[from].name + ' → ' + PROV_BY[to].name, '<p class="small">' + PROV_BY[to].name + 'の へい ' + KS.provs[to].units.length + '/' + PROV_CAP + '</p>' + pickerHtml(A.units, 'none'),
-    [{ label: '🚶 うごかす', cls: 'act', fn: function () { var r = moveUnits(KS, from, to, pickerUids(A.units)); if (r.ok) { logC(KS, PROV_BY[from].name + 'から ' + PROV_BY[to].name + 'へ ' + r.n + '隊 いどう', 'good'); kMode = 'idle'; kCloseModal(); kSave(); kUpdate(); } else banner(r.msg, 1200); } },
+    [{ label: '🚶 うごかす', cls: 'act', fn: function () { kSnap('移動'); var r = moveUnits(KS, from, to, pickerUids(A.units)); if (!r.ok) kUndoStack.pop(); if (r.ok) { logC(KS, PROV_BY[from].name + 'から ' + PROV_BY[to].name + 'へ ' + r.n + '隊 いどう', 'good'); kMode = 'idle'; kCloseModal(); kSave(); kUpdate(); } else banner(r.msg, 1200); } },
      { label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
   pickerBind();
 }
@@ -4445,7 +4478,7 @@ function kAssignBox(pid) {
   h += '</div>';
   kModal('城主（' + PROV_BY[pid].name + '）', h, [{ label: 'とじる', cls: 'act sub', fn: kCloseModal }]);
   Array.prototype.forEach.call($('kBody').querySelectorAll('.koff'), function (b) {
-    b.onclick = function () { SFX.tap(); var oid = b.getAttribute('data-o'); setOfficer(KS, pid, oid); logC(KS, KS.officers[oid].name + 'を ' + PROV_BY[pid].name + 'の 城主に した', 'good'); kSave(); kCloseModal(); kUpdate(); };
+    b.onclick = function () { SFX.tap(); var oid = b.getAttribute('data-o'); kSnap('城主'); setOfficer(KS, pid, oid); logC(KS, KS.officers[oid].name + 'を ' + PROV_BY[pid].name + 'の 城主に した', 'good'); kSave(); kCloseModal(); kUpdate(); };
   });
 }
 function kOfficersBox() {
@@ -4473,7 +4506,7 @@ function kSchemeBox(from, to) {
     '<button class="kopt" id="ksAlly"' + (pa <= 0 || poor ? ' disabled' : '') + '><b>🤝 同盟を むすぶ</b><small>おたがい せめなくなる（政が 大事）。</small><em>' + (pa <= 0 ? '同盟ずみ' : pa + '%') + '</em></button></div>';
   kModal('調略（' + PROV_BY[from].name + ' → ' + PROV_BY[to].name + '）', h, [{ label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
   function go(kind) {
-    var r = scheme(KS, from, to, kind); kMode = 'idle'; kCloseModal(); kSave();
+    var r = scheme(KS, from, to, kind); kUndoClear(); kMode = 'idle'; kCloseModal(); kSave();
     if (!r.ok) { banner(r.msg, 1400); kUpdate(); return; }
     (r.win ? SFX.win : SFX.lose)();
     banner(r.win ? '調略 せいこう！' : '調略 しっぱい…', 1400);
@@ -4489,7 +4522,7 @@ function kSchemeBox(from, to) {
 function kEndSeason() {
   if (!KS || KS.phase !== 'player') return;
   var left = provsOf(KS, KS.player).filter(function (pid) { return !KS.provs[pid].acted; }).length;
-  function go() { kCloseModal(); kMode = 'idle'; cpuBegin(KS); kSave(); kRunCpu(); }
+  function go() { kCloseModal(); kMode = 'idle'; kUndoClear(); cpuBegin(KS); kSave(); kRunCpu(); }
   if (left > 0) kModal('きせつを おわる？', '<p>まだ めいれい していない 国が ' + left + 'か国 あります。</p>', [{ label: 'おわる', cls: 'act', fn: go }, { label: 'もどる', cls: 'act sub', fn: kCloseModal }]);
   else go();
 }
