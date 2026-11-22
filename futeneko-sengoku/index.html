@@ -385,7 +385,7 @@ button{font-family:inherit;cursor:pointer;}
       <li>お金の たんいは <b>貫</b>。石高からの <b>年貢は 秋に まとめて</b> はいる。ほかの きせつは 商いの 収入だけ。石見の 銀山は まいきせつ お金が ふえる。</li>
       <li>へいは <b>隊</b>で うごく。1隊の 人数：足軽 300人・弓 200人・騎馬 50騎・鉄砲 50挺・工作 150人・忍び 20人。騎馬と 鉄砲は 人数は すくないが 高くて つよい。数字は いまの 人数。</li>
       <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
-      <li><b>🌾 内政は 領内マップで</b>：じぶんの 国の 中の ヘックスに たてる。<b>🌾田畑</b>（開墾：川や 田畑の 近く。石高 +0.5万石）・<b>🏘町</b>（道や 城の となり。まいきせつ +200貫、4つまで）・<b>⛏鉱山</b>（◆鉱脈の ある 国だけ：石見銀山・吉岡銅山・奥出雲の たたら など）・<b>🏺名産</b>（町の となりに 1つ。備前焼・因州和紙・備後表 など）・<b>🧂塩田</b>（海べ）。お金の かぎり いくつでも たてられ、↩で 1つずつ もどせる。たてた ものは 合戦の ちずにも でる。🗾ボタンで いつでも 見られる。</li>
+      <li><b>🌾 内政は 領内マップで</b>：じぶんの 国の 中の ヘックスに たてる。<b>🌾田畑</b>（開墾：川や 田畑の 近く。石高 +0.5万石。石高の 上限は なく、水を ひける 土地が あるだけ ふやせる。ただし ひらくほど 人手が たりなくなって 高くなる。森・丘は 割高）・<b>🏘町</b>（道や 城の となり。まいきせつ +200貫。町 1つを 田畑 6マスで ささえる）・<b>⛏鉱山</b>（◆鉱脈の ある 国だけ：石見銀山・吉岡銅山・奥出雲の たたら など）・<b>🏺名産</b>（町の となり。備前焼・因州和紙・備後表 など）・<b>🧂塩田</b>（海べ）。お金の かぎり いくつでも たてられ、↩で 1つずつ もどせる。たてた ものは 合戦の ちずにも でる。🗾ボタンで いつでも 見られる。</li>
       <li><b>中国地方は 1まいの ヘックス地図</b>：海岸線・国境は 国土数値情報、山・峠・川は 地理の 知識で つくった もの。国取りの 地図の こい 茶色が <b>けわしい山（とおれない）</b>。国どうしは <b>道</b>で つながる：🛤 陸路・⛰ <b>峠道</b>（四十曲峠・志戸坂峠・明地峠 など。守りが すこし ゆうり）・⛵ <b>海路</b>（船で 上陸。騎馬は つれていけない）。🚫 は 山が けわしくて 国境が あっても せめられない ところ。</li>
       <li><b>合戦の ちずは その 場所の 地形</b>：同じ 地図から 城の まわりを きりだす。<b>攻め手が とおってきた 道が ちずの 下</b>（左上の 方位で 北が わかる）。点線は 国ざかい、こい 茶色の 山は とおれない。</li>
       <li><b>退き口（🏃）</b>：守りは みかたの となりの 国の 方角に、攻めは うしろ（出陣した 国）に にげ道が ある。そこに いる 隊は「🏃 にげる」で その国へ 退却できる（へいは そのまま のこる）。城が おちたとき にげおくれた 守りの へいは 半分に へる。大将が にげると その合戦は まけ。となりに みかたの 国が ないと 籠城で にげ場は ない。</li>
@@ -437,7 +437,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.10';
+var VERSION = 'v3.11';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1947,7 +1947,8 @@ function totalKoku(S, cid) { var k = 0; provsOf(S, cid).forEach(function (pid) {
 function totalUnits(S, cid) { var n = 0; provsOf(S, cid).forEach(function (pid) { n += S.provs[pid].units.length; }); return n; }
 function unitCost(type) { return UNIT_TYPES[type].cost * GOLD_PER_COST; }
 function recruitCost(S, pid, type) { var o = S.officers ? officerAt(S, pid) : null; return Math.max(5, Math.round(unitCost(type) * (1 - (offP(o) - 50) / 400))); }
-function maxKoku(pid) { return Math.round(PROV_BY[pid].koku * 1.5); }
+function maxKoku(pid) { return Math.round(PROV_BY[pid].koku * 1.5); }   // CPU の 内政の めやすに だけ つかう（ルールの 上限では ない）
+function cpuKokuGoal(S, pid) { return PROV_BY[pid].koku * (S.difficulty === 'hard' ? 2 : 1.5); }
 
 // ---- 同盟 ----
 function isAlly(S, a, b) { if (!a || !b || a === b) return false; return (S.allies || []).some(function (p) { return (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a); }); }
@@ -2027,14 +2028,14 @@ function recruit(S, pid, order) {   // order: {type: count}
 }
 // ==== 領内（国の 中の ヘックス）：開墾・町・鉱山・名産・塩田 ====
 var BLD = {
-  field:    { name: '田畑',  icon: '🌾', cost: 15, desc: '開墾して 石高 +0.5万石（秋の 年貢が ふえる）' },
-  town:     { name: '町',    icon: '🏘', cost: 30, inc: 2, desc: '市を ひらいて 商いの 収入 +' + 200 + '貫（まいきせつ）' },
+  field:    { name: '田畑',  icon: '🌾', cost: 15, desc: '開墾して 石高 +0.5万石。水を ひける ところ（川や 田畑の 近く）なら いくらでも' },
+  town:     { name: '町',    icon: '🏘', cost: 30, inc: 2, desc: '市を ひらいて まいきせつ +200貫。町 1つを 田畑 6マスで ささえる' },
   mine:     { name: '鉱山',  icon: '⛏', cost: 40, desc: '鉱脈（◆）を ほる。まいきせつ 収入' },
-  meibutsu: { name: '名産',  icon: '🏺', cost: 35, inc: 4, desc: 'その 国の 名産品を つくる 工房（町の となり）。まいきせつ +400貫' },
+  meibutsu: { name: '名産',  icon: '🏺', cost: 35, inc: 4, desc: 'その 国の 名産品を つくる 工房（町の となりなら いくつでも）。まいきせつ +400貫' },
   salt:     { name: '塩田',  icon: '🧂', cost: 20, inc: 2, desc: '海べで 塩を つくる。まいきせつ +200貫' }
 };
 var MINE_INC = { iron: 3, copper: 4, silver: 6 }, MINE_NAME = { iron: '鉄（たたら）', copper: '銅', silver: '銀' };
-var MAX_TOWNS = 4;
+var FIELDS_PER_TOWN = 6;   // 町 1つを ささえるのに いる 田畑（食べもの）
 // 鉱脈（おおよその 場所）
 var DEPOSITS = [
   ['石見銀山', 132.44, 35.11, 'silver'], ['吉岡銅山', 133.47, 34.87, 'copper'], ['奥出雲の たたら', 133.05, 35.20, 'iron'],
@@ -2091,7 +2092,12 @@ function fieldTerrainOK(t) { return t === '.' || t === 'h' || t === 'f'; }
 function bldCount(P, type) { var n = 0; for (var k in (P.bld || {})) if (P.bld[k] === type || (type === 'town' && P.bld[k] === 'town0')) n++; return n; }
 function bldCost(S, pid, type, c, r) {
   var b = BLD[type], cost = b.cost, w = worldMap();
-  if (type === 'field' && w && w.at(c, r) === 'f') cost = Math.round(cost * 1.5);   // 森の 開墾は たいへん
+  if (type === 'field' && w) {
+    var tt = w.at(c, r); if (tt === 'f') cost *= 1.5; else if (tt === 'h') cost *= 1.2;   // 森・丘の 開墾は たいへん
+    // ひらけば ひらくほど 人手が たりなくなり 高くなる（上限は ない）
+    var P0 = S.provs[pid], f0 = Math.max(4, Math.round(PROV_BY[pid].koku * 2)), extra = Math.max(0, bldCount(P0, 'field') - f0);
+    cost *= 1 + extra / f0;
+  }
   var o = S.officers ? officerAt(S, pid) : null;
   return Math.max(5, Math.round(cost * (1 - (offP(o) - 50) / 200)));
 }
@@ -2105,23 +2111,20 @@ function canBuild(S, pid, c, r, type) {
   var mine = function (cc, rr) { var b = P.bld[hkey(cc, rr)]; return b; };
   if (type === 'field') {
     if (!fieldTerrainOK(t)) return { ok: false, msg: '平地・丘・森 で ないと ひらけない' };
-    if (P.koku + 0.5 > maxKoku(pid) + 1e-9) return { ok: false, msg: 'これいじょう 石高は ふやせない（さいだい ' + maxKoku(pid) + '万石）' };
     if (!nearAny(c, r, 2, function (cc, rr) { var tt = w.at(cc, rr); return tt === 'r' || mine(cc, rr) === 'field' || (cc === cas[0] && rr === cas[1]); })) return { ok: false, msg: '川や 田畑の 近く（2マス）で ないと 水が ひけない' };
   } else if (type === 'town') {
     if (t !== '.' && t !== '=' && t !== 'h') return { ok: false, msg: '平地で ないと 町は つくれない' };
-    if (bldCount(P, 'town') >= MAX_TOWNS + 1) return { ok: false, msg: '町は ' + MAX_TOWNS + 'つまで' };
+    if (bldCount(P, 'town') + 1 > Math.floor(bldCount(P, 'field') / FIELDS_PER_TOWN)) return { ok: false, msg: '田畑が たりない（町 1つを 田畑 ' + FIELDS_PER_TOWN + 'マスで ささえる。いまは 田畑 ' + bldCount(P, 'field') + 'マス・町 ' + bldCount(P, 'town') + '）' };
     if (!nearAny(c, r, 1, function (cc, rr) { var tt = w.at(cc, rr), b = mine(cc, rr); return tt === '=' || b === 'town' || b === 'town0' || (cc === cas[0] && rr === cas[1]); })) return { ok: false, msg: '道や 城・町の となりで ないと 人が あつまらない' };
   } else if (type === 'mine') {
     var dep = d[pid].dep[k]; if (!dep) return { ok: false, msg: '鉱脈（◆）の ある マスだけ' };
     if (dep.type === 'silver' && S.year < 1527) return { ok: false, msg: '銀は まだ みつかって いない（1527年）' };
   } else if (type === 'meibutsu') {
-    if (bldCount(P, 'meibutsu')) return { ok: false, msg: '名産の 工房は 1つまで' };
     if (t !== '.' && t !== '=' && t !== 'h') return { ok: false, msg: '平地で ないと だめ' };
     if (!nearAny(c, r, 1, function (cc, rr) { var b = mine(cc, rr); return b === 'town' || b === 'town0'; })) return { ok: false, msg: '町の となりで ないと だめ' };
   } else if (type === 'salt') {
     if (!fieldTerrainOK(t) && t !== '=') return { ok: false, msg: '海べの 平地だけ' };
     if (!nearAny(c, r, 1, function (cc, rr) { return w.at(cc, rr) === 's'; })) return { ok: false, msg: '海の となりで ないと 塩は とれない' };
-    if (bldCount(P, 'salt') >= 3) return { ok: false, msg: '塩田は 3つまで' };
   }
   var cost = bldCost(S, pid, type, c, r);
   if (S.clans[P.owner].gold < cost) return { ok: false, msg: 'お金が たりない（💰' + kan(cost) + '）', cost: cost };
@@ -2361,7 +2364,7 @@ function cpuDecide(S, pid) {
       if (n > 0) return { kind: 'move', to: dst, uids: P.units.slice(0, n).map(function (u) { return u.uid; }) };
     }
   }
-  if (!didCmd(P, 'develop') && C.gold >= DEVELOP_COST + 30 && P.koku < maxKoku(pid)) return { kind: 'develop' };
+  if (!didCmd(P, 'develop') && C.gold >= DEVELOP_COST + 30 && P.koku < cpuKokuGoal(S, pid)) return { kind: 'develop' };
   return { kind: 'wait' };
 }
 // CPU フェーズ：プレイヤーへの 攻撃が おきたら そこで とまる
@@ -4985,7 +4988,7 @@ function domRender() {
 function domPanel() {
   var P = KS.provs[DS.pid], pid = DS.pid, w = worldMap(), d = domData();
   $('dTitle').textContent = '🗾 ' + PROV_BY[pid].name + 'の 領内';
-  $('dStat').textContent = '💰' + kan(KS.clans[KS.player].gold) + '　🌾' + P.koku + '/' + maxKoku(pid) + '万石　🏘 収入 +' + kan(BASE_INCOME + silverOf(KS, pid) + bldIncome(KS, pid)) + '/きせつ';
+  $('dStat').textContent = '💰' + kan(KS.clans[KS.player].gold) + '　🌾' + P.koku + '万石（田畑 ' + bldCount(P, 'field') + '）　🏘 収入 +' + kan(BASE_INCOME + silverOf(KS, pid) + bldIncome(KS, pid)) + '/きせつ';
   var info = '';
   if (DS.sel) {
     var k = hkey(DS.sel[0], DS.sel[1]), t = w.at(DS.sel[0], DS.sel[1]), b = P.bld && P.bld[k], dep = d[pid].dep[k], cas = castleHex(pid);
@@ -5001,11 +5004,11 @@ function domPanel() {
   var acts = $('dActs'); acts.innerHTML = '';
   if (!DS.canBuild) return;
   ['field', 'town', 'mine', 'meibutsu', 'salt'].forEach(function (type) {
-    var B0 = BLD[type], cnt = type === 'town' ? bldCount(P, 'town') - 1 : bldCount(P, type);
+    var B0 = BLD[type], cnt = type === 'town' ? bldCount(P, 'town') : bldCount(P, type);
     var any = type === 'mine' ? Object.keys(d[pid].dep).length > 0 : type === 'salt' ? d[pid].hexes.some(function (h) { return nearAny(h[0], h[1], 1, function (c, r) { return w.at(c, r) === 's'; }); }) : true;
-    var cost = bldCost(KS, pid, type, -1, -1);
+    var cost = bldCost(KS, pid, type, -1, -1);   // 平地の ねだん（森・丘は たかい）
     var b = document.createElement('button'); b.className = 'dbld' + (DS.mode === type ? ' on' : ''); b.disabled = !any;
-    var sub = type === 'meibutsu' ? MEIBUTSU[pid] : type === 'field' ? '石高 +0.5' : type === 'mine' ? (any ? '鉱脈 ' + Object.keys(d[pid].dep).length + 'か所' : '鉱脈なし') : type === 'salt' ? (any ? '+' + kan(B0.inc) : '海が ない') : '+' + kan(B0.inc);
+    var sub = type === 'meibutsu' ? MEIBUTSU[pid] : type === 'field' ? '石高 +0.5' : type === 'town' ? '+' + kan(B0.inc) + '・あと ' + Math.max(0, Math.floor(bldCount(P, 'field') / FIELDS_PER_TOWN) - bldCount(P, 'town')) : type === 'mine' ? (any ? '鉱脈 ' + Object.keys(d[pid].dep).length + 'か所' : '鉱脈なし') : type === 'salt' ? (any ? '+' + kan(B0.inc) : '海が ない') : '+' + kan(B0.inc);
     b.innerHTML = B0.icon + ' ' + B0.name + (cnt ? '×' + cnt : '') + '<small>💰' + kan(cost) + '・' + sub + '</small>';
     b.onclick = function () { SFX.tap(); DS.mode = DS.mode === type ? null : type; domPanel(); domRender(); };
     acts.appendChild(b);
