@@ -185,6 +185,12 @@ button{font-family:inherit;cursor:pointer;}
 #kBody{text-align:left;font-size:14px;}
 #kBody h4{margin:10px 0 4px;color:#7a3a1a;}
 #kBody .small,.small{font-size:12px;color:#777;}
+.knb{display:inline-block;margin:1px 2px;padding:0 6px;border-radius:8px;font-size:12px;background:#5a4630;}
+.knb.none{background:#8a2a20;text-decoration:line-through;}
+.knb.pass{background:#8a4a1a;}
+.knb.sea{background:#24557a;}
+#kLegend{position:absolute;left:8px;z-index:4;background:rgba(255,250,235,0.92);border-radius:8px;padding:4px 8px;font-size:11px;color:#3a2210;line-height:1.5;pointer-events:none;}
+#kLegend i{display:inline-block;width:18px;height:4px;vertical-align:middle;margin-right:3px;}
 .kodds{margin:8px 0;padding:6px 10px;background:#f3ead6;border-radius:8px;font-size:14px;}
 .kamt{display:flex;align-items:center;gap:10px;margin:6px 0;}
 .kamt input{flex:1;height:34px;accent-color:#c0392b;}
@@ -298,6 +304,7 @@ button{font-family:inherit;cursor:pointer;}
       <button class="hb" id="kEndBtn">きせつを おわる ▶</button>
     </div>
   </div>
+  <div id="kLegend"><i style="background:#ffcf5a"></i>陸路　<i style="background:#ff8a3a"></i>⛰峠道　<i style="background:#7fd0ff"></i>⛵海路<br><i style="background:#ff3030"></i>🚫山で とおれない　<i style="background:#3e2e24;height:8px"></i>けわしい山</div>
   <div id="kbottom">
     <div id="kLog"></div>
     <div id="kInfo"></div>
@@ -430,7 +437,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.9';
+var VERSION = 'v3.10';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -4201,6 +4208,18 @@ function kBuildTerrain() {
   var sx = KK / w.KX / 2, sy = 0.8660254 * KK * KLAT / w.KY;
   kMap.terrRect = [(WORLD.lon0 - KLON0) * KK - 0.5 * sx * 2 * 0.5, (KLAT0 - WORLD.lat0) * KK * KLAT - 0.5 * sy, cv.width * sx, cv.height * sy];
   var land = new Path2D(); PROVS.forEach(function (p) { land.addPath(kMap.paths[p.id]); }); kMap.land = land;
+  // 国ざかいの 線（ヘックスの へり）：となりあう 2国ごと
+  kMap.borders = {};
+  for (var rr = 0; rr < w.h; rr++) for (var cc = 0; cc < w.w; cc++) {
+    var a = w.provAt(cc, rr); if (!a) continue;
+    var nb = hexNbs(cc, rr);
+    for (var j = 0; j < 3; j++) {   // 右・右下・左下 だけ みれば 重複しない
+      var n = [nb[0], nb[4], nb[5]][j], bq = w.provAt(n[0], n[1]); if (!bq || bq === a) continue;
+      var key2 = [a, bq].sort().join('|'), p1 = w.ll(cc, rr), p2 = w.ll(n[0], n[1]);
+      var q1 = kProj(p1[0], p1[1]), q2 = kProj(p2[0], p2[1]);
+      (kMap.borders[key2] || (kMap.borders[key2] = [])).push([(q1[0] + q2[0]) / 2, (q1[1] + q2[1]) / 2, q2[0] - q1[0], q2[1] - q1[1]]);
+    }
+  }
   // 道すじ（国取り地図の 座標）
   kMap.routes = WORLD.routes.map(function (rt) {
     var pts = [];
@@ -4220,6 +4239,43 @@ function kDrawTerrain(c, lw) {
   if (!kMap.terr) return;
   c.save(); c.clip(kMap.land); c.imageSmoothingEnabled = true;
   var t = kMap.terrRect; c.drawImage(kMap.terr, t[0], t[1], t[2], t[3]); c.restore();
+}
+// えらんだ 国の となりへの 道を はっきり
+function kNeighborInfo(pid) {
+  var set = {}; (CHUGOKU_GEO.adj[pid] || []).forEach(function (q) { set[q] = 1; }); (ADJ[pid] || []).forEach(function (q) { set[q] = 1; });
+  return Object.keys(set).map(function (q) { var rt = routeOf(pid, q); return { q: q, type: rt ? rt.type : 'none', name: rt ? rt.name : null }; });
+}
+var RT_COL = { land: '#ffcf5a', pass: '#ff8a3a', sea: '#7fd0ff', none: '#ff3030' };
+function kDrawFocus(c, lw) {
+  if (!kSel || !kMap.routes) return;
+  var u = Math.max(0.75, Math.min(1.6, 1 / kMap.s));
+  kNeighborInfo(kSel).forEach(function (nb) {
+    var key2 = [kSel, nb.q].sort().join('|');
+    if (nb.type === 'none') {
+      // とおれない 国ざかい：あかい ×の 線
+      var segs = kMap.borders[key2] || []; if (!segs.length) return;
+      c.strokeStyle = 'rgba(255,40,40,0.95)'; c.lineWidth = 4 * lw;
+      segs.forEach(function (sg) { var L = Math.hypot(sg[2], sg[3]) || 1, hx = -sg[3] / L * 3 * lw * 2.2, hy = sg[2] / L * 3 * lw * 2.2; c.beginPath(); c.moveTo(sg[0] - hx, sg[1] - hy); c.lineTo(sg[0] + hx, sg[1] + hy); c.stroke(); });
+      var m = segs[Math.floor(segs.length / 2)];
+      kTag(c, m[0], m[1], '🚫 山で とおれない', '#c62828', u);
+      return;
+    }
+    var rt = kMap.routes.filter(function (r0) { return (r0.a === kSel && r0.b === nb.q) || (r0.b === kSel && r0.a === nb.q); })[0]; if (!rt || !rt.pts.length) return;
+    c.beginPath(); rt.pts.forEach(function (q, i) { if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    c.strokeStyle = 'rgba(40,20,10,0.85)'; c.lineWidth = 7 * lw; c.setLineDash(nb.type === 'sea' ? [8 * lw, 6 * lw] : []); c.stroke();
+    c.strokeStyle = RT_COL[nb.type]; c.lineWidth = 4 * lw; c.stroke(); c.setLineDash([]);
+    var mid = rt.mid || rt.pts[Math.floor(rt.pts.length / 2)];
+    kTag(c, mid[0], mid[1], nb.type === 'sea' ? '⛵ 海路' : nb.type === 'pass' ? '⛰ ' + (rt.name && rt.name !== '峠道' ? rt.name : '峠道') : '🛤 陸路', nb.type === 'sea' ? '#1e6aa8' : nb.type === 'pass' ? '#b4501a' : '#7a5a10', u);
+  });
+}
+function kTag(c, x, y, txt, col, u) {
+  c.save(); c.translate(x, y); c.scale(u, u);
+  c.font = 'bold 11px sans-serif'; var w2 = c.measureText(txt).width + 10;
+  c.fillStyle = col; c.beginPath(); if (c.roundRect) c.roundRect(-w2 / 2, -9, w2, 18, 9); else c.rect(-w2 / 2, -9, w2, 18); c.fill();
+  c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke();
+  c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, 0, 1);
+  c.restore();
 }
 function kDrawRoutes(c, lw) {
   if (!kMap.routes) return;
@@ -4310,6 +4366,7 @@ function kRender() {
   // 国ざかい
   PROVS.forEach(function (p) { c.strokeStyle = 'rgba(45,30,18,0.75)'; c.lineWidth = 1.6 * lw; c.stroke(kMap.paths[p.id]); });
   kDrawRoutes(c, lw);
+  kDrawFocus(c, lw);
   // えらんだ 国の ふち
   if (kSel) { c.strokeStyle = '#ffe24a'; c.lineWidth = 3.5 * lw; c.stroke(kMap.paths[kSel]); }
   tg.forEach(function (q) { c.strokeStyle = kMode === 'attack' ? '#ff5a3a' : kMode === 'scheme' ? '#c48aff' : '#5aa8ff'; c.lineWidth = 3 * lw; c.setLineDash([8 * lw, 5 * lw]); c.stroke(kMap.paths[q]); c.setLineDash([]); });
@@ -4366,6 +4423,7 @@ function kUpdate() {
   $('kKoku').textContent = '🌾 ' + totalKoku(KS, KS.player) + '万石';
   $('kProv').textContent = '🏯 ' + provsOf(KS, KS.player).length + '/' + PROVS.length + '　⚔ ' + menStr(menTotal(totalArmy(KS, KS.player)));
   $('kEndBtn').disabled = KS.phase !== 'player' || KS.over;
+  $('kLegend').style.bottom = (($('kbottom').offsetHeight || 150) + 6) + 'px';
   var last = KS.log.slice(-2);
   $('kLog').innerHTML = last.map(function (e) { return '<div class="lg ' + kLogCls(e.kind) + '">' + e.text + '</div>'; }).join('');
   kInfo();
@@ -4393,6 +4451,11 @@ function kInfo() {
   var ofc = officerAt(KS, kSel);
   html += '<div class="kunits">城主：' + offTxt(ofc) + (P.naio && P.naio === KS.player ? '　🦊内応あり' : '') + '</div>';
   html += '<div class="kunits">へい ' + menStr(menTotal(P.units)) + '（' + P.units.length + '隊：' + unitSummary(P.units) + '）<br>動員の めやす ' + menStr(P.koku * MEN_PER_KOKU) + '</div>';
+  var nbl = kNeighborInfo(kSel).map(function (nb) {
+    var ic = nb.type === 'sea' ? '⛵' : nb.type === 'pass' ? '⛰' : nb.type === 'land' ? '🛤' : '🚫';
+    return '<span class="knb ' + nb.type + '">' + ic + PROV_BY[nb.q].name + (nb.type === 'pass' && nb.name && nb.name !== '峠道' ? '（' + nb.name + '）' : '') + '</span>';
+  }).join(' ');
+  html += '<div class="kunits">となりへの 道：' + nbl + '</div>';
   if (P.bld) { var bs = ['town', 'mine', 'meibutsu', 'salt'].map(function (t) { var n = t === 'town' ? bldCount(P, 'town') : bldCount(P, t); return n ? BLD[t].icon + (t === 'meibutsu' ? MEIBUTSU[kSel] : BLD[t].name + n) : ''; }).filter(Boolean).join(' ');
     html += '<div class="kunits">領内：' + (bs || 'なし') + (mine ? '　収入 +' + kan(BASE_INCOME + silverOf(KS, kSel) + bldIncome(KS, kSel)) + '/きせつ' : '') + '</div>'; }
   if (kMode === 'attack') html += '<p class="hint">あかく 光る 国を クリックして せめる 国を えらぶ</p>';
