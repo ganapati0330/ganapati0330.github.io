@@ -443,7 +443,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v4.6';
+var VERSION = 'v4.7';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2046,6 +2046,18 @@ function garrison(S, castleId, uidsIn, uidsOut, pid) {
   C0.units = C0.units.filter(function (u) { return uidsOut.indexOf(u.uid) < 0; }).concat(mvIn);
   return { ok: true };
 }
+// 支城と 国の 兵を まとめて わけなおす：keep に ある uid を 支城へ、ほかを 国へ
+function redeploy(S, castleId, pid, uids, keep) {
+  var C0 = S.castles[castleId], P = S.provs[pid];
+  var pool = C0.units.concat(P.units.filter(function (u) { return uids.indexOf(u.uid) >= 0; }));
+  var inC = pool.filter(function (u) { return keep.indexOf(u.uid) >= 0; }), out = pool.filter(function (u) { return keep.indexOf(u.uid) < 0; });
+  if (!inC.length) return { ok: false, msg: '支城に 1隊は のこそう' };
+  if (inC.length > 8) return { ok: false, msg: '支城には 8たいまで' };
+  var rest = P.units.filter(function (u) { return uids.indexOf(u.uid) < 0; });
+  if (rest.length + out.length > PROV_CAP) return { ok: false, msg: PROV_BY[pid].name + 'に はいりきらない（' + PROV_CAP + 'たいまで）' };
+  C0.units = inC; P.units = rest.concat(out);
+  return { ok: true };
+}
 // おとした 支城に のこす 守備兵の かず
 var BRANCH_KEEP = 3;
 function unitCost(type) { return UNIT_TYPES[type].cost * GOLD_PER_COST; }
@@ -2495,7 +2507,7 @@ function applyBattle(S, b, res) {
       var nKeep = Math.min(8, Math.max(Math.min(keep, order.length), order.length - room));
       C0.units = order.slice(0, nKeep);
       if (A.owner === b.atkClan) A.units = A.units.concat(order.slice(nKeep));
-      res.keptN = nKeep; res.backN = order.length - nKeep;
+      res.keptN = nKeep; res.backN = order.length - nKeep; res.backUids = A.owner === b.atkClan ? order.slice(nKeep).map(function (u) { return u.uid; }) : [];
       if (pr.men) logC(S, 'てきの へい ' + pr.men.toLocaleString('ja-JP') + '人が 降参して ' + atkName + 'に くわわった', b.atkClan === S.player ? 'good' : 'sys');
       // まけた 守りは その国の 本城（自分の 国なら）か となりの 自分の 国へ
       if (b.defClan && res.defSurv.length) {
@@ -4992,7 +5004,7 @@ function pickerHtml(units, init) {
   var order = ['ashigaru', 'yumi', 'kiba', 'teppo', 'kosaku', 'ninja'], h = '';
   order.forEach(function (t) {
     if (!by[t]) return;
-    var n = init === 'all' ? by[t].length : 0;
+    var n = init === 'all' ? by[t].length : (init && typeof init === 'object') ? Math.min(by[t].length, init[t] || 0) : 0;
     h += '<div class="arow"><span class="uic blue">' + UNIT_TYPES[t].ch + '</span><span class="uname"><b>' + UNIT_TYPES[t].name + '隊</b><small>' + by[t].length + '隊・' + menTotal(by[t]) + menUnit(t) + '</small></span>' +
       '<button class="pm" data-t="' + t + '" data-d="-1">－</button><span class="num" id="pk_' + t + '" data-max="' + by[t].length + '">' + n + '</span><button class="pm" data-t="' + t + '" data-d="1">＋</button></div>';
   });
@@ -5010,6 +5022,22 @@ function pickerUids(units) {
   return out;
 }
 
+// ---- おとした 支城の 配置：のこす 兵を じぶんで きめる ----
+function kDeployBox(id, pid, backUids, done) {
+  var C0 = KS.castles[id], P = KS.provs[pid];
+  var pool = C0.units.concat(P.units.filter(function (u) { return backUids.indexOf(u.uid) >= 0; })), init = {};
+  C0.units.forEach(function (u) { init[u.type] = (init[u.type] || 0) + 1; });
+  kModal('🏯 ' + brName(id) + 'に のこす 兵', '<p class="small">おとした 支城に のこす 隊を えらぶ（1〜8隊）。のこりは <b>' + PROV_BY[pid].name + '</b>へ もどる。</p>' + pickerHtml(pool, init) + '<p id="kDep" class="small"></p>', [
+    { label: 'けってい', cls: 'act', id: 'kDepOk', fn: function () {
+      var r = redeploy(KS, id, pid, backUids, pickerUids(pool)); if (!r.ok) { banner(r.msg, 1400); return; }
+      kSave(); kCloseModal(); done(); } }]);
+  function upd() {
+    var k = pickerUids(pool).length, back = pool.length - k, room = PROV_CAP - (P.units.length - backUids.length);
+    $('kDep').innerHTML = '🏯 ' + brName(id) + ' ' + k + '隊　／　' + PROV_BY[pid].name + 'へ ' + back + '隊' + (k < 1 ? '<br><span class="r">1隊は のこそう</span>' : k > 8 ? '<br><span class="r">支城は 8たいまで</span>' : back > room ? '<br><span class="r">' + PROV_BY[pid].name + 'に はいりきらない</span>' : '');
+    $('kDepOk').disabled = k < 1 || k > 8 || back > room;
+  }
+  pickerBind(upd); upd();
+}
 // ---- 支城 ----
 function kCastleBox(id) {
   var C0 = KS.castles[id], P = KS.provs[C0.prov], mine = C0.owner === KS.player, links = mine && KS.phase === 'player' ? castleLinks(KS, id) : [];
@@ -5135,7 +5163,7 @@ function kFinishBattle(b, res, auto) {
   kModal(win ? 'しょうり！' : 'はいぼく…', '<div class="kres"><img src="' + img + '" alt=""><p><b>' + txt + '</b>' + (auto ? '（おまかせ）' : '') + '</p>' +
     '<p class="small">みかた ' + menStr(before) + ' → ' + menStr(after) + '　／　てき ' + menStr(eBefore) + ' → ' + menStr(eAfter) + fledTxt + (res.prisMen ? '<br>' + (pSide === 'atk' ? '🙇 てきの へい ' + menStr(res.prisMen) + 'が 降参して みかたに くわわった' : '🙇 みかたの へい ' + menStr(res.prisMen) + 'が てきに 降参した') : '') +
     (b.castleId && win && pSide === 'atk' && res.keptN ? '<br>🏯 ' + b.castleName + 'に ' + res.keptN + '隊を のこし' + (res.backN ? '、' + res.backN + '隊は ' + PROV_BY[b.from].name + 'へ もどった' : 'た') : '') + '</p></div>',
-    [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); kAfterBattle(); } }]);
+    [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); if (b.castleId && win && pSide === 'atk' && res.backUids && KS.provs[b.from].owner === KS.player && KS.castles[b.castleId].owner === KS.player) kDeployBox(b.castleId, b.from, res.backUids, kAfterBattle); else kAfterBattle(); } }]);
 }
 function kAfterBattle() {
   if (KS.over) return kGameOver();
