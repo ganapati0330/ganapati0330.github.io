@@ -399,7 +399,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.1';
+var VERSION = 'v3.2';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -3033,7 +3033,11 @@ function drawTile(t) {
 }
 // ---- 画像グラフィック（img/ フォルダ。読めないときは 上の 図形描画に もどる） ----
 var GFX_NAMES = ['t_grass', 't_court', 't_water', 't_sea', 'forest', 'sakura', 'bamboo', 'hill', 'mount', 'snow', 'bridge', 'wall', 'dorui', 'gate', 'gateopen', 'gatebroken', 'rubble', 'yagura',
-  'ashi_stand_b', 'ashi_stand_r', 'ashi_atk_b', 'ashi_atk_r', 'ashi_down_b', 'ashi_down_r', 'arrow', 'smoke', 'spark', 'dust', 'crumble', 'shutsujin', 'kachidoki'];
+  'ashi_stand_b', 'ashi_stand_r', 'ashi_atk_b', 'ashi_atk_r', 'ashi_down_b', 'ashi_down_r',
+  'kosaku_stand_b', 'kosaku_stand_r', 'kosaku_atk_b', 'kosaku_atk_r', 'kosaku_down_b', 'kosaku_down_r',
+  'teppo_stand_b', 'teppo_stand_r', 'teppo_atk_b', 'teppo_atk_r', 'teppo_down_b', 'teppo_down_r',
+  'kiba_stand_b', 'kiba_stand_r', 'kiba_atk_b', 'kiba_atk_r', 'kiba_down_b', 'kiba_down_r',
+  'yumi_stand_b', 'yumi_stand_r', 'yumi_atk_b', 'yumi_atk_r', 'yumi_down_b', 'yumi_down_r', 'arrow', 'smoke', 'spark', 'dust', 'crumble', 'shutsujin', 'kachidoki'];
 var GFX = {};
 GFX_NAMES.forEach(function (n) { var im = new Image(); im.onload = function () { terrCache = null; }; im.src = 'img/' + n + '.webp'; GFX[n] = im; });
 function gx(n) { var im = GFX[n]; return im && im.complete && im.naturalWidth ? im : null; }
@@ -3189,8 +3193,8 @@ function stepFx(dt) {
 }
 function drawFx() {
   FALLEN.forEach(function (f) {
-    if (f.type !== 'ashigaru') return; var im = gx('ashi_down_' + (f.side === G.playerSide ? 'b' : 'r')); if (!im) return;
-    var p = hexCenter(f.c, f.r); ctx.globalAlpha = Math.min(1, (1 - f.t) * 2); putSpr(im, p[0], p[1] + R * 0.62, R * 1.55, f.face < 0); ctx.globalAlpha = 1;
+    var im = unitSpr(f.type, 'down', f.side); if (!im) return;
+    var p = hexCenter(f.c, f.r); ctx.globalAlpha = Math.min(1, (1 - f.t) * 2); putSprH(im, p[0], p[1] + R * 0.62, R * (f.type === 'kiba' ? 1.45 : 1.6), f.face < 0); ctx.globalAlpha = 1;
   });
   FX.forEach(function (f) {
     if (f.delay > 0) return; var im = gx(f.n), x = f.x, y = f.y - f.rise * f.t, h = f.w * im.naturalHeight / im.naturalWidth;
@@ -3206,13 +3210,18 @@ function drawStamp() {
   var s = t < 0.15 ? 1.6 - t / 0.15 * 0.6 : 1, a = t < 0.15 ? t / 0.15 : t > 0.8 ? (1 - t) / 0.2 : 1;
   ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, H * 0.42); ctx.scale(s, s); ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore();
 }
+// 兵種ごとの 絵の 名前
+var SPR_PRE = { ashigaru: 'ashi', kosaku: 'kosaku', teppo: 'teppo', kiba: 'kiba', yumi: 'yumi' };
+function unitSpr(type, pose, side) { var p = SPR_PRE[type]; return p ? gx(p + '_' + pose + '_' + (side === G.playerSide ? 'b' : 'r')) : null; }
+// 高さを そろえて おく
+function putSprH(im, x, by, h, flip) { putSpr(im, x, by, h * im.naturalWidth / im.naturalHeight, flip); }
 function drawAshigaru(u, x, y, col) {
-  var pose = u._atk && u._atk > nowMs() ? 'atk' : 'stand', im = gx('ashi_' + pose + '_' + (u.side === G.playerSide ? 'b' : 'r'));
+  var pose = u._atk && u._atk > nowMs() ? 'atk' : 'stand', im = unitSpr(u.type, pose, u.side);
   if (!im) return false;
   var face = u._face || (u.side === G.playerSide ? 1 : -1);
   ctx.fillStyle = col; ctx.globalAlpha *= 0.55; ctx.beginPath(); ctx.ellipse(x, y + R * 0.5, R * 0.55, R * 0.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha /= 0.55;
   ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(x, y + R * 0.5, R * 0.55, R * 0.2, 0, 0, Math.PI * 2); ctx.stroke();
-  putSpr(im, x + (pose === 'atk' ? 6 * face : 0), y + R * 0.58, pose === 'atk' ? R * 1.6 : R * 0.98, face < 0);
+  putSprH(im, x + (pose === 'atk' ? 6 * face : 0), y + R * 0.58, R * (u.type === 'kiba' ? 1.78 : 1.72), face < 0);
   return true;
 }
 function hpBar(x, y, f) {
@@ -3240,7 +3249,7 @@ function drawUnit(u, x, y) {
       else { var sc = (rad * 2.2) / im.naturalHeight, iw = im.naturalWidth * sc, ih = im.naturalHeight * sc; ctx.drawImage(im, x - iw / 2, y - rad + 2, iw, ih); }
       ctx.restore();
     }
-  } else if (u.type === 'ashigaru' && drawAshigaru(u, x, y, col)) {
+  } else if (SPR_PRE[u.type] && drawAshigaru(u, x, y, col)) {
     // 絵で かいた
   } else {
     ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
