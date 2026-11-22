@@ -82,6 +82,7 @@ button{font-family:inherit;cursor:pointer;}
 #logFull{text-align:left;font-size:13px;max-height:60vh;overflow-y:auto;background:#2b1d14;border-radius:10px;padding:8px;touch-action:pan-y;}
 #logFull .lg{white-space:normal;padding-right:0;border-bottom:1px solid rgba(255,255,255,.08);padding:3px 0;}
 .act.undo{background:#e8841e;}
+.act.flee{background:#2a7a4a;}
 #infoBox{font-size:13px;min-height:44px;}
 #infoBox .irow{display:flex;align-items:center;gap:8px;}
 #infoBox .irow .uic{width:26px;height:26px;font-size:14px;}
@@ -347,6 +348,8 @@ button{font-family:inherit;cursor:pointer;}
       <li>お金の たんいは <b>貫</b>。石高からの <b>年貢は 秋に まとめて</b> はいる。ほかの きせつは 商いの 収入だけ。石見の 銀山は まいきせつ お金が ふえる。</li>
       <li>へいは <b>隊</b>で うごく。1隊の 人数：足軽 300人・弓 200人・騎馬 50騎・鉄砲 50挺・工作 150人・忍び 20人。騎馬と 鉄砲は 人数は すくないが 高くて つよい。数字は いまの 人数。</li>
       <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
+      <li><b>合戦の ちずは ほんとうの 地形</b>：海岸線は 国境データから、山・森・川は その国の 特ちょうで つくる。<b>せめてくる 国の 方角が ちずの 下</b>（左上の 方位で 北が わかる）。点線は 国ざかい。</li>
+      <li><b>退き口（🏃）</b>：守りは みかたの となりの 国の 方角に、攻めは うしろ（出陣した 国）に にげ道が ある。そこに いる 隊は「🏃 にげる」で その国へ 退却できる（へいは そのまま のこる）。城が おちたとき にげおくれた 守りの へいは 半分に へる。大将が にげると その合戦は まけ。となりに みかたの 国が ないと 籠城で にげ場は ない。</li>
       <li>へった 隊は きせつごとに すこし（2わり）もどる。1つの りょうちには 19隊まで。すすみは じどうで ほぞん される。</li>
       <li class="small">音楽：「毛利合戦譜」。🔊ボタンで オン・オフ。</li>
       <li class="small">地図：「国土数値情報（行政区域データ）」（国土交通省）を 加工して 作成。昔の 国の 境は 今の 市町村から 再現した めやすです。</li></ul>
@@ -395,7 +398,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v2.9';
+var VERSION = 'v3.0';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -699,6 +702,7 @@ var SIZES = [
 ];
 var PALISADE_HP = 5;
 
+var SQ3G = Math.sqrt(3);
 // 地形生成用の乱数（シード固定）
 function mapRng(seed) {
   var a = (seed >>> 0) || 1;
@@ -706,7 +710,7 @@ function mapRng(seed) {
 }
 
 // 城テンプレート＋自動生成の地形で行文字列を作る
-function generateRows(castle, size, seed) {
+function generateRows(castle, size, seed, env) {
   var R = mapRng(seed);
   var tw = castle.t[0].length, th = castle.t.length;
   var W = Math.max(size.w, tw + 4), H = Math.max(size.h, th + 1 + 6);
@@ -717,8 +721,19 @@ function generateRows(castle, size, seed) {
   var spawnTop = H - 4;
   function inT(cc, rr) { return rr >= oy && rr < oy + th && cc >= ox && cc < ox + tw && castle.t[rr - oy][cc - ox] !== ' '; }
   function free(cc, rr) { return rr >= 0 && rr < H && cc >= 0 && cc < W && !inT(cc, rr); }
+  // 実際の 地形（国取り）：城の 本丸を 基準に 海・国を きめる
+  var kr0 = -1, kc0 = -1;
+  for (r = 0; r < th; r++) for (c = 0; c < tw; c++) if (castle.t[r][c] === 'K') { kr0 = r; kc0 = c; }
+  var kx = SQ3G * (ox + kc0 + 0.5 * ((oy + kr0) & 1)), ky = 1.5 * (oy + kr0);
+  var geo = null;
+  if (env) {
+    geo = []; for (r = 0; r < H; r++) { geo.push([]); for (c = 0; c < W; c++) geo[r].push(env.land(SQ3G * (c + 0.5 * (r & 1)) - kx, 1.5 * r - ky)); }
+    env.grid = geo;
+  }
+  var pf = (env && env.prof) || { mount: 1, forest: 1, hill: 1 };
+  var gsea = env ? false : castle.gen.sea;
   // 海
-  if (castle.gen.sea) {
+  if (gsea) {
     for (r = 0; r <= castleBottom; r++) for (c = 0; c < W; c++) {
       if (r >= oy && c >= ox && c < ox + tw) continue;
       g[r][c] = 's';
@@ -737,17 +752,19 @@ function generateRows(castle, size, seed) {
       }
     }
   }
-  blob('f', Math.round(area / 34 * castle.gen.forest), 4 + Math.floor(R() * 3), 0, H);
-  blob('h', Math.round(area / 70 * castle.gen.hill), 3, 0, H - 4);
-  blob('m', Math.round(area / 110 * castle.gen.mount), 3, 0, H - 5);
+  if (geo) for (r = 0; r < H; r++) for (c = 0; c < W; c++) if (geo[r][c].sea && !inT(c, r)) g[r][c] = 's';
+  blob('f', Math.round(area / 34 * castle.gen.forest * pf.forest), 4 + Math.floor(R() * 3), 0, H);
+  blob('h', Math.round(area / 70 * castle.gen.hill * pf.hill), 3, 0, H - 4);
+  blob('m', Math.round(area / 110 * castle.gen.mount * pf.mount), 3, 0, H - 5);
   // 川（城と出陣地のあいだを横切る）
   var riverRow = -1;
-  if (R() < castle.gen.river && spawnTop - castleBottom >= 5) {
+  var riverP = env && env.prof && env.prof.river !== undefined ? env.prof.river : castle.gen.river;
+  if (R() < riverP && spawnTop - castleBottom >= 5) {
     riverRow = castleBottom + 2 + Math.floor(R() * (spawnTop - castleBottom - 4));
     var rr2 = riverRow;
     for (c = 0; c < W; c++) {
       if (free(c, rr2) && g[rr2][c] !== 's') g[rr2][c] = 'r';
-      if (R() < 0.25) { var nr = rr2 + (R() < 0.5 ? -1 : 1); if (nr > castleBottom + 1 && nr < spawnTop - 1) { rr2 = nr; if (free(c, rr2)) g[rr2][c] = 'r'; } }
+      if (R() < 0.25) { var nr = rr2 + (R() < 0.5 ? -1 : 1); if (nr > castleBottom + 1 && nr < spawnTop - 1) { rr2 = nr; if (free(c, rr2) && g[rr2][c] !== 's') g[rr2][c] = 'r'; } }
     }
     // 道とは別に 1〜2 本の橋
     var nb2 = 1 + Math.floor(R() * 2);
@@ -779,7 +796,7 @@ function generateRows(castle, size, seed) {
     for (var r3 = r + 1; r3 < H; r3++) {
       var cur = g[r3][cc2];
       if (cur === 'r') g[r3][cc2] = 'b';
-      else if (cur === 's') break;
+      else if (cur === 's') { if (!env) break; g[r3][cc2] = '='; }
       else if ('WPGCK'.indexOf(cur) < 0 && cur !== 'b') g[r3][cc2] = '=';
       // 下の行へ：ときどき中央に寄る（隣接を保つ）
       if (r3 > r + 2 && R() < 0.35 && cc2 !== center) {
@@ -791,6 +808,7 @@ function generateRows(castle, size, seed) {
   }
   // 出陣地（下 4 行）は平地に
   for (r = spawnTop; r < H; r++) for (c = 0; c < W; c++) if ('mrs'.indexOf(g[r][c]) >= 0) g[r][c] = '.';
+  if (env) env.keepXY = [kx, ky];
   return g.map(function (row) { return row.join(''); });
 }
 
@@ -1164,7 +1182,8 @@ function newGame(opts) {
   // opts: {mapIndex, playerSide:'atk'|'def', playerChar, cpuChar, playerArmy, cpuArmy, difficulty}
   var castle = CASTLES[opts.mapIndex || 0], si = opts.sizeIndex || 0, size = SIZES[si];
   var seed = opts.mapSeed || Math.floor(Math.random() * 1e9) + 1;
-  var mapDef = { id: castle.id, name: castle.name, rows: generateRows(castle, size, seed) };
+  var env = opts.env || null;
+  var mapDef = { id: castle.id, name: castle.name, rows: generateRows(castle, size, seed, env) };
   var G = { map: buildMap(mapDef), mapDef: mapDef, castle: castle, sizeIndex: si, turnLimit: size.turns, mapSeed: seed, units: [], turn: 1, side: 'atk', playerSide: opts.playerSide,
             cpuSide: opts.playerSide === 'atk' ? 'def' : 'atk', over: false, winner: null, log: [], difficulty: opts.difficulty || 'normal',
             chars: {} };
@@ -1184,16 +1203,73 @@ function newGame(opts) {
   G.generals = opts.generals || null;   // {atk:{name,charId,crest,color}, def:{...}}
   G.sideMult = opts.sideMult || null;   // 大将（家臣）の 武で こうげき力 アップ
   G.campaign = !!opts.campaign;
+  if (env) setupGeo(G, env);
   placeArmies(G);
   return G;
 }
 
+// ---- 実地形：国・方角・退き口 ----
+// 画面の 角度 a（右=0, 下=+90°）へ 本丸から まっすぐ のばして、地図の はしの マスを えらぶ
+function edgeHexAt(G, ang) {
+  var keep = findKeep(G), kx = SQ3G * (keep.c + 0.5 * (keep.r & 1)), ky = 1.5 * keep.r;
+  var dx = Math.cos(ang), dy = Math.sin(ang), last = null;
+  for (var s = 0; s < 400; s += 0.5) {
+    var x = kx + dx * s, y = ky + dy * s, r = Math.round(y / 1.5), c = Math.round(x / SQ3G - 0.5 * (r & 1));
+    if (r < 0 || r >= G.map.h || c < 0 || c >= G.map.w) break;
+    last = [c, r];
+  }
+  return last;
+}
+function exitOK(t) { return t && '.=fhb'.indexOf(t.ch) >= 0; }
+function setupGeo(G, env) {
+  var r, c;
+  for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) { var cell = env.grid && env.grid[r] && env.grid[r][c]; G.map.tiles[r][c].prov = cell && !cell.sea ? cell.prov : null; }
+  G.north = env.north;  // 画面での 北の 向き（ラジアン）
+  G.geoInfo = { from: env.from, fromName: env.fromName, to: env.to, toName: env.toName, names: env.names || {}, river: env.riverName || null };
+  G.exits = { atk: [], def: [] };
+  // 攻め手：うしろ（下の はし）が 退き口＝出撃した 国へ
+  var cx = Math.floor(G.map.w / 2), bot = [];
+  for (c = 0; c < G.map.w; c++) { var t = G.map.tiles[G.map.h - 1][c]; if (exitOK(t)) bot.push(t); }
+  bot.sort(function (a, b) { return Math.abs(a.c - cx) - Math.abs(b.c - cx); });
+  bot.slice(0, 5).forEach(function (t) { G.exits.atk.push({ c: t.c, r: t.r, to: env.from, name: env.fromName }); });
+  // 守り手：みかたの となりの 国の 方角
+  var used = {};
+  (env.escapes || []).forEach(function (e) {
+    var p = edgeHexAt(G, e.ang); if (!p) return;
+    // はしの マスの うち 近い 通れる マスを 3つ
+    var cand = [];
+    for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) {
+      if (!(r === 0 || c === 0 || r === G.map.h - 1 || c === G.map.w - 1)) continue;
+      var t2 = G.map.tiles[r][c]; if (!exitOK(t2) || used[key(c, r)]) continue;
+      if (G.exits.atk.some(function (q) { return q.c === c && q.r === r; })) continue;
+      cand.push({ t: t2, d: hexDist(c, r, p[0], p[1]) });
+    }
+    cand.sort(function (a, b) { return a.d - b.d; });
+    cand.slice(0, 3).forEach(function (q) { if (q.d > 6) return; used[key(q.t.c, q.t.r)] = 1; G.exits.def.push({ c: q.t.c, r: q.t.r, to: e.to, name: e.name }); });
+  });
+}
+function exitAt(G, side, c, r) {
+  if (!G.exits) return null; var l = G.exits[side];
+  for (var i = 0; i < l.length; i++) if (l[i].c === c && l[i].r === r) return l[i];
+  return null;
+}
+function canFlee(G, u) { return !!(u && u.hp > 0 && !u.fled && exitAt(G, u.side, u.c, u.r)); }
+function doFlee(G, u) {
+  var e = exitAt(G, u.side, u.c, u.r); if (!e) return null;
+  u.fled = true; u.fledTo = e.to; u.fledName = e.name; u.acted = true; u.c = -99; u.r = -99;
+  return e;
+}
+function escaped(G, side) {
+  return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.hp > 0 && u.fled; })
+    .map(function (u) { return { uid: u.ref, type: u.type, hp: u.hp, to: u.fledTo }; });
+}
+
 // 合戦のあと：生きのこった へい（国取りへ もどす）
 function survivors(G, side) {
-  return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.hp > 0; })
+  return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.hp > 0 && !u.fled; })
     .map(function (u) { return { uid: u.ref, type: u.type, hp: u.hp }; });
 }
-function unitsOf(G, side) { return G.units.filter(function (u) { return u.hp > 0 && u.side === side; }); }
+function unitsOf(G, side) { return G.units.filter(function (u) { return u.hp > 0 && u.side === side && !u.fled; }); }
 function general(G, side) { for (var i = 0; i < G.units.length; i++) { var u = G.units[i]; if (u.side === side && u.type === 'taisho') return u; } return null; }
 
 // 勝敗判定（ターン終了時に呼ぶ）
@@ -1202,6 +1278,8 @@ function checkVictory(G) {
   var ga = general(G, 'atk'), gd = general(G, 'def');
   if (gd && gd.hp <= 0) { G.over = true; G.winner = 'atk'; G.reason = 'てきの たいしょうを たおした！'; return 'atk'; }
   if (ga && ga.hp <= 0) { G.over = true; G.winner = 'def'; G.reason = 'せめての たいしょうを たおした！'; return 'def'; }
+  if (gd && gd.fled) { G.over = true; G.winner = 'atk'; G.reason = 'まもりの たいしょうが ' + (gd.fledName || 'となりの国') + 'へ にげた！'; return 'atk'; }
+  if (ga && ga.fled) { G.over = true; G.winner = 'def'; G.reason = 'せめての たいしょうが ' + (ga.fledName || 'もとの国') + 'へ ひきあげた'; return 'def'; }
   var keep = findKeep(G);
   var occ = unitAt(G, keep.c, keep.r);
   if (occ && occ.side === 'atk' && G.side === 'atk') { G.over = true; G.winner = 'atk'; G.reason = 'ほんまるを おとした！'; return 'atk'; }
@@ -1264,6 +1342,21 @@ function threatAt(G, side, c, r, uDef) {
   return sum;
 }
 
+// 退却するか（0=しない, 1=兵だけ, 2=大将も）
+function aiRout(G, side) {
+  if (!G.exits || !G.exits[side] || !G.exits[side].length) return 0;
+  function pw(sd) { var p = 0; unitsOf(G, sd).forEach(function (u) { if (u.type !== 'taisho') p += u.atk * u.hp; }); return p; }
+  var me = pw(side), en = pw(side === 'atk' ? 'def' : 'atk');
+  var g = general(G, side);
+  if (side === 'atk') {
+    if (G.turn >= 4 && me < en * 0.22) return 2;
+    if (g && g.hp <= 2 && me < en * 0.4) return 2;
+  } else {
+    if (me < en * 0.22) return 2;
+    if (me < en * 0.3) return 1;
+  }
+  return 0;
+}
 // 1ユニットの最善手を決める。戻り値 {move:[c,r], action:{kind, target}}
 function aiPlan(G, u) {
   var side = u.side, enemy = side === 'atk' ? 'def' : 'atk';
@@ -1275,12 +1368,23 @@ function aiPlan(G, u) {
   var hard = G.difficulty === 'hard', easy = G.difficulty === 'easy';
   var gateTiles = listTiles(G, 'G');
   var anyOpen = gateTiles.some(function (g) { return g.open || g.broken; }) || listTiles(G, 'W').some(function (w) { return w.broken; });
+  var rout = aiRout(G, side), myExits = rout && G.exits ? G.exits[side] : null;
+  if (myExits && !myExits.length) myExits = null;
+  if (myExits && u.type === 'taisho' && !(threatAt(G, side, u.c, u.r, u) >= u.hp * 0.8 || rout === 2)) myExits = null;
 
   for (var k in reach) {
     if (k === '__from') continue;
     var p = k.split(',').map(Number), c = p[0], r = p[1];
     var moved = !(c === u.c && r === u.r);
     var t = tileAt(G, c, r);
+    if (myExits) {
+      // 退却：いちばん 近い 退き口へ
+      var ex = exitAt(G, side, c, r), dEx = 99;
+      myExits.forEach(function (q) { dEx = Math.min(dEx, hexDist(c, r, q.c, q.r)); });
+      var sc0 = ex ? 100 : -dEx * 3 - threatAt(G, side, c, r, u) * 0.3;
+      if (!best || sc0 > best.score) best = { score: sc0, move: [c, r], action: ex ? { kind: 'flee' } : { kind: 'wait' } };
+      continue;
+    }
     if (side === 'def' && u.guard && keep && hexDist(c, r, keep.c, keep.r) > 2) continue;
     // 守りの大将は本丸を はなれない
     if (side === 'def' && u.type === 'taisho' && keep && t.ch !== 'K' && tileAt(G, u.c, u.r).ch === 'K') continue;
@@ -1404,6 +1508,7 @@ function aiExecute(G, u, plan) {
   else if (a.kind === 'close') { doCloseGate(G, u, a.target); events.push({ kind: 'close', unit: u, tile: a.target }); }
   else if (a.kind === 'repair') { doRepair(G, u, a.target); events.push({ kind: 'repair', unit: u, tile: a.target }); }
   else if (a.kind === 'bridge') { doBuildBridge(G, u, a.target); events.push({ kind: 'bridge', unit: u, tile: a.target }); }
+  else if (a.kind === 'flee') { var fc = u.c, fr = u.r, ex = doFlee(G, u); if (ex) events.push({ kind: 'flee', unit: u, c: fc, r: fr, exit: ex }); }
   u.acted = true;
   return events;
 }
@@ -1460,6 +1565,78 @@ var PROVS = [
   { id:'bizen',   name:'備前',     kuni:'備前', castleName:'三石城',     castle:'ridge_r',   koku:22, pin:[134.27, 34.83] }
 ];
 var ADJ = (typeof CHUGOKU_GEO !== 'undefined') ? CHUGOKU_GEO.adj : {};
+// ---- 国ごとの 地形の 特ちょう（山・森・丘の こさ、川） ----
+var PROV_TERRAIN = {
+  nagato:  { mount: 1.0, forest: 1.0, hill: 1.2, river: 0.3, riverName: '木屋川' },
+  suo:     { mount: 0.9, forest: 1.0, hill: 1.1, river: 0.7, riverName: '椹野川' },
+  akiw:    { mount: 1.2, forest: 1.1, hill: 1.0, river: 0.3, riverName: '御手洗川' },
+  sato:    { mount: 1.0, forest: 0.9, hill: 1.0, river: 0.95, riverName: '太田川' },
+  yoshida: { mount: 1.4, forest: 1.3, hill: 1.2, river: 0.9, riverName: '可愛川' },
+  oasa:    { mount: 1.6, forest: 1.5, hill: 1.2, river: 0.4, riverName: '江の川' },
+  kagami:  { mount: 0.9, forest: 1.0, hill: 1.4, river: 0.3, riverName: '黒瀬川' },
+  nuta:    { mount: 1.1, forest: 1.1, hill: 1.1, river: 0.8, riverName: '沼田川' },
+  bingon:  { mount: 1.5, forest: 1.4, hill: 1.3, river: 0.8, riverName: '西城川' },
+  bingos:  { mount: 0.7, forest: 0.8, hill: 1.0, river: 0.9, riverName: '芦田川' },
+  iwamiw:  { mount: 1.6, forest: 1.5, hill: 1.0, river: 0.8, riverName: '津和野川' },
+  iwamie:  { mount: 1.5, forest: 1.4, hill: 1.0, river: 0.95, riverName: '江の川' },
+  izumo:   { mount: 1.0, forest: 1.0, hill: 1.0, river: 0.9, riverName: '飯梨川' },
+  hoki:    { mount: 0.8, forest: 0.9, hill: 1.0, river: 0.85, riverName: '日野川' },
+  inaba:   { mount: 1.0, forest: 1.0, hill: 1.0, river: 0.9, riverName: '千代川' },
+  mimasaka:{ mount: 1.4, forest: 1.3, hill: 1.3, river: 0.9, riverName: '旭川' },
+  bitchu:  { mount: 1.2, forest: 1.1, hill: 1.2, river: 0.9, riverName: '高梁川' },
+  bizen:   { mount: 0.9, forest: 0.9, hill: 1.2, river: 0.5, riverName: '八塔寺川' }
+};
+var HEX_KM = 0.42;   // ヘックス 1こ（半径）＝ 約0.42km（となりの マスまで 約0.7km）
+// 国境データを 経緯度の 多角形に（はじめて つかうときに 1回だけ）
+var GEO_POLY = null;
+function geoPolys() {
+  if (GEO_POLY || typeof CHUGOKU_GEO === 'undefined') return GEO_POLY;
+  function dec(str) { var v = str.split(','), x = 0, y = 0, pts = []; for (var i = 0; i < v.length; i += 2) { x += +v[i]; y += +v[i + 1]; pts.push([x / 1000, y / 1000]); } return pts; }
+  function box(pts) { var b = [999, 999, -999, -999]; pts.forEach(function (p) { b[0] = Math.min(b[0], p[0]); b[1] = Math.min(b[1], p[1]); b[2] = Math.max(b[2], p[0]); b[3] = Math.max(b[3], p[1]); }); return b; }
+  GEO_POLY = [];
+  Object.keys(CHUGOKU_GEO.provs).forEach(function (pid) { CHUGOKU_GEO.provs[pid].forEach(function (s) { var p = dec(s); GEO_POLY.push({ prov: pid, pts: p, b: box(p) }); }); });
+  (CHUGOKU_GEO.near || []).forEach(function (n) { n.rings.forEach(function (s) { var p = dec(s); GEO_POLY.push({ prov: '_', pts: p, b: box(p) }); }); });
+  return GEO_POLY;
+}
+function geoAt(lon, lat) {
+  var P = geoPolys(); if (!P) return null;
+  for (var i = 0; i < P.length; i++) {
+    var q = P[i], b = q.b; if (lon < b[0] || lon > b[2] || lat < b[1] || lat > b[3]) continue;
+    var ins = false, pts = q.pts;
+    for (var a = 0, z = pts.length - 1; a < pts.length; z = a++) {
+      var xi = pts[a][0], yi = pts[a][1], xj = pts[z][0], yj = pts[z][1];
+      if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) ins = !ins;
+    }
+    if (ins) return q.prov;
+  }
+  return null;
+}
+var DIR8 = ['東', '北東', '北', '北西', '西', '南西', '南', '南東'];
+function dirName(e, n) { var a = Math.atan2(n, e); return DIR8[((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8]; }
+function provPoint(pid) { return PROV_BY[pid].pin; }
+// 合戦の 地形と 方角（攻め手が くる ほうを 画面の 下に する）
+function battleEnv(S, b) {
+  if (typeof CHUGOKU_GEO === 'undefined') return null;
+  var T = PROV_BY[b.to], pin = T.pin, cosL = Math.cos(pin[1] * Math.PI / 180);
+  function km(p) { return [(p[0] - pin[0]) * 111.32 * cosL, (p[1] - pin[1]) * 110.57]; }
+  var fp = km(b.from === b.to ? [pin[0], pin[1] - 0.1] : PROV_BY[b.from].pin);
+  var len = Math.hypot(fp[0], fp[1]) || 1, d = [fp[0] / len, fp[1] / len], rt = [-d[1], d[0]];
+  // 画面座標 → 経緯度
+  function land(dx, dy) {
+    var E = (dx * rt[0] + dy * d[0]) * HEX_KM, N = (dx * rt[1] + dy * d[1]) * HEX_KM;
+    var pv = geoAt(pin[0] + E / (111.32 * cosL), pin[1] + N / 110.57);
+    return { sea: !pv, prov: pv === '_' ? null : pv };
+  }
+  function scr(e, n) { return Math.atan2(e * d[0] + n * d[1], e * rt[0] + n * rt[1]); }
+  var esc = [];
+  if (b.defClan) ADJ[b.to].forEach(function (q) {
+    if (q === b.from || S.provs[q].owner !== b.defClan) return;
+    var v = km(provPoint(q)); esc.push({ to: q, name: PROV_BY[q].name, ang: scr(v[0], v[1]), dir: dirName(v[0], v[1]) });
+  });
+  var names = {}; PROVS.forEach(function (p) { names[p.id] = p.name; });
+  return { land: land, prof: PROV_TERRAIN[b.to], riverName: (PROV_TERRAIN[b.to] || {}).riverName, north: scr(0, 1), from: b.from, fromName: PROV_BY[b.from].name,
+           fromDir: dirName(fp[0], fp[1]), to: b.to, toName: T.name, escapes: esc, names: names };
+}
 var PROV_BY = {}; PROVS.forEach(function (p, i) { p.idx = i; PROV_BY[p.id] = p; });
 var TEPPO_YEAR = 1543;   // 鉄砲 伝来
 
@@ -1692,9 +1869,19 @@ function startBattle(S, b) {
 // 合戦の けっか を 国に もどす
 function applyBattle(S, b, res) {
   var A = S.provs[b.from], B = S.provs[b.to];
+  // 退き口から にげた 隊：その 国へ（じぶんの 国の ときだけ）
+  function sendFled(list, clan) {
+    (list || []).forEach(function (u) {
+      var P = S.provs[u.to]; if (!P || P.owner !== clan || P.units.length >= PROV_CAP) return;
+      P.units.push({ uid: u.uid, type: u.type, hp: u.hp });
+    });
+  }
   var atkName = CLANS[b.atkClan].name, defName = b.defClan ? CLANS[b.defClan].name : '';
   if (res.winner === 'atk') {
     B.owner = b.atkClan; B.units = res.atkSurv.slice(0, PROV_CAP); B.acted = true;
+    sendFled(res.atkFled, b.atkClan); sendFled(res.defFled, b.defClan);
+    // にげおくれた 守り手は 兵が 半分に
+    if (res.defFled) res.defSurv = res.defSurv.map(function (u) { return { uid: u.uid, type: u.type, hp: Math.floor(u.hp / 2) }; }).filter(function (u) { return u.hp > 0; });
     // まけた がわの 生きのこりは となりの 自分の国へ にげる
     var esc = null;
     if (b.defClan) {
@@ -1721,6 +1908,7 @@ function applyBattle(S, b, res) {
     logC(S, atkName + 'が ' + PROV_BY[b.to].name + '（' + castleNameOf(S, b.to) + '）を 攻め落とした！', b.atkClan === S.player ? 'good' : (b.defClan === S.player ? 'bad' : 'sys'));
   } else {
     B.units = res.defSurv.slice(0, PROV_CAP);
+    sendFled(res.atkFled, b.atkClan); sendFled(res.defFled, b.defClan);
     if (A.owner === b.atkClan) { var room2 = PROV_CAP - A.units.length; A.units = A.units.concat(res.atkSurv.slice(0, Math.max(0, room2))); }
     logC(S, defName + 'が ' + PROV_BY[b.to].name + 'を まもりきった（' + atkName + 'は ひきあげた）', b.defClan === S.player ? 'good' : (b.atkClan === S.player ? 'bad' : 'sys'));
   }
@@ -2778,11 +2966,71 @@ function drawTerrainLayer() {
       var r, c;
       for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) drawGround(G.map.tiles[r][c]);
       for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) drawNature(G.map.tiles[r][c]);
+      drawBorders();
     } finally { ctx = keep; }
     terrCache = { cv: cv, sc: sc, map: G.map, key: key, w: b[0], h: b[1] };
   }
   ctx.drawImage(terrCache.cv, 0, 0, terrCache.w, terrCache.h);
   for (var r2 = 0; r2 < G.map.h; r2++) for (var c3 = 0; c3 < G.map.w; c3++) { var t = G.map.tiles[r2][c3]; if (t.ch === 'W' || t.ch === 'G' || t.ch === 'K') drawCastlePart(t); }
+}
+// 国ざかい（点線）と となりの 国の 名前
+function drawBorders() {
+  if (!G.geoInfo) return;
+  var r, c, d, acc = {};
+  ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = 'rgba(120,20,20,0.75)'; ctx.lineWidth = 2.5;
+  for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) {
+    var t = G.map.tiles[r][c]; if (!t.prov) continue;
+    if (t.prov !== G.geoInfo.to) { var a = acc[t.prov] || (acc[t.prov] = { x: 0, y: 0, n: 0 }); var p0 = hexCenter(c, r); a.x += p0[0]; a.y += p0[1]; a.n++; }
+    var nb = neighbors(c, r);
+    for (d = 0; d < 6; d++) {
+      var o = tileAt(G, nb[d][0], nb[d][1]); if (!o || !o.prov || o.prov === t.prov || o.prov < t.prov) continue;
+      var p1 = hexCenter(c, r), p2 = hexCenter(o.c, o.r), mx = (p1[0] + p2[0]) / 2, my = (p1[1] + p2[1]) / 2, vx = p2[0] - p1[0], vy = p2[1] - p1[1], L = Math.hypot(vx, vy);
+      var hx = -vy / L * R * 0.5, hy = vx / L * R * 0.5;
+      ctx.beginPath(); ctx.moveTo(mx - hx, my - hy); ctx.lineTo(mx + hx, my + hy); ctx.stroke();
+    }
+  }
+  ctx.setLineDash([]);
+  Object.keys(acc).forEach(function (k) {
+    var a = acc[k]; if (a.n < 3) return; var nm = (G.geoInfo.names[k] || k);
+    ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.fillStyle = 'rgba(110,20,20,0.9)';
+    ctx.strokeText(nm, a.x / a.n, a.y / a.n); ctx.fillText(nm, a.x / a.n, a.y / a.n);
+  });
+  ctx.restore();
+}
+// 退き口（にげ口）の しるし
+function drawExits() {
+  if (!G.exits) return;
+  ['atk', 'def'].forEach(function (side) {
+    var mine = side === G.playerSide, groups = {};
+    G.exits[side].forEach(function (e) {
+      var p = hexCenter(e.c, e.r);
+      hexPath(p[0], p[1], R - 4); ctx.fillStyle = mine ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.12)'; ctx.fill();
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = mine ? '#fff' : 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
+      var g = groups[e.to] || (groups[e.to] = { x: 0, y: 0, n: 0, name: e.name }); g.x += p[0]; g.y += p[1]; g.n++;
+    });
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k], x = g.x / g.n, y = g.y / g.n, txt = (side === 'atk' ? '⬇' : '🏃') + g.name + 'へ';
+      ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var w = ctx.measureText(txt).width + 12;
+      ctx.fillStyle = side === G.playerSide ? 'rgba(30,90,200,0.85)' : 'rgba(170,40,30,0.8)';
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x - w / 2, y - 11, w, 22, 11); else ctx.rect(x - w / 2, y - 11, w, 22); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(txt, x, y + 1);
+    });
+  });
+}
+// 方位（北）
+function drawCompass() {
+  if (!G || G.north === undefined) return;
+  var x = 46, y = ($('hud').offsetHeight || 56) + 46, a = G.north;
+  ctx.save(); ctx.globalAlpha = 0.92;
+  ctx.fillStyle = 'rgba(40,30,20,0.75)'; ctx.beginPath(); ctx.arc(x, y, 24, 0, Math.PI * 2); ctx.fill();
+  ctx.translate(x, y); ctx.rotate(a + Math.PI / 2);
+  ctx.fillStyle = '#e8463a'; ctx.beginPath(); ctx.moveTo(0, -19); ctx.lineTo(6, 0); ctx.lineTo(-6, 0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#eee'; ctx.beginPath(); ctx.moveTo(0, 19); ctx.lineTo(6, 0); ctx.lineTo(-6, 0); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  var tx = x + Math.cos(a) * 34, ty = y + Math.sin(a) * 34;
+  ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fff';
+  ctx.strokeText('北', tx, ty); ctx.fillText('北', tx, ty);
 }
 // 演出（矢・けむり・火花・土けむり）
 var FX = [], FALLEN = [], STAMP = null;
@@ -2884,7 +3132,8 @@ function render() {
   ctx.fillStyle = '#6f8f5a'; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.translate(cam.x, cam.y); ctx.scale(cam.s, cam.s);
   if (gfxOn()) drawTerrainLayer();
-  else for (var r = 0; r < G.map.h; r++) for (var c = 0; c < G.map.w; c++) drawTile(G.map.tiles[r][c]);
+  else { for (var r = 0; r < G.map.h; r++) for (var c = 0; c < G.map.w; c++) drawTile(G.map.tiles[r][c]); drawBorders(); }
+  drawExits();
   // ハイライト
   if (reach && sel && phase === 'idle') {
     for (var k in reach) { if (k === '__from') continue; var p = k.split(',').map(Number); var hc = hexCenter(p[0], p[1]); hexPath(hc[0], hc[1], R - 3); ctx.fillStyle = 'rgba(40,110,255,0.42)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2.5; ctx.stroke(); }
@@ -2898,7 +3147,7 @@ function render() {
   });
   // ユニット
   G.units.forEach(function (u) {
-    if (u.hp <= 0) return;
+    if (u.hp <= 0 || u.fled) return;
     if (moveAnim && moveAnim.unit === u) return;
     if (!isVisibleTo(G, u, G.playerSide)) return;
     var p = hexCenter(u.c, u.r); drawUnit(u, p[0], p[1]);
@@ -2920,6 +3169,7 @@ function render() {
     ctx.globalAlpha = 1;
   });
   ctx.restore();
+  drawCompass();
   drawStamp();
 }
 var lastT = 0;
@@ -3042,11 +3292,22 @@ function showActions() {
   var kinds = {}; targets.forEach(function (t) { kinds[t.kind] = 1; });
   var labels = { attack: '⚔ あかい てきを クリックで こうげき', wall: '🔨 オレンジで かべこわし', open: '🚪 みどりで もんを あける', repair: '🔧 みどりで なおす', close: '🚪 みどりで もんを しめる', bridge: '🌉 みどりで はしを かける' };
   Object.keys(kinds).forEach(function (k) { var s = document.createElement('span'); s.className = 'actlbl'; s.textContent = labels[k]; bar.appendChild(s); });
+  if (sel && canFlee(G, sel)) { var ex0 = exitAt(G, sel.side, sel.c, sel.r), fb = document.createElement('button'); fb.className = 'act flee'; fb.textContent = '🏃 にげる（' + ex0.name + 'へ）'; fb.onclick = function () { SFX.tap(); fleeUnit(); }; bar.appendChild(fb); }
   var w = document.createElement('button'); w.className = 'act'; w.textContent = '⏸ まつ'; w.onclick = function () { SFX.tap(); finishUnit(); }; bar.appendChild(w);
   var nx = document.createElement('button'); nx.className = 'act sub'; nx.textContent = '▶ つぎ'; nx.onclick = function () { SFX.tap(); nextUnit(); }; bar.appendChild(nx);
   if (phase === 'moved' && undoPos && undoPos.unit === sel) { var ub = document.createElement('button'); ub.className = 'act undo'; ub.textContent = '↩ もどす'; ub.onclick = function () { SFX.tap(); undoMove(); }; bar.appendChild(ub); }
   if (phase === 'idle') { var c = document.createElement('button'); c.className = 'act sub'; c.textContent = 'やめる'; c.onclick = function () { SFX.tap(); deselect(); }; bar.appendChild(c); }
   bar.classList.add('on');
+}
+var confirmAct = null;
+function fleeUnit(ok) {
+  var u = sel; if (!u || !canFlee(G, u)) return;
+  if (u.type === 'taisho' && !ok) { confirmAct = function () { fleeUnit(true); }; $('confirmMsg').textContent = 'たいしょうが にげると この合戦は まけに なります。にげますか？'; $('confirmBox').classList.add('on'); return; }
+  var c = u.c, r = u.r, e = doFlee(G, u);
+  floatText(c, r, e.name + 'へ', '#bfe0ff'); SFX.move();
+  logMsg(unitName(u) + ' が ' + e.name + 'へ 退却した（' + menOf(u) + menUnit(u.type) + '）');
+  deselect(); updateHud();
+  if (checkVictory(G)) return gameOver();
 }
 var undoPos = null;
 function undoMove() {
@@ -3182,10 +3443,11 @@ function cpuTurn() {
   if (!G || G.over) return;
   phase = 'cpu'; updateHud();
   var order = aiOrder(G, G.cpuSide);
-  var i = 0;
+  var i = 0, myG = G;
   function next() {
+    if (!G || G !== myG) return;   // べつの 合戦に かわった
     if (G.over) return gameOver();
-    while (i < order.length && (order[i].hp <= 0 || order[i].acted)) i++;
+    while (i < order.length && (order[i].hp <= 0 || order[i].acted || order[i].fled)) i++;
     if (i >= order.length) {
       // 本丸占領チェックを含む
       endTurn(G);
@@ -3196,9 +3458,11 @@ function cpuTurn() {
     }
     var u = order[i++];
     var plan = aiPlan(G, u);
+    if (!plan) { u.acted = true; return next(); }
     var moved = plan.move[0] !== u.c || plan.move[1] !== u.r;
     var visBefore = isVisibleTo(G, u, G.playerSide);
     function act() {
+      if (!G || G !== myG) return;
       var evs = aiExecute(G, u, plan);
       var delay = 120;
       evs.forEach(function (ev) {
@@ -3216,6 +3480,7 @@ function cpuTurn() {
         else if (ev.kind === 'open') { SFX.gate(); floatText(ev.tile.c, ev.tile.r, 'ひらいた！', '#ffb0b0'); logMsg('てきの 忍者が もんを あけた！'); }
         else if (ev.kind === 'close') { SFX.gate(); floatText(ev.tile.c, ev.tile.r, 'しめた！', '#ffb0b0'); logMsg('てきが もんを しめた'); }
         else if (ev.kind === 'bridge') { SFX.repair(); floatText(ev.tile.c, ev.tile.r, 'はし！', '#ffb0b0'); logMsg('てきの 工作が 川に はしを かけた！'); }
+        else if (ev.kind === 'flee') { SFX.move(); floatText(ev.c, ev.r, ev.exit.name + 'へ', '#ffd0d0'); logMsg('てきの ' + unitName(u) + ' が ' + ev.exit.name + 'へ 退却した'); }
         else if (ev.kind === 'repair') { SFX.repair(); floatText(ev.tile.c, ev.tile.r, '+' + REPAIR_AMOUNT, '#ffb0b0'); logMsg('てきの 工作が ' + (ev.tile.ch === 'G' ? 'もん' : 'じょうへき') + ' を なおした（のこり ' + ev.tile.hp + '）'); }
       });
       updateHud();
@@ -3323,8 +3588,8 @@ window.addEventListener('load', function () {
     if (msgs.length) { $('confirmMsg').textContent = msgs.join(' ') + ' ターンを おわりますか？'; $('confirmBox').classList.add('on'); }
     else playerEndTurn();
   };
-  $('confirmYes').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); playerEndTurn(); };
-  $('confirmNo').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); };
+  $('confirmYes').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); var f = confirmAct || playerEndTurn; confirmAct = null; f(); };
+  $('confirmNo').onclick = function () { SFX.tap(); confirmAct = null; $('confirmBox').classList.remove('on'); };
   $('logLine').onclick = function () { SFX.tap(); openLog(); };
   $('logClose').onclick = function () { SFX.tap(); $('logBox').classList.remove('on'); };
   $('fitBtn').onclick = function () { SFX.tap(); toggleCamera(); };
@@ -3809,19 +4074,29 @@ function kFightBattle(b) {
   var pLead = (pSide === 'atk' ? ao : dO), cLead = (pSide === 'atk' ? dO : ao);
   var pChar = pLead && pLead.lord ? portraitChar(KS.player) : (pLead ? 'clan:' + KS.player : KS.face);
   var cChar = cLead && cLead.lord ? portraitChar(cClan) : 'clan:' + cClan;
+  var env = battleEnv(KS, b);
   G = newGame({ mapIndex: castleIndexOf(b.castle), sizeIndex: battleSizeIndex(b), mapSeed: battleSeed(KS, b.to), playerSide: pSide,
                 playerChar: pChar, cpuChar: cChar, playerUnits: pUnits, cpuUnits: cUnits, difficulty: KS.difficulty,
-                generals: gens, sideMult: sm, campaign: true });
+                generals: gens, sideMult: sm, campaign: true, env: env });
   G.kBattle = b;
-  beginBattle(castleNameOf(KS, b.to) + 'の 合戦！ ' + (pSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.turnLimit + 'ターン）');
+  var intro = castleNameOf(KS, b.to) + 'の 合戦！ ' + (pSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.turnLimit + 'ターン）';
+  if (env) {
+    intro += '　' + env.fromName + 'の 軍が ' + env.fromDir + 'から せめこむ。';
+    intro += env.escapes.length ? '守りの 退き口：' + env.escapes.map(function (e) { return e.name + '（' + e.dir + '）'; }).join('・') : '守りに にげ場は ない（籠城）';
+  }
+  beginBattle(intro);
 }
 function kBattleFinished() {
   var b = G.kBattle, pSide = G.playerSide;
-  var res = { winner: G.winner, atkSurv: survivors(G, 'atk'), defSurv: survivors(G, 'def') };
+  var res = { winner: G.winner, atkSurv: survivors(G, 'atk'), defSurv: survivors(G, 'def'), atkFled: escaped(G, 'atk'), defFled: escaped(G, 'def') };
   // 大将を うしなった がわは、のこりの へいも すこし にげる
   G = null;
   $('resultBox').classList.remove('on');
   kFinishBattle(b, res);
+}
+function fledStr(list) {
+  var by = {}; list.forEach(function (u) { by[u.to] = (by[u.to] || 0) + menTotal([u]); });
+  return Object.keys(by).map(function (k) { return (PROV_BY[k] ? PROV_BY[k].name : k) + 'へ ' + menStr(by[k]); }).join('、');
 }
 function kAutoBattle(b) {
   var res = autoResolve(KS, b);
@@ -3829,8 +4104,10 @@ function kAutoBattle(b) {
 }
 function kFinishBattle(b, res, auto) {
   var pSide = b.playerSide || (b.defClan === KS.player ? 'def' : 'atk');
+  var myFled = (pSide === 'atk' ? res.atkFled : res.defFled) || [], enFled = (pSide === 'atk' ? res.defFled : res.atkFled) || [];
   var before = menTotal(pSide === 'atk' ? b.atkUnits : b.defUnits), after = menTotal(pSide === 'atk' ? res.atkSurv : res.defSurv);
   var eBefore = menTotal(pSide === 'atk' ? b.defUnits : b.atkUnits), eAfter = menTotal(pSide === 'atk' ? res.defSurv : res.atkSurv);
+  var fledTxt = (myFled.length ? '<br>みかたの 退却：' + fledStr(myFled) : '') + (enFled.length ? '<br>てきの 退却：' + fledStr(enFled) : '');
   applyBattle(KS, b, res); kSave();
   openMap();
   var win = res.winner === pSide, p = PROV_BY[b.to];
@@ -3838,7 +4115,7 @@ function kFinishBattle(b, res, auto) {
   (win ? SFX.win : SFX.lose)();
   var img = SPR[(win ? charById(KS.face).win : charById(KS.face).lose) || 'fute_joy'];
   kModal(win ? 'しょうり！' : 'はいぼく…', '<div class="kres"><img src="' + img + '" alt=""><p><b>' + txt + '</b>' + (auto ? '（おまかせ）' : '') + '</p>' +
-    '<p class="small">みかた ' + menStr(before) + ' → ' + menStr(after) + '　／　てき ' + menStr(eBefore) + ' → ' + menStr(eAfter) + '</p></div>',
+    '<p class="small">みかた ' + menStr(before) + ' → ' + menStr(after) + '　／　てき ' + menStr(eBefore) + ' → ' + menStr(eAfter) + fledTxt + '</p></div>',
     [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); kAfterBattle(); } }]);
 }
 function kAfterBattle() {
