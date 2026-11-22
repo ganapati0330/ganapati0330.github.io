@@ -399,7 +399,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.5';
+var VERSION = 'v3.6';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -3050,7 +3050,9 @@ var GFX_NAMES = ['t_grass', 't_court', 't_water', 't_sea', 'forest', 'sakura', '
   'kosaku_stand_b', 'kosaku_stand_r', 'kosaku_atk_b', 'kosaku_atk_r', 'kosaku_down_b', 'kosaku_down_r',
   'teppo_stand_b', 'teppo_stand_r', 'teppo_atk_b', 'teppo_atk_r', 'teppo_down_b', 'teppo_down_r',
   'kiba_stand_b', 'kiba_stand_r', 'kiba_atk_b', 'kiba_atk_r', 'kiba_down_b', 'kiba_down_r',
-  'yumi_stand_b', 'yumi_stand_r', 'yumi_atk_b', 'yumi_atk_r', 'yumi_down_b', 'yumi_down_r', 'arrow', 'smoke', 'spark', 'dust', 'crumble', 'shutsujin', 'kachidoki'];
+  'yumi_stand_b', 'yumi_stand_r', 'yumi_atk_b', 'yumi_atk_r', 'yumi_down_b', 'yumi_down_r',
+  'taisho_stand_b', 'taisho_stand_r', 'taisho_atk_b', 'taisho_atk_r', 'taisho_down_b', 'taisho_down_r',
+  'ninja_stand_b', 'ninja_stand_r', 'ninja_atk_b', 'ninja_atk_r', 'ninja_down_b', 'ninja_down_r', 'arrow', 'smoke', 'spark', 'dust', 'crumble', 'shutsujin', 'kachidoki'];
 var GFX = {};
 GFX_NAMES.forEach(function (n) { var im = new Image(); im.onload = function () { terrCache = null; }; im.src = 'img/' + n + '.webp'; GFX[n] = im; });
 function gx(n) { var im = GFX[n]; return im && im.complete && im.naturalWidth ? im : null; }
@@ -3224,7 +3226,7 @@ function drawStamp() {
   ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, H * 0.42); ctx.scale(s, s); ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore();
 }
 // 兵種ごとの 絵の 名前
-var SPR_PRE = { ashigaru: 'ashi', kosaku: 'kosaku', teppo: 'teppo', kiba: 'kiba', yumi: 'yumi' };
+var SPR_PRE = { ashigaru: 'ashi', kosaku: 'kosaku', teppo: 'teppo', kiba: 'kiba', yumi: 'yumi', taisho: 'taisho', ninja: 'ninja' };
 function unitSpr(type, pose, side) { var p = SPR_PRE[type]; return p ? gx(p + '_' + pose + '_' + (side === G.playerSide ? 'b' : 'r')) : null; }
 // 高さを そろえて おく
 function putSprH(im, x, by, h, flip) { putSpr(im, x, by, h * im.naturalWidth / im.naturalHeight, flip); }
@@ -3232,6 +3234,7 @@ function drawAshigaru(u, x, y, col) {
   var pose = u._atk && u._atk > nowMs() ? 'atk' : 'stand', im = unitSpr(u.type, pose, u.side);
   if (!im) return false;
   var face = u._face || (u.side === G.playerSide ? 1 : -1);
+  if (u.type === 'ninja' && !u.revealed) ctx.globalAlpha *= 0.6;   // かくれている 忍者は うすく
   ctx.fillStyle = col; ctx.globalAlpha *= 0.55; ctx.beginPath(); ctx.ellipse(x, y + R * 0.5, R * 0.55, R * 0.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha /= 0.55;
   ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(x, y + R * 0.5, R * 0.55, R * 0.2, 0, 0, Math.PI * 2); ctx.stroke();
   putSprH(im, x + (pose === 'atk' ? 6 * face : 0), y + R * 0.58, R * (u.type === 'kiba' ? 1.78 : 1.72), face < 0);
@@ -3248,7 +3251,19 @@ function drawUnit(u, x, y) {
   ctx.save();
   if (u.acted && u.side === G.side) ctx.globalAlpha = 0.55;
   ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(x, y + rad * 0.85, rad * 0.9, rad * 0.35, 0, 0, Math.PI * 2); ctx.fill();
-  if (u.type === 'taisho') {
+  if (u.type === 'taisho' && drawAshigaru(u, x, y, col)) {
+    // 全身の 絵 ＋ だれが 大将かが わかる 小さな 顔
+    var chB = charById(u.charId), imB = chB.spr ? getImg(chB.spr) : null, bx2 = x + R * 0.5, by2 = y - R * 0.95, br = R * 0.3;
+    ctx.beginPath(); ctx.arc(bx2, by2, br + 2.5, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+    ctx.beginPath(); ctx.arc(bx2, by2, br, 0, Math.PI * 2); ctx.fillStyle = chB.spr ? '#fff6e0' : (chB.color || '#888'); ctx.fill();
+    if (!chB.spr) { ctx.fillStyle = '#fff'; ctx.font = 'bold ' + Math.round(br * 1.2) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(chB.crest || '将', bx2, by2 + 1); }
+    else if (imB && imB.complete && imB.naturalWidth) {
+      ctx.save(); ctx.beginPath(); ctx.arc(bx2, by2, br - 1, 0, Math.PI * 2); ctx.clip();
+      if (chB.spr.indexOf('art:') === 0) ctx.drawImage(imB, bx2 - br, by2 - br, br * 2, br * 2);
+      else { var scB = (br * 2.2) / imB.naturalHeight; ctx.drawImage(imB, bx2 - imB.naturalWidth * scB / 2, by2 - br + 1, imB.naturalWidth * scB, imB.naturalHeight * scB); }
+      ctx.restore();
+    }
+  } else if (u.type === 'taisho') {
     var ch = charById(u.charId);
     ctx.beginPath(); ctx.arc(x, y, rad + 3, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
     ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fillStyle = '#fff6e0'; ctx.fill();
