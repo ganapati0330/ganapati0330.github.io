@@ -342,6 +342,7 @@ button{font-family:inherit;cursor:pointer;}
       <button class="hb" id="fitBtn" title="ぜんたい">⤢</button>
       <button class="hb" id="helpBtn2">?</button>
       <button class="hb" id="quitBtn">✕</button>
+      <button class="hb" id="supplyBtn" title="補給" style="display:none">🐴補給</button>
       <button class="hb" id="endTurnBtn">ターンおわり ▶</button>
     </div>
   </div>
@@ -369,6 +370,12 @@ button{font-family:inherit;cursor:pointer;}
   <button class="close" id="logClose">とじる</button>
 </div></div>
 
+<div class="modal" id="supplyBox"><div class="card">
+  <h2 style="font-size:22px;color:#7a3a1a">🐴 小荷駄隊を よぶ</h2>
+  <p id="supplyMsg" style="font-size:14px;color:#555;text-align:left"></p>
+  <div class="row" id="supplyOpts"></div>
+  <div class="row"><button class="act sub" id="supplyNo">やめる</button></div>
+</div></div>
 <div class="modal" id="confirmBox"><div class="card">
   <h2 style="font-size:22px;color:#7a3a1a">ターンを おわる？</h2>
   <p id="confirmMsg" style="font-size:15px;color:#555"></p>
@@ -391,7 +398,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>🌾 内政は 領内マップで</b>：じぶんの 国の 中の ヘックスに たてる。<b>🌾田畑</b>（開墾：川や 田畑の 近く。石高 +0.5万石。石高の 上限は なく、水を ひける 土地が あるだけ ふやせる。ただし ひらくほど 人手が たりなくなって 高くなる。森・丘は 割高）・<b>🏘町</b>（道や 城の となり。まいきせつ +200貫。町 1つを 田畑 6マスで ささえる）・<b>⛏鉱山</b>（◆鉱脈の ある 国だけ：石見銀山・吉岡銅山・奥出雲の たたら など）・<b>🏺名産</b>（町の となり。備前焼・因州和紙・備後表 など）・<b>🧂塩田</b>（海べ）。お金の かぎり いくつでも たてられ、↩で 1つずつ もどせる。たてた ものは 合戦の ちずにも でる。🗾ボタンで いつでも 見られる。</li>
       <li><b>🙇 降参した へい</b>：城を おとすと、のこった てきの へいの 3割くらい（せめた 国の 城主の 政が 高いほど ふえる。2〜5割）が 降参して みかたに くわわる。のこりは となりの 国へ にげる。</li>
       <li><b>🏯 城を おとして いく</b>：国ごとに 本城と 支城（2つ）が ある。となりの 国から せめると、まず その 道の 入り口を まもる <b>支城</b>を おとす（地図の 小さな 櫓。赤く 光るのが せめられる 城）。支城を とれば <b>本城</b>を せめられ、本城が おちると その 国が 手に はいる（のこった 支城の 多くは 降参、のこりは 抵抗を つづける）。支城が せめられると 本城から 後詰めが くる。支城の まわりは その城の <b>所領</b>（国の 1〜3わりほど）。支城を とると 所領が じぶんの 色に かわり、その ぶんの 年貢・収入が はいる（とられた 側は へる。とられた 所領には 田畑や 町を つくれない）。じぶんの 支城を タップして「所領を ひらく」と、その まわりに 田畑・町などを つくれる（支城ごとに きせつに 1回。年貢は 田畑の かずで わける）。支城を タップすると 守備兵の 出し入れが できる。</li>
-      <li><b>⚔ 合戦は 国ざかいから</b>：となりの 国から 道を すすみ、国ざかいを こえて 城へ むかう。<b>本丸に はいれば かち</b>（大将を たおしても かち）。ターンの かぎりは なく、<b>兵糧</b>が つきると ひきあげ。出陣の とき なん日ぶん もっていくか えらぶ（お金が かかる。へいが へると ながもち）。城が とおい 国ほど 日数が いる。出陣の とき、おなじ 城を せめられる ほかの 国が あれば「＋◯◯からも せめる」で <b>何か所からも 同時に</b> せめられる（それぞれの 攻め口から あらわれる）。</li>
+      <li><b>⚔ 合戦は 国ざかいから</b>：となりの 国から 道を すすみ、国ざかいを こえて 城へ むかう。<b>本丸に はいれば かち</b>（大将を たおしても かち）。ターンの かぎりは なく、<b>兵糧</b>が つきると ひきあげ。出陣の とき なん日ぶん もっていくか えらぶ（お金が かかる。へいが へると ながもち）。城が とおい 国ほど 日数が いる。合戦中は「🐴補給」で <b>小荷駄隊</b>を よべる（お金が かかる）。攻め口に あらわれるので、本隊（みかた 3隊いじょう）の 2マス いないまで はこぶと 兵糧が ふえる。小荷駄隊は たたかえず、森・山・丘を みかたなしで すすむと 伏兵に おそわれ、てきにも ねらわれる。てきの 小荷駄隊を おそえば 兵糧ぎれを ねらえる。出陣の とき、おなじ 城を せめられる ほかの 国が あれば「＋◯◯からも せめる」で <b>何か所からも 同時に</b> せめられる（それぞれの 攻め口から あらわれる）。</li>
       <li><b>🚧 普請と 改築</b>：領内（内政）で <b>柵・堀・砦</b>を つくれる。合戦の とき 地図に そのまま あらわれ、柵は てきの 足どめ、堀は わたりにくく、砦は 柵に かこまれた 小さな 城に なる。<b>城の 改築</b>（Lv3まで）で 石垣と 門が かたくなり 守りが つよく なる。支城も 所領の 内政から 改築 できる。</li>
       <li><b>🌾 年貢と 一揆</b>：国ごとに 年貢の 割合（三公七民〜七公三民）を −／＋で きめられる（行為は つかわない）。おもくすると 秋の 年貢が ふえるが、農民の <b>不満</b>が たまる。不満が 60を こえると <b>一揆</b>が おきる。兵が おおければ しずめられる（田畑が すこし あれる）が、すくないと 国を うばわれて <b>一揆衆</b>の 国に なる。一揆衆は せめて こないが、せめて とりかえす ことが できる。いくさが あると 不満が ふえ、政の たかい 城主や 町が あると へる。</li>
       <li><b>中国地方は 1まいの ヘックス地図</b>：海岸線・国境は 国土数値情報、山・峠・川は 地理の 知識で つくった もの。国取りの 地図の こい 茶色が <b>けわしい山（とおれない）</b>。国どうしは <b>道</b>で つながる：🛤 陸路・⛰ <b>峠道</b>（四十曲峠・志戸坂峠・明地峠 など。守りが すこし ゆうり）・⛵ <b>海路</b>（船で 上陸。騎馬は つれていけない）。🚫 は 山が けわしくて 国境が あっても せめられない ところ。</li>
@@ -445,7 +452,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v5.1';
+var VERSION = 'v5.2';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -463,6 +470,8 @@ var UNIT_TYPES = {
     desc:'うごきが おそく こうげきは よわいが、まもりは かたい。じょうへき・もんを おおきく こわす（6）。まもりでは なおす（+2、こわれた あなは なおせない）。川に はしを かけられる。' },
   ninja:    { id:'ninja', name:'忍者', kana:'にんじゃ', ch:'忍', men:20, atk:6, def:2, mov:4, rmin:1, rmax:1, cost:4,
     desc:'かべや 山を のりこえ、もんを あけられる。こうげきは つよいが まもりは よわい。てきの となりに いくまで みつからない。' },
+  konida:   { id:'konida', name:'小荷駄', kana:'こにだ', ch:'糧', men:100, atk:0, def:2, mov:4, rmin:1, rmax:1, cost:0,
+    desc:'兵糧を はこぶ 補給の 隊。たたかえない。本隊（みかた 3隊いじょう）の 2マス いないまで はこぶと 兵糧が ふえる。森・山・丘で ひとりだと 敵に おそわれやすい。' },
   taisho:   { id:'taisho', name:'大将', kana:'たいしょう', ch:'将', men:100, atk:6, def:6, mov:4, rmin:1, rmax:1, cost:0,
     desc:'ぐんの リーダー。よろいが かたい。となりの みかたが つよくなる。やられたら まけ！' }
 };
@@ -1093,7 +1102,7 @@ function isVisibleTo(G, u, side) {
 
 // 攻撃可能か（位置 c,r から target）
 function canAttackFrom(G, u, c, r, target, moved) {
-  if (target.hp <= 0 || target.side === u.side) return false;
+  if (target.hp <= 0 || target.side === u.side || u.type === 'konida') return false;
   if (u.type === 'teppo' && moved) return false;
   var d = hexDist(c, r, target.c, target.r);
   return d >= u.rmin && d <= u.rmax;
@@ -1120,7 +1129,46 @@ function estimateDamage(G, a, aC, aR, d) {
   return Math.max(dmg, 0.5);
 }
 // その隊の いまの 人数（騎馬は 騎、鉄砲は 挺）
-function atkMen(G) { var m = 0; G.units.forEach(function (u) { if (u.side === 'atk' && u.hp > 0 && !u.fled && u.type !== 'taisho') m += menOf(u); }); return m; }
+function atkMen(G) { var m = 0; G.units.forEach(function (u) { if (u.side === 'atk' && u.hp > 0 && !u.fled && u.type !== 'taisho' && u.type !== 'konida') m += menOf(u); }); return m; }
+// ---- 補給（小荷駄隊） ----
+function activeConvoy(G, side) { return G.units.filter(function (u) { return u.type === 'konida' && u.side === side && u.hp > 0 && !u.delivered; })[0] || null; }
+// 国ざかい（攻め口）に 小荷駄隊を だす。days 日ぶんの 兵糧（いまの 人数で）
+function sendSupply(G, days, side) {
+  side = side || 'atk'; if (G.food === undefined || activeConvoy(G, side)) return null;
+  var F = G.fronts && G.fronts[0] ? G.fronts[0] : { c: Math.floor(G.map.w / 2), r: G.map.h - 1 }, best = null;
+  for (var r = 0; r < G.map.h; r++) for (var c = 0; c < G.map.w; c++) {
+    var t = G.map.tiles[r][c]; if ('.=fhb'.indexOf(t.ch) < 0 || unitAt(G, c, r)) continue;
+    var d = hexDist(c, r, F.c, F.r) + (G.map.h - 1 - r) * 0.2; if (!best || d < best[1]) best = [t, d];
+  }
+  if (!best) return null;
+  var u = makeUnit('konida', side, null); u.c = best[0].c; u.r = best[0].r; u.revealed = true;
+  u.cargo = days * Math.max(1, atkMen(G)); u.cargoDays = days; G.units.push(u);
+  return u;
+}
+// きせつの おわり（その がわの 番の おわり）：おそわれる・とどける
+function convoyStep(G, side) {
+  var notes = G.notes || (G.notes = []);
+  G.units.forEach(function (u) {
+    if (u.type !== 'konida' || u.side !== side || u.hp <= 0 || u.delivered) return;
+    var t = tileAt(G, u.c, u.r), guard = G.units.some(function (o) { return o !== u && o.side === side && o.hp > 0 && !o.fled && o.type !== 'konida' && hexDist(o.c, o.r, u.c, u.r) <= 2; });
+    if (u.moved && !guard) {   // 野伏せり・伏兵に おそわれる
+      var ch = 'fmh'.indexOf(t.ch) >= 0 ? 0.35 : 0.12;
+      if (rand() < ch) {
+        var dmg = 3 + Math.floor(rand() * 4), lost = Math.min(u.hp, dmg) / u.hp;
+        u.cargo = Math.round(u.cargo * (1 - lost * 0.8)); u.hp = Math.max(0, u.hp - dmg);
+        notes.push({ c: u.c, r: u.r, side: side, text: u.hp > 0 ? '小荷駄隊が 伏兵に おそわれた！ 兵糧が へった' : '小荷駄隊が 伏兵に おそわれ、兵糧を うばわれた…' });
+        if (u.hp <= 0) return;
+      }
+    }
+    // 本隊（みかた 3隊いじょう）の 2マス いないに とどけば 兵糧が ふえる
+    var near = G.units.filter(function (o) { return o !== u && o.side === side && o.hp > 0 && !o.fled && o.type !== 'konida' && hexDist(o.c, o.r, u.c, u.r) <= 2; });
+    var army = G.units.filter(function (o) { return o.side === side && o.hp > 0 && !o.fled && o.type !== 'konida'; });
+    if (near.length >= Math.min(3, army.length)) {
+      var men = Math.max(1, atkMen(G)), add = u.cargo; G.food += add; u.delivered = true; var dc = u.c, dr = u.r; u.hp = 0; u.c = -99; u.r = -99;
+      notes.push({ c: dc, r: dr, side: side, text: '小荷駄隊が 本隊に とどいた！ 兵糧 +' + Math.floor(add / men) + '日ぶん' });
+    }
+  });
+}
 // 兵糧が あと 何日 もつか
 function foodDays(G) { if (G.food === undefined) return null; return Math.max(0, Math.floor(G.food / Math.max(1, atkMen(G)))); }
 function menOf(u) { return Math.max(1, Math.round(u.hp * UNIT_TYPES[u.type].men / 10)); }
@@ -1165,7 +1213,7 @@ function wallDamage(u) {
 }
 function canHitWallFrom(G, u, c, r, t, moved) {
   if (!t || (t.ch !== 'W' && t.ch !== 'G') || t.broken) return false;
-  if (u.side === 'def') return false;
+  if (u.side === 'def' || u.type === 'konida') return false;
   if (unitAt(G, t.c, t.r)) return false;
   if (wallDamage(u) <= 0) return false;
   if (u.type === 'teppo' && moved) return false;
@@ -1432,13 +1480,13 @@ function doFlee(G, u) {
   return e;
 }
 function escaped(G, side) {
-  return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.hp > 0 && u.fled; })
+  return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.type !== 'konida' && u.hp > 0 && u.fled; })
     .map(function (u) { return { uid: u.ref, type: u.type, hp: u.hp, to: u.fledTo }; });
 }
 
 // 合戦のあと：生きのこった へい（国取りへ もどす）
 function survivors(G, side) {
-  return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.hp > 0 && !u.fled; })
+  return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.type !== 'konida' && u.hp > 0 && !u.fled; })
     .map(function (u) { return { uid: u.ref, type: u.type, hp: u.hp }; });
 }
 function unitsOf(G, side) { return G.units.filter(function (u) { return u.hp > 0 && u.side === side && !u.fled; }); }
@@ -1455,7 +1503,7 @@ function checkVictory(G) {
   var keep = findKeep(G);
   var occ = unitAt(G, keep.c, keep.r);
   if (occ && occ.side === 'atk' && G.side === 'atk') { G.over = true; G.winner = 'atk'; G.reason = 'ほんまるを おとした！'; return 'atk'; }
-  if (unitsOf(G, 'atk').length === 0) { G.over = true; G.winner = 'def'; G.reason = 'せめてを ぜんめつ させた！'; return 'def'; }
+  if (unitsOf(G, 'atk').filter(function (u) { return u.type !== 'konida'; }).length === 0) { G.over = true; G.winner = 'def'; G.reason = 'せめてを ぜんめつ させた！'; return 'def'; }
   if (unitsOf(G, 'def').length === 0) { G.over = true; G.winner = 'atk'; G.reason = 'まもりてを ぜんめつ させた！'; return 'atk'; }
   return null;
 }
@@ -1463,12 +1511,17 @@ function checkVictory(G) {
 function endTurn(G) {
   checkVictory(G);
   if (G.over) return;
+  if (G.food !== undefined) convoyStep(G, G.side);
   if (G.side === 'atk') { G.side = 'def'; }
   else {
     G.side = 'atk'; G.turn++;
     if (G.food !== undefined) {   // 1日 すぎる：兵糧を たべる
       G.food -= atkMen(G);
       if (G.food < 0) { G.food = 0; G.over = true; G.winner = 'def'; G.reason = 'せめての 兵糧が つきた！（ひきあげ）'; return; }
+      // CPU の 攻め手は 兵糧が へると 小荷駄隊を よぶ（2回まで）
+      if (G.playerSide === 'def' && foodDays(G) <= 4 && (G.cpuSupply || 0) < 2 && !activeConvoy(G, 'atk')) {
+        var cv = sendSupply(G, 8, 'atk'); if (cv) { G.cpuSupply = (G.cpuSupply || 0) + 1; (G.notes || (G.notes = [])).push({ c: cv.c, r: cv.r, side: 'atk', text: 'てきの 小荷駄隊が あらわれた！ おそえば 兵糧が とどかない' }); }
+      }
     }
     if (G.turn > (G.turnLimit || TURN_LIMIT)) { G.over = true; G.winner = 'def'; G.reason = 'しろを まもりきった！'; return; }
   }
@@ -1554,6 +1607,14 @@ function aiPlan(G, u) {
   if (myExits && !myExits.length) myExits = null;
   if (myExits && u.type === 'taisho' && !(threatAt(G, side, u.c, u.r, u) >= u.hp * 0.8 || rout === 2)) myExits = null;
 
+  if (u.type === 'konida') {   // 小荷駄：本隊（みかたが あつまって いる ところ）へ、あぶない ところは さける
+    var arm = unitsOf(G, side).filter(function (o) { return o.type !== 'konida' && o.type !== 'taisho'; }), bk = null;
+    if (!arm.length) arm = unitsOf(G, side).filter(function (o) { return o.type !== 'konida'; });
+    for (var k0 in reach) { if (k0 === '__from') continue; var p0 = k0.split(',').map(Number);
+      var ds2 = arm.map(function (o) { return hexDist(p0[0], p0[1], o.c, o.r); }).sort(function (a, b) { return a - b; }), dd2 = ds2.length ? ds2[Math.min(2, ds2.length - 1)] : 0;
+      var sc1 = -dd2 * 3 - threatAt(G, side, p0[0], p0[1], u) * 1.2; if (!bk || sc1 > bk.score) bk = { score: sc1, move: p0, action: { kind: 'wait' } }; }
+    return bk;
+  }
   for (var k in reach) {
     if (k === '__from') continue;
     var p = k.split(',').map(Number), c = p[0], r = p[1];
@@ -1610,6 +1671,7 @@ function aiPlan(G, u) {
       var val = Math.min(dmg, e.hp) * 1.4 + (kill ? 5 : 0);
       if (e.type === 'taisho') val += kill ? 40 : dmg * 1.0;
       if (e.type === 'kosaku' && side === 'def') val += 2;
+      if (e.type === 'konida') val += 8;   // 補給を たつ
       // 反撃
       var dd = hexDist(c, r, e.c, e.r);
       if (!kill && dd >= e.rmin && dd <= e.rmax) {
@@ -1699,7 +1761,7 @@ function aiExecute(G, u, plan) {
   return events;
 }
 function aiOrder(G, side) {
-  var pri = { ninja: 0, kosaku: 1, kiba: 2, ashigaru: 3, yumi: 4, teppo: 5, taisho: 6 };
+  var pri = { ninja: 0, kosaku: 1, kiba: 2, ashigaru: 3, yumi: 4, teppo: 5, taisho: 6, konida: 7 };
   return unitsOf(G, side).filter(function (u) { return !u.acted; }).sort(function (a, b) { return pri[a.type] - pri[b.type]; });
 }
 
@@ -4187,6 +4249,9 @@ function updateHud() {
   $('sideLbl').textContent = mine ? 'あなたの ばん' : 'あいての ばん';
   $('sideLbl').className = mine ? 'me' : 'cpu';
   $('endTurnBtn').disabled = !mine || phase === 'cpu';
+  var canSup = G.food !== undefined && G.playerSide === 'atk' && G.kBattle && typeof KS !== 'undefined' && KS;
+  $('supplyBtn').style.display = canSup ? '' : 'none';
+  if (canSup) $('supplyBtn').disabled = !mine || phase === 'cpu' || !!activeConvoy(G, 'atk');
   var ca = unitsOf(G, 'atk').length, cd = unitsOf(G, 'def').length;
   $('countLbl').textContent = '⚔ せめて ' + ca + '　🏯 まもり ' + cd;
   updateInfo();
@@ -4211,6 +4276,7 @@ function updateInfo() {
   var mine = u.side === G.playerSide;
   var html = '<div class="irow"><span class="uic ' + (mine ? 'blue' : 'red') + '">' + T.ch + '</span><b>' + unitName(u) + '</b><span class="tag">' + (mine ? 'みかた' : 'てき') + '</span></div>';
   html += '<div class="stats">兵 <b>' + menOf(u) + menUnit(u.type) + '</b>（' + UNIT_TYPES[u.type].men + menUnit(u.type) + 'の隊）／攻 ' + u.atk + '／守 ' + u.def + '／移 ' + u.mov + '／射 ' + (u.rmin === u.rmax ? u.rmin : u.rmin + '〜' + u.rmax) + '　地形：' + TERRAIN[t.ch].name + (t.ch === 'W' && !t.broken ? '（まもり UP）' : '') + '</div>';
+  if (u.type === 'konida') html += '<p class="hint">🍙 兵糧 ' + Math.floor(u.cargo / Math.max(1, atkMen(G))) + '日ぶんを はこんでいる。本隊（みかた 3隊）の 2マス いないで とどく。</p>';
   if (mine && sel === u && G.side === G.playerSide) {
     if (phase === 'idle') html += '<p class="hint">あお＝いどう／あか・オレンジ＝こうげき／じぶんを もう一度＝まつ</p>';
     else if (phase === 'moved') html += '<p class="hint">あか＝こうげき／ほかを クリック＝まつ</p>';
@@ -4445,6 +4511,32 @@ function nearestTargetUnit(wx, wy) {
   return best;
 }
 function deselectKeep() { sel = null; reach = null; targets = []; phase = 'idle'; hideActions(); }
+// 補給：国取りの お金で 小荷駄隊を よぶ
+function supplyCost(days) { return Math.ceil(foodCost(atkMen(G), days) * 1.3); }   // はこぶ 手間で すこし たかい
+function openSupply() {
+  if (!G || G.food === undefined || activeConvoy(G, 'atk')) return;
+  var gold = KS.clans[KS.player].gold;
+  $('supplyMsg').innerHTML = 'いまの 兵糧：あと <b>' + foodDays(G) + '日</b>（お金 💰' + kan(gold) + '）<br>攻め口に 小荷駄隊が あらわれる。<b>本隊（みかた 3隊いじょう）の 2マス いない</b>まで はこぶと 兵糧が ふえる。<br><span style="color:#b33">⚠ たたかえない。森・山・丘を みかたなしで すすむと 伏兵に おそわれやすい。てきにも ねらわれる。</span>';
+  var box = $('supplyOpts'); box.innerHTML = '';
+  [5, 10, 15].forEach(function (d) {
+    var c = supplyCost(d), b = document.createElement('button'); b.className = 'act'; b.innerHTML = d + '日ぶん<br><small>💰' + kan(c) + '</small>'; b.disabled = c > gold;
+    b.onclick = function () {
+      SFX.tap(); $('supplyBox').classList.remove('on');
+      var u = sendSupply(G, d, 'atk'); if (!u) return;
+      KS.clans[KS.player].gold -= c; kSave && kSave();
+      logMsg('🐴 小荷駄隊（兵糧 ' + d + '日ぶん）が 攻め口に ついた。本隊の そばまで はこぼう', 'sys'); banner('小荷駄隊が ついた', 1000);
+      floatText(u.c, u.r, '🐴', '#ffe24a', true); updateHud();
+    };
+    box.appendChild(b);
+  });
+  $('supplyBox').classList.add('on');
+}
+// 小荷駄の できごと（おそわれた・とどいた）
+function showNotes() {
+  if (!G || !G.notes || !G.notes.length) return;
+  G.notes.forEach(function (n, i) { logMsg(n.text, 'sys'); floatText(n.c, n.r, /とどいた/.test(n.text) ? '🍙+' : '⚔', /とどいた/.test(n.text) ? '#a0ffb0' : '#ff8a7a', true); setTimeout(function () { banner(n.text, 1300); }, 1000 + i * 1400); });
+  G.notes = [];
+}
 // 兵糧の しらせ（のこり 5・3・1日）
 function foodNote() {
   if (!G || G.food === undefined || G.side !== 'atk') return;
@@ -4457,7 +4549,7 @@ function playerEndTurn() {
   deselect(); hoverInfo = null; clearUndo();
   endTurn(G);
   if (G.over) return gameOver();
-  updateHud(); SFX.turn(); banner('あいての ばん', 900); foodNote();
+  updateHud(); SFX.turn(); banner('あいての ばん', 900); foodNote(); showNotes();
   logMsg('―― あいての ばん ――', 'sys');
   setTimeout(cpuTurn, 700);
 }
@@ -4476,7 +4568,7 @@ function cpuTurn() {
       // 本丸占領チェックを含む
       endTurn(G);
       if (G.over) return gameOver();
-      phase = 'idle'; updateHud(); SFX.turn(); banner('あなたの ばん', 900); foodNote();
+      phase = 'idle'; updateHud(); SFX.turn(); banner('あなたの ばん', 900); foodNote(); showNotes();
       logMsg('―― ターン ' + G.turn + '　あなたの ばん ――', 'sys');
       return;
     }
@@ -4636,6 +4728,8 @@ window.addEventListener('load', function () {
     else playerEndTurn();
   };
   $('confirmYes').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); var f = confirmAct || playerEndTurn; confirmAct = null; f(); };
+  $('supplyBtn').onclick = function () { SFX.tap(); openSupply(); };
+  $('supplyNo').onclick = function () { SFX.tap(); $('supplyBox').classList.remove('on'); };
   $('confirmNo').onclick = function () { SFX.tap(); confirmAct = null; $('confirmBox').classList.remove('on'); };
   $('logLine').onclick = function () { SFX.tap(); openLog(); };
   $('logClose').onclick = function () { SFX.tap(); $('logBox').classList.remove('on'); };
