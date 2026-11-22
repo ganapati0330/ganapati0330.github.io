@@ -388,7 +388,7 @@ button{font-family:inherit;cursor:pointer;}
       <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
       <li><b>🌾 内政は 領内マップで</b>：じぶんの 国の 中の ヘックスに たてる。<b>🌾田畑</b>（開墾：川や 田畑の 近く。石高 +0.5万石。石高の 上限は なく、水を ひける 土地が あるだけ ふやせる。ただし ひらくほど 人手が たりなくなって 高くなる。森・丘は 割高）・<b>🏘町</b>（道や 城の となり。まいきせつ +200貫。町 1つを 田畑 6マスで ささえる）・<b>⛏鉱山</b>（◆鉱脈の ある 国だけ：石見銀山・吉岡銅山・奥出雲の たたら など）・<b>🏺名産</b>（町の となり。備前焼・因州和紙・備後表 など）・<b>🧂塩田</b>（海べ）。お金の かぎり いくつでも たてられ、↩で 1つずつ もどせる。たてた ものは 合戦の ちずにも でる。🗾ボタンで いつでも 見られる。</li>
       <li><b>🙇 降参した へい</b>：城を おとすと、のこった てきの へいの 3割くらい（せめた 国の 城主の 政が 高いほど ふえる。2〜5割）が 降参して みかたに くわわる。のこりは となりの 国へ にげる。</li>
-      <li><b>🏯 城を おとして いく</b>：国ごとに 本城と 支城（2つ）が ある。となりの 国から せめると、まず その 道の 入り口を まもる <b>支城</b>を おとす（地図の 小さな 櫓。赤く 光るのが せめられる 城）。支城を とれば <b>本城</b>を せめられ、本城が おちると その 国が 手に はいる（のこった 支城の 多くは 降参、のこりは 抵抗を つづける）。支城が せめられると 本城から 後詰めが くる。ほかの 家に とられた 支城の ぶん、国の 収入の 1/5 が へる。支城を タップすると 守備兵の 出し入れが できる。</li>
+      <li><b>🏯 城を おとして いく</b>：国ごとに 本城と 支城（2つ）が ある。となりの 国から せめると、まず その 道の 入り口を まもる <b>支城</b>を おとす（地図の 小さな 櫓。赤く 光るのが せめられる 城）。支城を とれば <b>本城</b>を せめられ、本城が おちると その 国が 手に はいる（のこった 支城の 多くは 降参、のこりは 抵抗を つづける）。支城が せめられると 本城から 後詰めが くる。支城の まわりは その城の <b>所領</b>（国の 1〜3わりほど）。支城を とると 所領が じぶんの 色に かわり、その ぶんの 年貢・収入が はいる（とられた 側は へる。とられた 所領には 田畑や 町を つくれない）。支城を タップすると 守備兵の 出し入れが できる。</li>
       <li><b>中国地方は 1まいの ヘックス地図</b>：海岸線・国境は 国土数値情報、山・峠・川は 地理の 知識で つくった もの。国取りの 地図の こい 茶色が <b>けわしい山（とおれない）</b>。国どうしは <b>道</b>で つながる：🛤 陸路・⛰ <b>峠道</b>（四十曲峠・志戸坂峠・明地峠 など。守りが すこし ゆうり）・⛵ <b>海路</b>（船で 上陸。騎馬は つれていけない）。🚫 は 山が けわしくて 国境が あっても せめられない ところ。</li>
       <li><b>合戦の ちずは その 場所の 地形</b>：同じ 地図から 城の まわりを きりだす。<b>攻め手が とおってきた 道が ちずの 下</b>（左上の 方位で 北が わかる）。点線は 国ざかい、こい 茶色の 山は とおれない。</li>
       <li><b>退き口（🏃）</b>：守りは みかたの となりの 国の 方角に、攻めは うしろ（出陣した 国）に にげ道が ある。そこに いる 隊は「🏃 にげる」で その国へ 退却できる（へいは そのまま のこる）。城が おちたとき にげおくれた 守りの へいは 半分に へる。大将が にげると その合戦は まけ。となりに みかたの 国が ないと 籠城で にげ場は ない。</li>
@@ -440,7 +440,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v4.4';
+var VERSION = 'v4.5';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1952,17 +1952,23 @@ function strength(units) { var s = 0; units.forEach(function (u) { var T = UNIT_
 function defStrength(S, pid) { var o = S.officers ? officerAt(S, pid) : null; return strength(S.provs[pid].units) * castleMult(PROV_BY[pid].castle) * warMult(o) * (1 + (offI(o) - 50) / 400) + 1; }
 function isFrontier(S, pid) { var o = S.provs[pid].owner; return ADJ[pid].some(function (q) { return S.provs[q].owner !== o; }); }
 function provRevenue(S, pid) { var o = S.officers ? officerAt(S, pid) : null; return ((S.season === 2 ? S.provs[pid].koku * NENGU : 0) + silverOf(S, pid) + BASE_INCOME + bldIncome(S, pid)) * (1 + (offP(o) - 50) / 200); }
-function lostShare(S, pid) { var own = S.provs[pid].owner, n = 0; branchesIn(S, pid).forEach(function (c) { if (c.owner && c.owner !== own) n++; }); return n * BRANCH_SHARE; }
+function lostShare(S, pid) { var own = S.provs[pid].owner, n = 0; branchesIn(S, pid).forEach(function (c) { if (c.owner && c.owner !== own) n += branchShare(c.id); }); return n; }
 function income(S, cid) {
   var g = 0;
   provsOf(S, cid).forEach(function (pid) { g += provRevenue(S, pid) * (1 - lostShare(S, pid)); });
   // ほかの 国に もっている 支城の とりぶん
-  if (S.castles) for (var k in S.castles) { var c0 = S.castles[k]; if (c0.owner === cid && S.provs[c0.prov].owner !== cid) g += provRevenue(S, c0.prov) * BRANCH_SHARE; }
+  if (S.castles) for (var k in S.castles) { var c0 = S.castles[k]; if (c0.owner === cid && S.provs[c0.prov].owner !== cid) g += provRevenue(S, c0.prov) * branchShare(k); }
   g = Math.round(g);
   if (cid !== S.player) { if (S.difficulty === 'hard') g = Math.round(g * 1.3); if (S.difficulty === 'easy') g = Math.round(g * 0.8); }
   return g;
 }
 function totalKoku(S, cid) { var k = 0; provsOf(S, cid).forEach(function (pid) { k += S.provs[pid].koku; }); return k; }
+// 支城の 所領を いれた 石高（表示用）
+function effKoku(S, cid) {
+  var k = 0; provsOf(S, cid).forEach(function (pid) { k += S.provs[pid].koku * (1 - lostShare(S, pid)); });
+  if (S.castles) for (var id in S.castles) { var c0 = S.castles[id]; if (c0.owner === cid && S.provs[c0.prov].owner !== cid) k += S.provs[c0.prov].koku * branchShare(id); }
+  return k;
+}
 function totalUnits(S, cid) { var n = 0; provsOf(S, cid).forEach(function (pid) { n += S.provs[pid].units.length; }); if (S.castles) for (var k in S.castles) if (S.castles[k].owner === cid) n += S.castles[k].units.length; return n; }
 // 支城と 兵を 出し入れ できる 国：本城が 同じ 家なら 本城、ちがえば となりの じぶんの 国
 function castleLinks(S, castleId) {
@@ -2149,6 +2155,7 @@ function canBuild(S, pid, c, r, type) {
   var k = hkey(c, r), t = w.at(c, r), cas = castleHex(pid);
   if (P.bld && P.bld[k]) return { ok: false, msg: 'もう たっている' };
   if (c === cas[0] && r === cas[1]) return { ok: false, msg: '城が ある' };
+  var ro = regionOwner(S, c, r); if (ro && ro !== P.owner) return { ok: false, msg: CLANS[ro].name + 'の 支城の 所領' };
   var mine = function (cc, rr) { var b = P.bld[hkey(cc, rr)]; return b; };
   if (type === 'field') {
     if (!fieldTerrainOK(t)) return { ok: false, msg: '平地・丘・森 で ないと ひらけない' };
@@ -2232,6 +2239,54 @@ function branchHexes() {
   });
   return BR_HEX;
 }
+// ---- 支城の 所領（国の 中を 本城・支城の ちかい ほうで わける） ----
+var REGION = null, REG_MAX = 0.33, REG_W = { '.': 1, '=': 1, h: 0.8, f: 0.4, m: 0.3, M: 0.05 };
+function castleRegions() {
+  if (REGION) return REGION;
+  var w = worldMap(), bh = branchHexes(); if (!w || !bh) return null;
+  var N = w.w * w.h, own = new Int16Array(N).fill(-1), dist = new Float64Array(N).fill(1e9), ids = [];
+  var share = {};
+  PROVS.forEach(function (p) {
+    var src = [[WORLD.castles[p.id], 'main', 1.25]];   // 本城の まわりは 少し ひろく
+    (BRANCHES[p.id] || []).forEach(function (b, i) { src.push([bh[p.id + '_' + i], p.id + '_' + i, 1]); });
+    var q = [];
+    src.forEach(function (sv) { var id = ids.length; ids.push(sv[1] === 'main' ? p.id : sv[1]); var h = sv[0], k = h[1] * w.w + h[0]; if (w.provAt(h[0], h[1]) !== p.id) return; dist[k] = 0; own[k] = id; q.push([0, h[0], h[1], id, sv[2]]); });
+    while (q.length) {   // 小さい 国ごとの ダイクストラ（線形さがし で 十分）
+      var bi = 0; for (var j = 1; j < q.length; j++) if (q[j][0] < q[bi][0]) bi = j;
+      var e = q[bi]; q[bi] = q[q.length - 1]; q.pop();
+      if (e[0] > dist[e[2] * w.w + e[1]]) continue;
+      hexNbs(e[1], e[2]).forEach(function (n) {
+        if (n[0] < 0 || n[1] < 0 || n[0] >= w.w || n[1] >= w.h || w.provAt(n[0], n[1]) !== p.id) return;
+        var t = w.at(n[0], n[1]), cst = (t === 'M' ? 4 : t === 'm' ? 2.2 : t === 'f' ? 1.4 : t === 'r' ? 1.5 : 1) / e[4], k = n[1] * w.w + n[0], nd = e[0] + cst;
+        if (nd < dist[k]) { dist[k] = nd; own[k] = e[3]; q.push([nd, n[0], n[1], e[3], e[4]]); }
+      });
+    }
+  });
+  var tot = {};
+  for (var r = 0; r < w.h; r++) for (var c = 0; c < w.w; c++) {
+    var k = r * w.w + c; if (own[k] < 0) continue; var pv = w.provAt(c, r), wt = REG_W[w.at(c, r)] || 0;
+    tot[pv] = (tot[pv] || 0) + wt; var id = ids[own[k]]; share[id] = (share[id] || 0) + wt;
+  }
+  Object.keys(share).forEach(function (id) { var pv = id.split('_')[0]; share[id] = tot[pv] ? share[id] / tot[pv] : 0; });
+  // 支城の 所領は 国の 1/3 まで：とおい マスから 本城の 直轄へ もどす
+  var mainIdx = {}; ids.forEach(function (id, i) { if (id.indexOf('_') < 0) mainIdx[id] = i; });
+  ids.forEach(function (id, i) {
+    if (id.indexOf('_') < 0 || share[id] <= REG_MAX) return;
+    var pv = id.split('_')[0], hs = [];
+    for (var k = 0; k < N; k++) if (own[k] === i) hs.push(k);
+    hs.sort(function (a, b) { return dist[b] - dist[a]; });
+    for (var j = 0; j < hs.length && share[id] > REG_MAX; j++) {
+      var k2 = hs[j], wt = (REG_W[w.T[k2]] || 0) / tot[pv]; own[k2] = mainIdx[pv]; share[id] -= wt; share[pv] += wt;
+    }
+  });
+  REGION = { own: own, ids: ids, share: share };
+  return REGION;
+}
+// その マスを もつ 城（'pid' か 'pid_i'）
+function regionAt(c, r) { var R0 = castleRegions(), w = worldMap(); if (!R0 || c < 0 || r < 0 || c >= w.w || r >= w.h) return null; var o = R0.own[r * w.w + c]; return o < 0 ? null : R0.ids[o]; }
+// 支城の 所領が 国の 何わりか（収入の わけまえ）
+function branchShare(cid) { var R0 = castleRegions(); var v = R0 && R0.share[cid] !== undefined ? R0.share[cid] : BRANCH_SHARE; return Math.max(0.05, Math.min(REG_MAX, v)); }
+function regionOwner(S, c, r) { var id = regionAt(c, r); if (!id) return null; return id.indexOf('_') > 0 && S.castles && S.castles[id] ? S.castles[id].owner : S.provs[id] ? S.provs[id].owner : null; }
 function initCastles(S) {
   S.castles = {};
   Object.keys(BRANCHES).forEach(function (pid) {
@@ -4509,6 +4564,31 @@ function kBuildTerrain() {
     return { a: rt.a, b: rt.b, type: rt.type, name: rt.name, pts: pts, mid: mid };
   });
 }
+// 支城の 所領：持ち主が 本城と ちがえば その家の いろで ぬる。どの 所領も さかいを うすく
+function kRegionLayer() {
+  var w = worldMap(), R0 = castleRegions(); if (!w || !R0 || !KS.castles) return null;
+  var key = Object.keys(KS.castles).map(function (k) { return KS.castles[k].owner + '/' + KS.provs[KS.castles[k].prov].owner; }).join(',');
+  if (kMap.regKey === key && kMap.reg) return kMap.reg;
+  var cv = document.createElement('canvas'); cv.width = w.w * 2 + 1; cv.height = w.h;
+  var x = cv.getContext('2d'), img = x.createImageData(cv.width, cv.height), d = img.data, rgb = {};
+  function col(cid) { if (!rgb[cid]) { var h = CLANS[cid].color.replace('#', ''); if (h.length === 3) h = h.replace(/(.)/g, '$1$1'); rgb[cid] = [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; } return rgb[cid]; }
+  for (var r = 0; r < w.h; r++) for (var c = 0; c < w.w; c++) {
+    var o = R0.own[r * w.w + c]; if (o < 0) continue; var id = R0.ids[o];
+    var isBr = id.indexOf('_') > 0, C0 = isBr ? KS.castles[id] : null, foreign = C0 && C0.owner && C0.owner !== KS.provs[C0.prov].owner;
+    var edge = false; hexNbs(c, r).forEach(function (n) { if (n[0] < 0 || n[1] < 0 || n[0] >= w.w || n[1] >= w.h) return; var o2 = R0.own[n[1] * w.w + n[0]]; if (o2 >= 0 && o2 !== o && R0.ids[o2].split('_')[0] === id.split('_')[0]) edge = true; });
+    var px = null;
+    if (foreign) { var q = col(C0.owner); px = edge ? [q[0] * 0.5, q[1] * 0.5, q[2] * 0.5, 255] : [q[0], q[1], q[2], 235]; }
+    else if (edge) px = [255, 250, 230, 120];
+    if (!px) continue;
+    for (var k = 0; k < 2; k++) { var i = (r * cv.width + 2 * c + (r & 1) + k) * 4; d[i] = px[0]; d[i + 1] = px[1]; d[i + 2] = px[2]; d[i + 3] = px[3]; }
+  }
+  x.putImageData(img, 0, 0);
+  kMap.reg = cv; kMap.regKey = key; return cv;
+}
+function kDrawRegions(c) {
+  var cv = kRegionLayer(); if (!cv || !kMap.terrRect) return;
+  c.save(); c.clip(kMap.land); c.imageSmoothingEnabled = false; var t = kMap.terrRect; c.drawImage(cv, t[0], t[1], t[2], t[3]); c.restore();
+}
 function kDrawTerrain(c, lw) {
   if (!kMap.terr) return;
   c.save(); c.clip(kMap.land); c.imageSmoothingEnabled = true;
@@ -4636,6 +4716,8 @@ function kRender() {
       c.save(); c.clip(path); c.fillStyle = c.createPattern(kMap.stripe, 'repeat'); c.setTransform(1, 0, 0, 1, 0, 0); c.fillRect(0, 0, kMap.W * kMap.dpr, kMap.H * kMap.dpr); c.restore();
     }
   });
+  // 支城の 所領
+  kDrawRegions(c);
   // 地形（けわしい山・山・森・川）
   kDrawTerrain(c, lw);
   // 国ざかい
@@ -4711,7 +4793,7 @@ function kUpdate() {
   var me = KS.clans[KS.player];
   $('kDate').textContent = eraName(KS.year) + '年 ' + SEASONS_K[KS.season];
   $('kGold').textContent = '💰' + kan(me.gold);
-  $('kKoku').textContent = '🌾 ' + totalKoku(KS, KS.player) + '万石';
+  $('kKoku').textContent = '🌾 ' + Math.round(effKoku(KS, KS.player) * 10) / 10 + '万石';
   $('kProv').textContent = '🏯 ' + provsOf(KS, KS.player).length + '/' + PROVS.length + '　⚔ ' + menStr(menTotal(totalArmy(KS, KS.player)));
   $('kEndBtn').disabled = KS.phase !== 'player' || KS.over;
   $('kLegend').style.bottom = (($('kbottom').offsetHeight || 150) + 6) + 'px';
@@ -4747,7 +4829,7 @@ function kInfo() {
     return '<span class="knb ' + nb.type + '">' + ic + PROV_BY[nb.q].name + (nb.type === 'pass' && nb.name && nb.name !== '峠道' ? '（' + nb.name + '）' : '') + '</span>';
   }).join(' ');
   html += '<div class="kunits">となりへの 道：' + nbl + '</div>';
-  if (KS.castles) html += '<div class="kunits">支城：' + branchesIn(KS, kSel).map(function (c) { return '<span class="kbr" style="border-color:' + (c.owner ? CLANS[c.owner].color : '#999') + '">🏯' + brName(c.id) + '（' + (c.owner ? CLANS[c.owner].name : 'だれも いない') + '・' + c.units.length + '隊）</span>'; }).join(' ') + '</div>';
+  if (KS.castles) html += '<div class="kunits">支城：' + branchesIn(KS, kSel).map(function (c) { return '<span class="kbr" style="border-color:' + (c.owner ? CLANS[c.owner].color : '#999') + '">🏯' + brName(c.id) + '（' + (c.owner ? CLANS[c.owner].name : 'だれも いない') + '・' + c.units.length + '隊・所領' + Math.round(branchShare(c.id) * 100) + '%）</span>'; }).join(' ') + '</div>';
   if (P.bld) { var bs = ['town', 'mine', 'meibutsu', 'salt'].map(function (t) { var n = t === 'town' ? bldCount(P, 'town') : bldCount(P, t); return n ? BLD[t].icon + (t === 'meibutsu' ? MEIBUTSU[kSel] : BLD[t].name + n) : ''; }).filter(Boolean).join(' ');
     html += '<div class="kunits">領内：' + (bs || 'なし') + (mine ? '　収入 +' + kan(BASE_INCOME + silverOf(KS, kSel) + bldIncome(KS, kSel)) + '/きせつ' : '') + '</div>'; }
   if (kMode === 'attack') html += '<p class="hint">あかく 光る 国を クリックして せめる 国を えらぶ</p>';
@@ -4859,7 +4941,8 @@ function kCastleBox(id) {
   var C0 = KS.castles[id], P = KS.provs[C0.prov], mine = C0.owner === KS.player, links = mine && KS.phase === 'player' ? castleLinks(KS, id) : [];
   var body = '<div class="kintro">' + (C0.owner ? crestHtml(C0.owner, 48) : '') + '<p><b>' + brName(id) + '</b>（' + PROV_BY[C0.prov].name + 'の 支城・' + CASTLES[castleIndexOf(brTpl(id))].kana + '）<br>もちぬし：' + (C0.owner ? CLANS[C0.owner].name : 'なし') + '</p></div>' +
     '<p class="small">守備兵 ' + menStr(menTotal(C0.units)) + '（' + (C0.units.length ? unitSummary(C0.units) : 'なし') + '）</p>' +
-    '<p class="small">' + (P.owner === C0.owner ? '本城と 同じ 家。せめられると 本城から 後詰めが くる。' : C0.owner === KS.player ? 'てきの 国の 中の みかたの 城。ここが あれば ' + castleNameOf(KS, C0.prov) + '（本城）を せめられる。国の 収入の 1/5 が はいる。' : 'この 城を おとさないと、この 道から 本城へは せめられない。') + '</p>' +
+    '<p class="small">' + (P.owner === C0.owner ? '本城と 同じ 家。せめられると 本城から 後詰めが くる。' : C0.owner === KS.player ? 'てきの 国の 中の みかたの 城。ここが あれば ' + castleNameOf(KS, C0.prov) + '（本城）を せめられる。' : 'この 城を おとさないと、この 道から 本城へは せめられない。') + '</p>' +
+    '<p class="small">🗾 所領：' + PROV_BY[C0.prov].name + 'の 約' + Math.round(branchShare(id) * 100) + '%（地図で 色の かわる ところ）' + (C0.owner && C0.owner !== P.owner ? '。その ぶんの 年貢・収入は ' + CLANS[C0.owner].name + 'に はいる' : '') + '</p>' +
     (mine && P.owner !== C0.owner ? '<p class="small">兵の 出し入れ：' + (links.length ? links.map(function (q) { return PROV_BY[q].name; }).join('・') + 'と できる（行為は つかわない）' : '<span class="r">となりに みかたの 国が ないので できない</span>') + '</p>' : '');
   var btns = [];
   links.forEach(function (q) {
@@ -5266,6 +5349,7 @@ function domRender() {
       var im = t === 'f' ? gx('forest') : (t === 'm' || t === 'M') ? gx(t === 'M' ? 'snow' : 'mount') : t === 'h' ? gx('hill') : null;
       if (im && !(P.bld && P.bld[k])) { var ww = s * 1.9, hh = ww * im.naturalHeight / im.naturalWidth; c.drawImage(im, x - ww / 2, y + s * 0.75 - hh, ww, hh); }
     }
+    if (mine) { var ro = regionOwner(KS, cc, r); if (ro && ro !== P.owner) { domHexPath(c, x, y, s * 1.02); c.fillStyle = CLANS[ro].color; c.globalAlpha = 0.45; c.fill(); c.globalAlpha = 1; } }
     if (mine && P.bld && P.bld[k] === 'field') { domHexPath(c, x, y, s * 0.98); c.fillStyle = '#e9cf5a'; c.fill(); c.strokeStyle = 'rgba(150,110,20,0.6)'; c.lineWidth = 1; for (var li = -2; li <= 2; li++) { c.beginPath(); c.moveTo(x - s * 0.7, y + li * s * 0.28); c.lineTo(x + s * 0.7, y + li * s * 0.28); c.stroke(); } }
     if (DS.mode && mine && DS.canBuild) { var ok = canBuild(KS, pid, cc, r, DS.mode).ok; if (ok) { valid[k] = 1; domHexPath(c, x, y, s * 0.9); c.fillStyle = 'rgba(80,230,120,0.45)'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = Math.max(1, s * 0.08); c.stroke(); } }
   }
