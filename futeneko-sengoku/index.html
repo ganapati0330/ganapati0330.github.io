@@ -120,6 +120,17 @@ button{font-family:inherit;cursor:pointer;}
 .kci em{display:block;font-style:normal;font-size:12px;color:#555;margin-top:2px;}
 .krec{position:absolute;top:6px;right:8px;background:#e8841e;color:#fff;font-size:11px;padding:1px 8px;border-radius:999px;}
 #mapScreen{background:#3f7fb8;}
+#domScreen{background:#3f7fb8;}
+#dcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+#dhud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top));background:rgba(40,25,15,.9);color:#fff;font-size:15px;z-index:5;}
+#dhud .hrow span{font-size:13px;color:#ffe8b0;margin-left:8px;}
+#dbottom{position:absolute;left:0;right:0;bottom:0;z-index:5;background:rgba(40,25,15,.92);color:#fff;padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
+#dInfo{font-size:14px;line-height:1.5;margin-bottom:6px;min-height:40px;}
+#dActs{display:flex;flex-wrap:wrap;gap:6px;}
+#dActs .dbld{flex:1 1 30%;min-width:100px;padding:6px 6px;border-radius:10px;border:2px solid #8a6a40;background:#f6ecd6;color:#3a2210;font-size:13px;font-weight:bold;cursor:pointer;line-height:1.25;}
+#dActs .dbld small{display:block;font-weight:normal;font-size:11px;color:#6a4a2a;}
+#dActs .dbld.on{background:#ffd34a;border-color:#c07a00;box-shadow:0 0 0 2px #fff inset;}
+#dActs .dbld:disabled{opacity:.45;}
 #kcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
 #khud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top));background:rgba(40,25,15,.9);color:#fff;font-size:14px;z-index:5;}
 #khud .hrow span{font-size:13px;color:#ffe8b0;}
@@ -290,6 +301,18 @@ button{font-family:inherit;cursor:pointer;}
   </div>
 </div>
 
+<div id="domScreen" class="screen">
+  <canvas id="dcv"></canvas>
+  <div id="dhud">
+    <div class="hrow"><b id="dTitle"></b><span id="dStat"></span></div>
+    <div class="hrow right"><button class="hb" id="dFitBtn" title="ぜんたい">⤢</button><button class="hb" id="dDoneBtn">✔ おわる</button></div>
+  </div>
+  <div id="dbottom">
+    <div id="dInfo"></div>
+    <div id="dActs"></div>
+  </div>
+</div>
+
 <div class="modal" id="kBox"><div class="card">
   <h2 id="kTitle" style="font-size:22px;color:#7a3a1a"></h2>
   <div id="kBody"></div>
@@ -351,6 +374,7 @@ button{font-family:inherit;cursor:pointer;}
       <li>お金の たんいは <b>貫</b>。石高からの <b>年貢は 秋に まとめて</b> はいる。ほかの きせつは 商いの 収入だけ。石見の 銀山は まいきせつ お金が ふえる。</li>
       <li>へいは <b>隊</b>で うごく。1隊の 人数：足軽 300人・弓 200人・騎馬 50騎・鉄砲 50挺・工作 150人・忍び 20人。騎馬と 鉄砲は 人数は すくないが 高くて つよい。数字は いまの 人数。</li>
       <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
+      <li><b>🌾 内政は 領内マップで</b>：じぶんの 国の 中の ヘックスに たてる。<b>🌾田畑</b>（開墾：川や 田畑の 近く。石高 +0.5万石）・<b>🏘町</b>（道や 城の となり。まいきせつ +200貫、4つまで）・<b>⛏鉱山</b>（◆鉱脈の ある 国だけ：石見銀山・吉岡銅山・奥出雲の たたら など）・<b>🏺名産</b>（町の となりに 1つ。備前焼・因州和紙・備後表 など）・<b>🧂塩田</b>（海べ）。お金の かぎり いくつでも たてられ、↩で 1つずつ もどせる。たてた ものは 合戦の ちずにも でる。🗾ボタンで いつでも 見られる。</li>
       <li><b>中国地方は 1まいの ヘックス地図</b>：海岸線・国境は 国土数値情報、山・峠・川は 地理の 知識で つくった もの。国取りの 地図の こい 茶色が <b>けわしい山（とおれない）</b>。国どうしは <b>道</b>で つながる：🛤 陸路・⛰ <b>峠道</b>（四十曲峠・志戸坂峠・明地峠 など。守りが すこし ゆうり）・⛵ <b>海路</b>（船で 上陸。騎馬は つれていけない）。🚫 は 山が けわしくて 国境が あっても せめられない ところ。</li>
       <li><b>合戦の ちずは その 場所の 地形</b>：同じ 地図から 城の まわりを きりだす。<b>攻め手が とおってきた 道が ちずの 下</b>（左上の 方位で 北が わかる）。点線は 国ざかい、こい 茶色の 山は とおれない。</li>
       <li><b>退き口（🏃）</b>：守りは みかたの となりの 国の 方角に、攻めは うしろ（出陣した 国）に にげ道が ある。そこに いる 隊は「🏃 にげる」で その国へ 退却できる（へいは そのまま のこる）。城が おちたとき にげおくれた 守りの へいは 半分に へる。大将が にげると その合戦は まけ。となりに みかたの 国が ないと 籠城で にげ場は ない。</li>
@@ -402,7 +426,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.7';
+var VERSION = 'v3.8';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1291,7 +1315,7 @@ function edgeHexAt(G, ang) {
 function exitOK(t) { return t && '.=fhb'.indexOf(t.ch) >= 0; }
 function setupGeo(G, env) {
   var r, c;
-  for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) { var cell = env.grid && env.grid[r] && env.grid[r][c]; G.map.tiles[r][c].prov = cell && !cell.sea ? cell.prov : null; }
+  for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) { var cell = env.grid && env.grid[r] && env.grid[r][c], tl = G.map.tiles[r][c]; tl.prov = cell && !cell.sea ? cell.prov : null; tl.bld = cell && cell.bld && '.=fh'.indexOf(tl.ch) >= 0 ? cell.bld : null; }
   G.north = env.north;  // 画面での 北の 向き（ラジアン）
   G.geoInfo = { from: env.from, fromName: env.fromName, to: env.to, toName: env.toName, names: env.names || {}, river: env.riverName || null };
   G.exits = { atk: [], def: [] };
@@ -1732,7 +1756,9 @@ function battleEnv(S, b) {
     var p = toWorld(dx, dy), h = w.hexAtKm(p[0], p[1]), t = w.at(h[0], h[1]);
     if (t === null || t === 'X') t = 'M';
     if (t === '=') t = '.';
-    return { sea: t === 's', t: t, prov: w.provAt(h[0], h[1]) };
+    var pv2 = w.provAt(h[0], h[1]), bd = pv2 && S.provs[pv2].bld ? S.provs[pv2].bld[h[0] + ',' + h[1]] : null;
+    if (h[0] === WORLD.castles[b.to][0] && h[1] === WORLD.castles[b.to][1]) bd = null;
+    return { sea: t === 's', t: t, prov: pv2, bld: bd || null };
   };
   // 道（世界地図の 道すじを 合戦の 座標で）
   env.roads = function () {
@@ -1885,6 +1911,7 @@ function newCampaign(opts) {
   });
   logC(S, eraName(S.year) + '年（' + S.year + '）' + SEASONS_K[S.season] + '。' + CLANS[S.player].lord + 'の 国取りが はじまった！', 'sys');
   PROVS.forEach(function (p) { if (!S.provs[p.id].owner) throw new Error('no owner ' + p.id); });
+  PROVS.forEach(function (p) { initDomain(S, p.id); });
   initOfficers(S);
   S.firedEv = {}; S.pendingEvents = []; S.history = []; S.clanOv = {};
   if (typeof fireEvents === 'function') fireEvents(S);
@@ -1900,7 +1927,7 @@ function defStrength(S, pid) { var o = S.officers ? officerAt(S, pid) : null; re
 function isFrontier(S, pid) { var o = S.provs[pid].owner; return ADJ[pid].some(function (q) { return S.provs[q].owner !== o; }); }
 function income(S, cid) {
   var g = 0;
-  provsOf(S, cid).forEach(function (pid) { var o = S.officers ? officerAt(S, pid) : null; g += ((S.season === 2 ? S.provs[pid].koku * NENGU : 0) + silverOf(S, pid) + BASE_INCOME) * (1 + (offP(o) - 50) / 200); });
+  provsOf(S, cid).forEach(function (pid) { var o = S.officers ? officerAt(S, pid) : null; g += ((S.season === 2 ? S.provs[pid].koku * NENGU : 0) + silverOf(S, pid) + BASE_INCOME + bldIncome(S, pid)) * (1 + (offP(o) - 50) / 200); });
   g = Math.round(g);
   if (cid !== S.player) { if (S.difficulty === 'hard') g = Math.round(g * 1.3); if (S.difficulty === 'easy') g = Math.round(g * 0.8); }
   return g;
@@ -1956,23 +1983,147 @@ function recruit(S, pid, order) {   // order: {type: count}
   markCmd(P, 'recruit');
   return { ok: true, cost: cost, n: n };
 }
-// 内政：つかう お金（amount）を じぶんで きめる。たまった ぶん（P.devp）が DEVELOP_COST に なるごとに 石高 +1万石
-function devRate(S, pid) { var pp = offP(officerAt(S, pid)); return pp >= 80 ? 2 : Math.max(0.8, Math.min(1.5, 1 + (pp - 50) / 100)); }
-function devNeed(S, pid) { var P = S.provs[pid], left = maxKoku(pid) - P.koku; return left <= 0 ? 0 : Math.max(0, Math.ceil((left * DEVELOP_COST - (P.devp || 0)) / devRate(S, pid))); }
-function develop(S, pid, amount) {
-  var P = S.provs[pid], cid = P.owner, gold = S.clans[cid].gold;
-  amount = Math.round(amount === undefined ? DEVELOP_COST : amount);
-  if (P.koku >= maxKoku(pid)) return { ok: false, msg: 'これいじょう ふやせない' };
-  amount = Math.min(amount, devNeed(S, pid));
-  if (amount < 1) return { ok: false, msg: 'つかう お金を きめてね' };
-  if (gold < amount) return { ok: false, msg: 'お金が たりない' };
-  S.clans[cid].gold -= amount;
-  P.devp = (P.devp || 0) + amount * devRate(S, pid);
-  var add = 0;
-  while (P.devp >= DEVELOP_COST && P.koku < maxKoku(pid)) { P.devp -= DEVELOP_COST; P.koku++; add++; }
-  if (P.koku >= maxKoku(pid)) P.devp = 0;
+// ==== 領内（国の 中の ヘックス）：開墾・町・鉱山・名産・塩田 ====
+var BLD = {
+  field:    { name: '田畑',  icon: '🌾', cost: 15, desc: '開墾して 石高 +0.5万石（秋の 年貢が ふえる）' },
+  town:     { name: '町',    icon: '🏘', cost: 30, inc: 2, desc: '市を ひらいて 商いの 収入 +' + 200 + '貫（まいきせつ）' },
+  mine:     { name: '鉱山',  icon: '⛏', cost: 40, desc: '鉱脈（◆）を ほる。まいきせつ 収入' },
+  meibutsu: { name: '名産',  icon: '🏺', cost: 35, inc: 4, desc: 'その 国の 名産品を つくる 工房（町の となり）。まいきせつ +400貫' },
+  salt:     { name: '塩田',  icon: '🧂', cost: 20, inc: 2, desc: '海べで 塩を つくる。まいきせつ +200貫' }
+};
+var MINE_INC = { iron: 3, copper: 4, silver: 6 }, MINE_NAME = { iron: '鉄（たたら）', copper: '銅', silver: '銀' };
+var MAX_TOWNS = 4;
+// 鉱脈（おおよその 場所）
+var DEPOSITS = [
+  ['石見銀山', 132.44, 35.11, 'silver'], ['吉岡銅山', 133.47, 34.87, 'copper'], ['奥出雲の たたら', 133.05, 35.20, 'iron'],
+  ['日野の たたら', 133.38, 35.20, 'iron'], ['備後の たたら', 133.12, 34.98, 'iron'], ['柵原', 134.07, 34.97, 'copper'],
+  ['石見の たたら', 132.05, 34.62, 'iron'], ['長登銅山', 131.23, 34.27, 'copper'], ['岩美の 鉱山', 134.37, 35.55, 'copper'],
+  ['美作の たたら', 133.82, 35.16, 'iron'], ['周防の 銅', 131.85, 34.15, 'copper'], ['安芸の たたら', 132.45, 34.72, 'iron']
+];
+// 国ごとの 名産品
+var MEIBUTSU = { nagato: '赤間硯', suo: '大内塗', akiw: '宮島の 細工', sato: '太田川の 材木', yoshida: '吉田の 和紙', oasa: '大朝の 牛',
+  kagami: '西条の 酒', nuta: '沼田の 塩', bingon: '比婆の 牛', bingos: '備後表（畳おもて）', iwamiw: '石州半紙', iwamie: '江の川の 鮎',
+  izumo: '出雲大社の 門前市', hoki: '大山の 牛馬市', inaba: '因州和紙', mimasaka: '美作の 湯', bitchu: '備中青江の 刀', bizen: '備前焼' };
+var DOM = null;   // 国ごとの マスの 一覧（はじめて つかうとき つくる）
+function domData() {
+  if (DOM) return DOM;
+  var w = worldMap(); if (!w) return null;
+  DOM = {};
+  PROVS.forEach(function (p) { DOM[p.id] = { hexes: [], dep: {} }; });
+  for (var r = 0; r < w.h; r++) for (var c = 0; c < w.w; c++) { var pv = w.provAt(c, r); if (pv && DOM[pv]) DOM[pv].hexes.push([c, r]); }
+  DEPOSITS.forEach(function (d) {
+    var h0 = w.hexAtKm((d[1] - WORLD.lon0) * w.KX, (WORLD.lat0 - d[2]) * w.KY), best = null;
+    for (var rr = h0[1] - 6; rr <= h0[1] + 6; rr++) for (var cc = h0[0] - 6; cc <= h0[0] + 6; cc++) {
+      var pv = w.provAt(cc, rr), t = w.at(cc, rr); if (!pv || 'mhf'.indexOf(t) < 0) continue;
+      var dd = Math.abs(cc - h0[0]) + Math.abs(rr - h0[1]); if (!best || dd < best[3]) best = [cc, rr, pv, dd];
+    }
+    if (best) DOM[best[2]].dep[best[0] + ',' + best[1]] = { type: d[3], name: d[0] };
+  });
+  return DOM;
+}
+function hkey(c, r) { return c + ',' + r; }
+function hexNbs(c, r) { var o = r & 1; return o ? [[c + 1, r], [c - 1, r], [c, r - 1], [c + 1, r - 1], [c, r + 1], [c + 1, r + 1]] : [[c + 1, r], [c - 1, r], [c - 1, r - 1], [c, r - 1], [c - 1, r + 1], [c, r + 1]]; }
+function nearAny(c, r, dist, fn) {
+  var seen = {}, q = [[c, r, 0]]; seen[hkey(c, r)] = 1;
+  for (var i = 0; i < q.length; i++) { var cur = q[i]; if (fn(cur[0], cur[1])) return true; if (cur[2] >= dist) continue;
+    hexNbs(cur[0], cur[1]).forEach(function (n) { var k = hkey(n[0], n[1]); if (!seen[k]) { seen[k] = 1; q.push([n[0], n[1], cur[2] + 1]); } }); }
+  return false;
+}
+function castleHex(pid) { return WORLD.castles[pid]; }
+// 国の はじめの ようす（城下町と もとからの 田畑）
+function initDomain(S, pid) {
+  var P = S.provs[pid], d = domData(); if (!d) return;
+  P.bld = {}; var w = worldMap(), cas = castleHex(pid), ck = hkey(cas[0], cas[1]);
+  // 城下町：城の となりの 平地
+  var nb = hexNbs(cas[0], cas[1]).filter(function (n) { var t = w.at(n[0], n[1]); return w.provAt(n[0], n[1]) === pid && (t === '.' || t === '=' || t === 'h'); });
+  if (nb.length) P.bld[hkey(nb[0][0], nb[0][1])] = 'town0';
+  // もとからの 田畑：石高 ×2 マス（川や 城の 近くの 平地から）
+  var cand = d[pid].hexes.filter(function (h) { return fieldTerrainOK(w.at(h[0], h[1])) && hkey(h[0], h[1]) !== ck && !P.bld[hkey(h[0], h[1])]; })
+    .map(function (h) { var t = w.at(h[0], h[1]), sc = (t === '.' ? 0 : 3) + Math.hypot(h[0] - cas[0], h[1] - cas[1]) * 0.25;
+      if (nearAny(h[0], h[1], 1, function (c, r) { return w.at(c, r) === 'r'; })) sc -= 4; return [h, sc]; })
+    .sort(function (a, b) { return a[1] - b[1]; });
+  var n = Math.round(P.koku * 2);
+  for (var i = 0; i < cand.length && n > 0; i++) { P.bld[hkey(cand[i][0][0], cand[i][0][1])] = 'field'; n--; }
+}
+function fieldTerrainOK(t) { return t === '.' || t === 'h' || t === 'f'; }
+function bldCount(P, type) { var n = 0; for (var k in (P.bld || {})) if (P.bld[k] === type || (type === 'town' && P.bld[k] === 'town0')) n++; return n; }
+function bldCost(S, pid, type, c, r) {
+  var b = BLD[type], cost = b.cost, w = worldMap();
+  if (type === 'field' && w && w.at(c, r) === 'f') cost = Math.round(cost * 1.5);   // 森の 開墾は たいへん
+  var o = S.officers ? officerAt(S, pid) : null;
+  return Math.max(5, Math.round(cost * (1 - (offP(o) - 50) / 200)));
+}
+// その マスに たてられるか
+function canBuild(S, pid, c, r, type) {
+  var w = worldMap(), d = domData(), P = S.provs[pid]; if (!w || !d) return { ok: false };
+  if (w.provAt(c, r) !== pid) return { ok: false, msg: 'この 国の 中で ないと だめ' };
+  var k = hkey(c, r), t = w.at(c, r), cas = castleHex(pid);
+  if (P.bld && P.bld[k]) return { ok: false, msg: 'もう たっている' };
+  if (c === cas[0] && r === cas[1]) return { ok: false, msg: '城が ある' };
+  var mine = function (cc, rr) { var b = P.bld[hkey(cc, rr)]; return b; };
+  if (type === 'field') {
+    if (!fieldTerrainOK(t)) return { ok: false, msg: '平地・丘・森 で ないと ひらけない' };
+    if (P.koku + 0.5 > maxKoku(pid) + 1e-9) return { ok: false, msg: 'これいじょう 石高は ふやせない（さいだい ' + maxKoku(pid) + '万石）' };
+    if (!nearAny(c, r, 2, function (cc, rr) { var tt = w.at(cc, rr); return tt === 'r' || mine(cc, rr) === 'field' || (cc === cas[0] && rr === cas[1]); })) return { ok: false, msg: '川や 田畑の 近く（2マス）で ないと 水が ひけない' };
+  } else if (type === 'town') {
+    if (t !== '.' && t !== '=' && t !== 'h') return { ok: false, msg: '平地で ないと 町は つくれない' };
+    if (bldCount(P, 'town') >= MAX_TOWNS + 1) return { ok: false, msg: '町は ' + MAX_TOWNS + 'つまで' };
+    if (!nearAny(c, r, 1, function (cc, rr) { var tt = w.at(cc, rr), b = mine(cc, rr); return tt === '=' || b === 'town' || b === 'town0' || (cc === cas[0] && rr === cas[1]); })) return { ok: false, msg: '道や 城・町の となりで ないと 人が あつまらない' };
+  } else if (type === 'mine') {
+    var dep = d[pid].dep[k]; if (!dep) return { ok: false, msg: '鉱脈（◆）の ある マスだけ' };
+    if (dep.type === 'silver' && S.year < 1527) return { ok: false, msg: '銀は まだ みつかって いない（1527年）' };
+  } else if (type === 'meibutsu') {
+    if (bldCount(P, 'meibutsu')) return { ok: false, msg: '名産の 工房は 1つまで' };
+    if (t !== '.' && t !== '=' && t !== 'h') return { ok: false, msg: '平地で ないと だめ' };
+    if (!nearAny(c, r, 1, function (cc, rr) { var b = mine(cc, rr); return b === 'town' || b === 'town0'; })) return { ok: false, msg: '町の となりで ないと だめ' };
+  } else if (type === 'salt') {
+    if (!fieldTerrainOK(t) && t !== '=') return { ok: false, msg: '海べの 平地だけ' };
+    if (!nearAny(c, r, 1, function (cc, rr) { return w.at(cc, rr) === 's'; })) return { ok: false, msg: '海の となりで ないと 塩は とれない' };
+    if (bldCount(P, 'salt') >= 3) return { ok: false, msg: '塩田は 3つまで' };
+  }
+  var cost = bldCost(S, pid, type, c, r);
+  if (S.clans[P.owner].gold < cost) return { ok: false, msg: 'お金が たりない（💰' + kan(cost) + '）', cost: cost };
+  return { ok: true, cost: cost };
+}
+function build(S, pid, c, r, type) {
+  var chk = canBuild(S, pid, c, r, type); if (!chk.ok) return chk;
+  var P = S.provs[pid]; if (!P.bld) P.bld = {};
+  S.clans[P.owner].gold -= chk.cost; P.bld[hkey(c, r)] = type;
+  if (type === 'field') P.koku = Math.round((P.koku + 0.5) * 10) / 10;
   markCmd(P, 'develop');
-  return { ok: true, add: add, prog: P.devp / DEVELOP_COST };
+  return { ok: true, cost: chk.cost };
+}
+// 建物の 収入（まいきせつ）
+function bldIncome(S, pid) {
+  var P = S.provs[pid], d = domData(), g = 0; if (!P.bld) return 0;
+  for (var k in P.bld) {
+    var b = P.bld[k];
+    if (b === 'town' || b === 'meibutsu' || b === 'salt') g += BLD[b].inc;
+    else if (b === 'mine' && d && d[pid].dep[k]) g += MINE_INC[d[pid].dep[k].type];
+  }
+  return g;
+}
+// CPU・おまかせの 内政：お金の ぶんだけ 田畑 → 町 の じゅんに たてる
+function develop(S, pid, amount) {
+  var P = S.provs[pid], cid = P.owner, w = worldMap(), d = domData();
+  amount = Math.round(amount === undefined ? DEVELOP_COST : amount);
+  if (S.clans[cid].gold < Math.min(amount, 5)) return { ok: false, msg: 'お金が たりない' };
+  if (!w || !d) return { ok: false, msg: 'ちずが ない' };
+  if (!P.bld) initDomain(S, pid);
+  var spent = 0, add = 0, k0 = P.koku, cas = castleHex(pid);
+  var hx = d[pid].hexes.slice().sort(function (a, b) { return Math.hypot(a[0] - cas[0], a[1] - cas[1]) - Math.hypot(b[0] - cas[0], b[1] - cas[1]); });
+  // これまでと 同じ はやさ：50金で 石高 +1（政 80いじょうは +2）。田畑の マスを ひらいて あらわす
+  var nField = Math.floor(amount / DEVELOP_COST) * (offP(officerAt(S, pid)) >= 80 ? 4 : 2), cost1 = Math.round(DEVELOP_COST / 2);
+  for (var i = 0; i < hx.length && nField > 0; i++) {
+    var ch = canBuild(S, pid, hx[i][0], hx[i][1], 'field');
+    if (!ch.ok) { if (/石高/.test(ch.msg || '')) break; continue; }
+    if (S.clans[cid].gold < cost1) break;
+    P.bld[hkey(hx[i][0], hx[i][1])] = 'field'; P.koku = Math.round((P.koku + 0.5) * 10) / 10; nField--;
+    if (nField % (offP(officerAt(S, pid)) >= 80 ? 4 : 2) === 0) { S.clans[cid].gold -= DEVELOP_COST; spent += DEVELOP_COST; }
+  }
+  if (!spent) return { ok: false, msg: 'たてられる ところが ない' };
+  markCmd(P, 'develop');
+  return { ok: true, add: Math.round((P.koku - k0) * 10) / 10, spent: spent };
 }
 function moveUnits(S, from, to, uids) {
   var A = S.provs[from], B = S.provs[to];
@@ -2445,6 +2596,7 @@ function deserialize(txt) {
   if (S.v === 2) { initOfficers(S); S.v = 3; }   // まえの 保存データにも 家臣を くわえる
   S.firedEv = S.firedEv || {}; S.pendingEvents = S.pendingEvents || []; S.history = S.history || []; S.clanOv = S.clanOv || {};
   if (typeof applyClanOv === 'function') applyClanOv(S);
+  PROVS.forEach(function (p) { if (!S.provs[p.id].bld) initDomain(S, p.id); });
   return S;
 }
 
@@ -2789,7 +2941,7 @@ var hoverInfo = null;
 
 // ---- 画面切替 ----
 function show(id) {
-  ['title', 'setupScreen', 'gameScreen', 'clanScreen', 'mapScreen'].forEach(function (s) { $(s).classList.toggle('on', s === id); });
+  ['title', 'setupScreen', 'gameScreen', 'clanScreen', 'mapScreen', 'domScreen'].forEach(function (s) { $(s).classList.toggle('on', s === id); });
 }
 
 // ---- セットアップ画面 ----
@@ -3094,11 +3246,15 @@ function drawGround(t) {
   if (t.ch === 'h') { ctx.fillStyle = 'rgba(190,190,90,0.18)'; ctx.fill(); }
   if (t.ch === 'm') { ctx.fillStyle = 'rgba(120,110,100,0.25)'; ctx.fill(); }
   if (t.ch === 'M') { ctx.fillStyle = 'rgba(70,55,45,0.55)'; ctx.fill(); }
+  if (t.bld === 'field') { ctx.fillStyle = 'rgba(233,207,90,0.55)'; ctx.fill(); ctx.strokeStyle = 'rgba(150,110,20,0.45)'; ctx.lineWidth = 1.5; for (var li = -2; li <= 2; li++) { ctx.beginPath(); ctx.moveTo(x - R * 0.75, y + li * R * 0.28); ctx.lineTo(x + R * 0.75, y + li * R * 0.28); ctx.stroke(); } }
   ctx.restore();
   hexPath(x, y, R); ctx.strokeStyle = 'rgba(40,30,10,0.22)'; ctx.lineWidth = 1.2; ctx.stroke();
 }
+var BLD_ICON = { town: '🏘', town0: '🏘', mine: '⛏', meibutsu: '🏺', salt: '🧂' };
 function drawNature(t) {
   var p = hexCenter(t.c, t.r), x = p[0], y = p[1], h = thash(t.c, t.r, 7), im;
+  if (t.bld && BLD_ICON[t.bld]) { ctx.font = Math.round(R * 1.05) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(BLD_ICON[t.bld], x, y + 2); return; }
+  if (t.bld === 'field') return;
   if (t.ch === 'f') { var k = h % 20; im = gx(k < 3 ? 'sakura' : k < 6 ? 'bamboo' : 'forest') || gx('forest'); if (im) putSpr(im, x + ((h >>> 8) % 7 - 3), y + R * 0.72, R * 1.85, (h >>> 4) & 1); }
   else if (t.ch === 'h') { im = gx('hill'); if (im) putSpr(im, x, y + R * 0.6, R * 1.9, h & 1); }
   else if (t.ch === 'm') { im = gx(h % 7 === 0 ? 'snow' : 'mount') || gx('mount'); if (im) putSpr(im, x, y + R * 0.78, R * 2.0, (h >>> 3) & 1); }
@@ -4202,6 +4358,8 @@ function kInfo() {
   var ofc = officerAt(KS, kSel);
   html += '<div class="kunits">城主：' + offTxt(ofc) + (P.naio && P.naio === KS.player ? '　🦊内応あり' : '') + '</div>';
   html += '<div class="kunits">へい ' + menStr(menTotal(P.units)) + '（' + P.units.length + '隊：' + unitSummary(P.units) + '）<br>動員の めやす ' + menStr(P.koku * MEN_PER_KOKU) + '</div>';
+  if (P.bld) { var bs = ['town', 'mine', 'meibutsu', 'salt'].map(function (t) { var n = t === 'town' ? bldCount(P, 'town') : bldCount(P, t); return n ? BLD[t].icon + (t === 'meibutsu' ? MEIBUTSU[kSel] : BLD[t].name + n) : ''; }).filter(Boolean).join(' ');
+    html += '<div class="kunits">領内：' + (bs || 'なし') + (mine ? '　収入 +' + kan(BASE_INCOME + silverOf(KS, kSel) + bldIncome(KS, kSel)) + '/きせつ' : '') + '</div>'; }
   if (kMode === 'attack') html += '<p class="hint">あかく 光る 国を クリックして せめる 国を えらぶ</p>';
   else if (kMode === 'move') html += '<p class="hint">あおく 光る じぶんの 国を クリックして いどう先を えらぶ</p>';
   else if (kMode === 'scheme') html += '<p class="hint">むらさきに 光る 国を クリックして 調略する あいてを えらぶ</p>';
@@ -4217,11 +4375,12 @@ function kInfo() {
     canMv = canMv && P.units.some(function (u) { return u.mv !== KS.turn; });
     btn('⚔ 出陣' + (didCmd(P, 'attack') ? '✓' : ''), function () { kMode = 'attack'; kUpdate(); }, 'katk', !canAtk || didCmd(P, 'attack'));
     btn('🪖 徴兵' + (didCmd(P, 'recruit') ? '✓' : ''), kRecruitBox, '', P.units.length >= PROV_CAP || didCmd(P, 'recruit'));
-    btn('🌾 内政' + (didCmd(P, 'develop') ? '✓' : ''), kDevelopBox, 'kdev', didCmd(P, 'develop'));
+    btn('🌾 内政' + (didCmd(P, 'develop') ? '✓' : ''), function () { openDomain(kSel); }, 'kdev', didCmd(P, 'develop'));
     btn('🚶 移動' + (didCmd(P, 'move') ? '✓' : ''), function () { kMode = 'move'; kUpdate(); }, 'sub', !canMv || didCmd(P, 'move'));
     btn('🦊 調略' + (didCmd(P, 'scheme') ? '✓' : ''), function () { kMode = 'scheme'; kUpdate(); }, 'kscheme', didCmd(P, 'scheme') || !ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }));
   }
   if (mine && KS.phase === 'player') btn('👥 城主', function () { kAssignBox(kSel); }, 'sub');
+  if (mine && (P.acted || didCmd(P, 'develop') || cmdFull(P) || KS.phase !== 'player')) btn('🗾 領内', function () { openDomain(kSel); }, 'sub');
   if (kUndoStack.length && KS.phase === 'player') btn('↩ もどす', kUndo, 'undo');
 }
 // ---- ひとつ 前に もどす（徴兵・内政・移動・城主 だけ。合戦・調略・きせつの おわりは もどせない） ----
@@ -4463,25 +4622,6 @@ function kRecruitBox() {
 // ---- 内政 ----
 // お金を えらぶ スライダー（500貫きざみ）
 function amtHtml(id, min, max, val) { return '<div class="kamt"><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="5" value="' + val + '"><b id="' + id + 'V"></b></div>'; }
-function kDevelopBox() {
-  var P = KS.provs[kSel], mx = maxKoku(kSel), gold = KS.clans[KS.player].gold, need = devNeed(KS, kSel), rate = devRate(KS, kSel);
-  var hi = Math.max(0, Math.min(gold, need)), one = Math.ceil(DEVELOP_COST / rate / 5) * 5, def = Math.min(hi, one);
-  var full = P.koku >= mx;
-  var body = '<p>お金を つかって 田畑を ひらく。つかった ぶんが たまって <b>💰' + kan(Math.ceil(DEVELOP_COST / rate)) + 'ごとに 石高 +1万石</b>' + (rate !== 1 ? '（城主の 政で ' + (rate > 1 ? 'おとく' : 'すこし 高い') + '）' : '') + '。のこりは つぎの 内政に もちこす。</p>' +
-    '<p class="small">いまの 石高 ' + P.koku + '万石（さいだい ' + mx + '）　たまっている ぶん ' + Math.round((P.devp || 0) / DEVELOP_COST * 100) + '%</p>' +
-    (full ? '<p class="r">これいじょう ふやせない</p>' : hi < 5 ? '<p class="r">お金が たりない</p>' : '<h4>つかう お金</h4>' + amtHtml('kDevAmt', 5, Math.max(5, hi - hi % 5 || 5), Math.max(5, def - def % 5)) + '<div id="kDevRes" class="kodds"></div>');
-  kModal('内政（' + PROV_BY[kSel].name + '）', body,
-    [{ label: '🌾 内政する', cls: 'act', id: 'kDevOk', disabled: full || hi < 5, fn: function () { var amt = +$('kDevAmt').value; kSnap('内政'); var r = develop(KS, kSel, amt); if (!r.ok) { kUndoStack.pop(); banner(r.msg, 1200); return; }
-        logC(KS, PROV_BY[kSel].name + 'で 内政（💰' + kan(amt) + '）' + (r.add ? '　石高が ' + KS.provs[kSel].koku + '万石に ふえた' : '　石高まで あと ' + Math.round((1 - r.prog) * 100) + '%'), 'good'); kSave(); kCloseModal(); kUpdate(); } },
-     { label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
-  var sl = $('kDevAmt'); if (!sl) return;
-  function upd() {
-    var a = +sl.value, tot = (P.devp || 0) + a * rate, add = Math.min(mx - P.koku, Math.floor(tot / DEVELOP_COST)), rest = add >= mx - P.koku ? 0 : tot - add * DEVELOP_COST;
-    sl.nextElementSibling.textContent = '💰' + kan(a);
-    $('kDevRes').innerHTML = 'けっか：石高 <b class="g">+' + add + '万石</b>' + (rest > 0 ? '（つぎの +1まで ' + Math.round(rest / DEVELOP_COST * 100) + '% たまる）' : '') + '　のこり 💰' + kan(gold - a);
-  }
-  sl.oninput = upd; upd();
-}
 // ---- 移動 ----
 function kMoveBox(from, to) {
   var A = KS.provs[from];
@@ -4663,8 +4803,148 @@ function kInit() {
   $('kHelpBtn').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
   $('kQuitBtn').onclick = function () { SFX.tap(); kModal('タイトルに もどる', '<p>ここまでの すすみは ほぞん されています。「はじめる → つづきから」で また あそべます。</p>', [{ label: 'もどる', cls: 'act', fn: function () { kCloseModal(); show('title'); } }, { label: 'やめる', cls: 'act sub', fn: kCloseModal }]); };
   $('backMapBtn').onclick = function () { SFX.tap(); kBattleFinished(); };
-  kInitInput();
+  kInitInput(); initDomainInput();
   window.addEventListener('resize', function () { if ($('mapScreen').classList.contains('on')) { kResize(); kFit(); kRender(); } });
+}
+
+// ==== 領内マップ（国の 中を ヘックスで 見て 開墾・町・鉱山・名産・塩田） ====
+var DS = { pid: null, mode: null, sel: null, s: 1, x: 0, y: 0, rho: 10, built: 0 };
+var TER_COL = { '.': '#a8d58a', '=': '#d9c08a', f: '#6aa85a', h: '#c2c97a', m: '#9a8f86', M: '#6d5f55', r: '#5fb0e8', s: '#4f8fc6', X: '#cfc8b5' };
+var TER_NAME = { '.': '平地', '=': '道', f: '森', h: '丘', m: '山', M: 'けわしい山', r: '川', s: '海・湖' };
+function openDomain(pid) {
+  var d = domData(); if (!d || !KS) return;
+  if (!KS.provs[pid].bld) initDomain(KS, pid);
+  DS.pid = pid; DS.mode = null; DS.sel = null; DS.built = 0; DS.snapped = false;
+  DS.canBuild = KS.provs[pid].owner === KS.player && KS.phase === 'player' && !KS.provs[pid].acted && (!didCmd(KS.provs[pid], 'develop')) && !cmdFull(KS.provs[pid]);
+  var hx = d[pid].hexes, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  hx.forEach(function (h) { var q = domXY(h[0], h[1]); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
+  DS.bb = [x0 - 2, y0 - 2, x1 + 2, y1 + 2];
+  show('domScreen');
+  var cv = $('dcv'); DS.cv = cv; DS.ctx = cv.getContext('2d');
+  domResize(); domFit(); domPanel(); domRender();
+}
+function domXY(c, r) { return [(c + 0.5 * (r & 1)) * 1.7320508, r * 1.5]; }   // 半径1の ヘックス
+function domResize() { var cv = DS.cv; DS.dpr = Math.min(2, window.devicePixelRatio || 1); DS.W = cv.offsetWidth; DS.H = cv.offsetHeight; cv.width = Math.round(DS.W * DS.dpr); cv.height = Math.round(DS.H * DS.dpr); }
+function domArea() { var top = ($('dhud').offsetHeight || 50) + 4, bot = ($('dbottom').offsetHeight || 150) + 4; return { top: top, h: Math.max(80, DS.H - top - bot) }; }
+function domFit() {
+  var a = domArea(), bb = DS.bb, bw = bb[2] - bb[0], bh = bb[3] - bb[1];
+  DS.s = Math.min(DS.W / bw, a.h / bh) * 0.96;
+  // 小さすぎると タップしにくいので 城の まわりを 大きめに
+  if (DS.s < 9) { DS.s = Math.min(16, Math.max(9, DS.s * 2.2)); var cas = castleHex(DS.pid), q = domXY(cas[0], cas[1]); DS.x = DS.W / 2 - q[0] * DS.s; DS.y = a.top + a.h / 2 - q[1] * DS.s; return; }
+  DS.x = (DS.W - bw * DS.s) / 2 - bb[0] * DS.s; DS.y = a.top + (a.h - bh * DS.s) / 2 - bb[1] * DS.s;
+}
+function domHexPath(c, x, y, r) { c.beginPath(); for (var i = 0; i < 6; i++) { var a = Math.PI / 180 * (60 * i - 30); var px = x + r * Math.cos(a), py = y + r * Math.sin(a); if (i) c.lineTo(px, py); else c.moveTo(px, py); } c.closePath(); }
+function domRender() {
+  if (!DS.ctx) return;
+  var c = DS.ctx, w = worldMap(), d = domData(), P = KS.provs[DS.pid], pid = DS.pid, cas = castleHex(pid);
+  c.setTransform(DS.dpr, 0, 0, DS.dpr, 0, 0); c.fillStyle = '#3f7fb8'; c.fillRect(0, 0, DS.W, DS.H);
+  var s = DS.s;
+  // 見えている はんい
+  var r0 = Math.floor((-DS.y / s) / 1.5) - 1, r1 = Math.ceil(((DS.H - DS.y) / s) / 1.5) + 1;
+  var c0 = Math.floor((-DS.x / s) / 1.732) - 1, c1 = Math.ceil(((DS.W - DS.x) / s) / 1.732) + 1;
+  r0 = Math.max(0, r0); c0 = Math.max(0, c0); r1 = Math.min(w.h - 1, r1); c1 = Math.min(w.w - 1, c1);
+  var valid = {};
+  for (var r = r0; r <= r1; r++) for (var cc = c0; cc <= c1; cc++) {
+    var t = w.at(cc, r), pv = w.provAt(cc, r), q = domXY(cc, r), x = DS.x + q[0] * s, y = DS.y + q[1] * s, k = hkey(cc, r);
+    var mine = pv === pid;
+    domHexPath(c, x, y, s * 1.02); c.fillStyle = TER_COL[t] || '#ccc'; c.fill();
+    if (!mine && t !== 's') { c.fillStyle = 'rgba(70,60,50,0.45)'; c.fill(); }
+    if (mine && s >= 8) {
+      var im = t === 'f' ? gx('forest') : (t === 'm' || t === 'M') ? gx(t === 'M' ? 'snow' : 'mount') : t === 'h' ? gx('hill') : null;
+      if (im && !(P.bld && P.bld[k])) { var ww = s * 1.9, hh = ww * im.naturalHeight / im.naturalWidth; c.drawImage(im, x - ww / 2, y + s * 0.75 - hh, ww, hh); }
+    }
+    if (mine && P.bld && P.bld[k] === 'field') { domHexPath(c, x, y, s * 0.98); c.fillStyle = '#e9cf5a'; c.fill(); c.strokeStyle = 'rgba(150,110,20,0.6)'; c.lineWidth = 1; for (var li = -2; li <= 2; li++) { c.beginPath(); c.moveTo(x - s * 0.7, y + li * s * 0.28); c.lineTo(x + s * 0.7, y + li * s * 0.28); c.stroke(); } }
+    if (DS.mode && mine && DS.canBuild) { var ok = canBuild(KS, pid, cc, r, DS.mode).ok; if (ok) { valid[k] = 1; domHexPath(c, x, y, s * 0.9); c.fillStyle = 'rgba(80,230,120,0.45)'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = Math.max(1, s * 0.08); c.stroke(); } }
+  }
+  // 国ざかい
+  c.strokeStyle = 'rgba(120,20,20,0.85)'; c.lineWidth = Math.max(1.5, s * 0.14);
+  for (r = r0; r <= r1; r++) for (cc = c0; cc <= c1; cc++) {
+    if (w.provAt(cc, r) !== pid) continue;
+    var nb = hexNbs(cc, r), q2 = domXY(cc, r);
+    for (var j = 0; j < 6; j++) { if (w.provAt(nb[j][0], nb[j][1]) === pid) continue; var q3 = domXY(nb[j][0], nb[j][1]), mx = (q2[0] + q3[0]) / 2, my = (q2[1] + q3[1]) / 2, vx = q3[0] - q2[0], vy = q3[1] - q2[1], L = Math.hypot(vx, vy); c.beginPath(); c.moveTo(DS.x + (mx - vy / L * 0.58) * s, DS.y + (my + vx / L * 0.58) * s); c.lineTo(DS.x + (mx + vy / L * 0.58) * s, DS.y + (my - vx / L * 0.58) * s); c.stroke(); }
+  }
+  // 建物・鉱脈・城
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  var fs = Math.max(9, s * 1.15);
+  function icon(cc2, rr2, txt, bg) { var q4 = domXY(cc2, rr2), x2 = DS.x + q4[0] * s, y2 = DS.y + q4[1] * s; if (x2 < -s || y2 < -s || x2 > DS.W + s || y2 > DS.H + s) return; if (bg) { c.beginPath(); c.arc(x2, y2, s * 0.8, 0, Math.PI * 2); c.fillStyle = bg; c.fill(); } c.font = fs + 'px sans-serif'; c.fillText(txt, x2, y2 + 1); }
+  var dep = d[pid].dep;
+  for (var dk in dep) { var p0 = dk.split(',').map(Number); if (!(P.bld && P.bld[dk])) { icon(p0[0], p0[1], '◆', 'rgba(255,255,255,0.75)'); c.fillStyle = '#7a2fb0'; } }
+  for (var bk in (P.bld || {})) { var b = P.bld[bk], p1 = bk.split(',').map(Number); if (b === 'field') { if (s >= 14) icon(p1[0], p1[1], '🌾'); continue; } icon(p1[0], p1[1], BLD[b === 'town0' ? 'town' : b].icon, 'rgba(255,250,235,0.85)'); }
+  icon(cas[0], cas[1], '🏯', 'rgba(255,250,235,0.9)');
+  // 鉱脈の 名前
+  if (s >= 10) for (dk in dep) { var p2 = dk.split(',').map(Number), q5 = domXY(p2[0], p2[1]); c.font = 'bold ' + Math.max(10, s * 0.75) + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = '#fff'; c.strokeText(dep[dk].name, DS.x + q5[0] * s, DS.y + (q5[1] + 1.25) * s); c.fillStyle = '#5a1f80'; c.fillText(dep[dk].name, DS.x + q5[0] * s, DS.y + (q5[1] + 1.25) * s); }
+  // えらんだ マス
+  if (DS.sel) { var q6 = domXY(DS.sel[0], DS.sel[1]); domHexPath(c, DS.x + q6[0] * s, DS.y + q6[1] * s, s * 0.98); c.strokeStyle = '#ffe24a'; c.lineWidth = Math.max(2, s * 0.18); c.stroke(); }
+  DS.valid = valid;
+}
+function domPanel() {
+  var P = KS.provs[DS.pid], pid = DS.pid, w = worldMap(), d = domData();
+  $('dTitle').textContent = '🗾 ' + PROV_BY[pid].name + 'の 領内';
+  $('dStat').textContent = '💰' + kan(KS.clans[KS.player].gold) + '　🌾' + P.koku + '/' + maxKoku(pid) + '万石　🏘 収入 +' + kan(BASE_INCOME + silverOf(KS, pid) + bldIncome(KS, pid)) + '/きせつ';
+  var info = '';
+  if (DS.sel) {
+    var k = hkey(DS.sel[0], DS.sel[1]), t = w.at(DS.sel[0], DS.sel[1]), b = P.bld && P.bld[k], dep = d[pid].dep[k], cas = castleHex(pid);
+    info = '<b>' + (TER_NAME[t] || '') + '</b>';
+    if (DS.sel[0] === cas[0] && DS.sel[1] === cas[1]) info += '　🏯 ' + castleNameOf(KS, pid);
+    if (b) info += '　' + (b === 'town0' ? '🏘 城下町' : BLD[b].icon + ' ' + BLD[b].name + (b === 'meibutsu' ? '（' + MEIBUTSU[pid] + '）' : b === 'mine' && dep ? '（' + MINE_NAME[dep.type] + '・+' + kan(MINE_INC[dep.type]) + '/きせつ）' : ''));
+    if (dep && !b) info += '　◆ 鉱脈：' + dep.name + '（' + MINE_NAME[dep.type] + '）';
+    if (DS.mode && DS.canBuild) { var ch = canBuild(KS, pid, DS.sel[0], DS.sel[1], DS.mode); if (!ch.ok && ch.msg) info += '<br><span style="color:#ffb0a0">' + ch.msg + '</span>'; }
+  } else info = DS.canBuild ? (DS.mode ? 'みどりの マスを タップすると ' + BLD[DS.mode].name + 'を たてる。' + BLD[DS.mode].desc : 'たてたい ものを えらんで、マップの みどりの マスを タップ。いくつでも たてられる（お金の かぎり）。') :
+    (KS.provs[pid].owner !== KS.player ? 'ほかの 家の 国。見るだけ。' : didCmd(P, 'develop') ? 'この きせつの 内政は おわった。見るだけ。' : 'いまは 見るだけ。');
+  if (DS.built) info += '<br><small>この 内政で たてた もの：' + DS.built + 'つ（↩で とりけし できる）</small>';
+  $('dInfo').innerHTML = info;
+  var acts = $('dActs'); acts.innerHTML = '';
+  if (!DS.canBuild) return;
+  ['field', 'town', 'mine', 'meibutsu', 'salt'].forEach(function (type) {
+    var B0 = BLD[type], cnt = type === 'town' ? bldCount(P, 'town') - 1 : bldCount(P, type);
+    var any = type === 'mine' ? Object.keys(d[pid].dep).length > 0 : type === 'salt' ? d[pid].hexes.some(function (h) { return nearAny(h[0], h[1], 1, function (c, r) { return w.at(c, r) === 's'; }); }) : true;
+    var cost = bldCost(KS, pid, type, -1, -1);
+    var b = document.createElement('button'); b.className = 'dbld' + (DS.mode === type ? ' on' : ''); b.disabled = !any;
+    var sub = type === 'meibutsu' ? MEIBUTSU[pid] : type === 'field' ? '石高 +0.5' : type === 'mine' ? (any ? '鉱脈 ' + Object.keys(d[pid].dep).length + 'か所' : '鉱脈なし') : type === 'salt' ? (any ? '+' + kan(B0.inc) : '海が ない') : '+' + kan(B0.inc);
+    b.innerHTML = B0.icon + ' ' + B0.name + (cnt ? '×' + cnt : '') + '<small>💰' + kan(cost) + '・' + sub + '</small>';
+    b.onclick = function () { SFX.tap(); DS.mode = DS.mode === type ? null : type; domPanel(); domRender(); };
+    acts.appendChild(b);
+  });
+  if (DS.built) { var u = document.createElement('button'); u.className = 'act undo'; u.textContent = '↩ もどす'; u.onclick = function () { SFX.tap(); domUndo(); }; acts.appendChild(u); }
+}
+function domTap(sx, sy) {
+  var wx = (sx - DS.x) / DS.s, wy = (sy - DS.y) / DS.s, r = Math.round(wy / 1.5), c = Math.round(wx / 1.7320508 - 0.5 * (r & 1));
+  // いちばん 近い ヘックスを さがす
+  var best = null; [[c, r]].concat(hexNbs(c, r)).forEach(function (h) { var q = domXY(h[0], h[1]), dd = Math.hypot(q[0] - wx, q[1] - wy); if (!best || dd < best[2]) best = [h[0], h[1], dd]; });
+  DS.sel = [best[0], best[1]];
+  if (DS.mode && DS.canBuild && DS.valid && DS.valid[hkey(best[0], best[1])]) {
+    if (!DS.snapped) { kSnap('内政'); DS.snapped = true; DS.snapIdx = kUndoStack.length; }
+    DS.stack = DS.stack || []; DS.stack.push(serialize(KS));
+    var r0 = build(KS, DS.pid, best[0], best[1], DS.mode);
+    if (r0.ok) { DS.built++; SFX.repair && SFX.repair(); logC(KS, PROV_BY[DS.pid].name + 'に ' + BLD[DS.mode].name + 'を たてた（💰' + kan(r0.cost) + '）', 'good'); kSave(); }
+    else DS.stack.pop();
+  }
+  domPanel(); domRender();
+}
+// 領内の 中で ひとつ ずつ もどす
+function domUndo() {
+  if (!DS.stack || !DS.stack.length) return;
+  var S2 = deserialize(DS.stack.pop()); if (!S2) return;
+  KS = S2; DS.built = Math.max(0, DS.built - 1);
+  if (!DS.built && DS.snapped) { kUndoStack.pop(); DS.snapped = false; }
+  kSave(); domPanel(); domRender();
+}
+function closeDomain() { DS.ctx = null; DS.stack = []; kMode = 'idle'; openMap(); }
+function initDomainInput() {
+  var cv = $('dcv'), ptrs = {}, drag = false, moved = false, st = null, cam0 = null, pinch = null;
+  cv.addEventListener('pointerdown', function (e) { ptrs[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(ptrs);
+    if (ids.length === 1) { drag = true; moved = false; st = [e.clientX, e.clientY]; cam0 = [DS.x, DS.y]; }
+    else if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: DS.s, m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }; moved = true; }
+    e.preventDefault(); });
+  cv.addEventListener('pointermove', function (e) { if (!ptrs[e.pointerId]) return; ptrs[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(ptrs);
+    if (ids.length === 2 && pinch) { var a = ptrs[ids[0]], b = ptrs[ids[1]], ns = Math.max(3, Math.min(60, pinch.s * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d)), wx = (pinch.m[0] - DS.x) / DS.s, wy = (pinch.m[1] - DS.y) / DS.s; DS.s = ns; DS.x = pinch.m[0] - wx * ns; DS.y = pinch.m[1] - wy * ns; domRender(); }
+    else if (drag) { var dx = e.clientX - st[0], dy = e.clientY - st[1]; if (Math.hypot(dx, dy) > 8) moved = true; if (moved) { DS.x = cam0[0] + dx; DS.y = cam0[1] + dy; domRender(); } } });
+  function up(e) { if (!ptrs[e.pointerId]) return; delete ptrs[e.pointerId]; if (!Object.keys(ptrs).length) { if (drag && !moved) { var rc = cv.getBoundingClientRect(); domTap(e.clientX - rc.left, e.clientY - rc.top); } drag = false; pinch = null; } }
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('wheel', function (e) { e.preventDefault(); var rc = cv.getBoundingClientRect(), mx = e.clientX - rc.left, my = e.clientY - rc.top, ns = Math.max(3, Math.min(60, DS.s * (e.deltaY < 0 ? 1.15 : 0.87))), wx = (mx - DS.x) / DS.s, wy = (my - DS.y) / DS.s; DS.s = ns; DS.x = mx - wx * ns; DS.y = my - wy * ns; domRender(); }, { passive: false });
+  $('dDoneBtn').onclick = function () { SFX.tap(); closeDomain(); };
+  $('dFitBtn').onclick = function () { SFX.tap(); domFit(); domRender(); };
+  window.addEventListener('resize', function () { if (DS.ctx && $('domScreen').classList.contains('on')) { domResize(); domRender(); } });
 }
 
 </script>
