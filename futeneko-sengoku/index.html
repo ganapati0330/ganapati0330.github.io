@@ -387,6 +387,7 @@ button{font-family:inherit;cursor:pointer;}
       <li>へいは <b>隊</b>で うごく。1隊の 人数：足軽 300人・弓 200人・騎馬 50騎・鉄砲 50挺・工作 150人・忍び 20人。騎馬と 鉄砲は 人数は すくないが 高くて つよい。数字は いまの 人数。</li>
       <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
       <li><b>🌾 内政は 領内マップで</b>：じぶんの 国の 中の ヘックスに たてる。<b>🌾田畑</b>（開墾：川や 田畑の 近く。石高 +0.5万石。石高の 上限は なく、水を ひける 土地が あるだけ ふやせる。ただし ひらくほど 人手が たりなくなって 高くなる。森・丘は 割高）・<b>🏘町</b>（道や 城の となり。まいきせつ +200貫。町 1つを 田畑 6マスで ささえる）・<b>⛏鉱山</b>（◆鉱脈の ある 国だけ：石見銀山・吉岡銅山・奥出雲の たたら など）・<b>🏺名産</b>（町の となり。備前焼・因州和紙・備後表 など）・<b>🧂塩田</b>（海べ）。お金の かぎり いくつでも たてられ、↩で 1つずつ もどせる。たてた ものは 合戦の ちずにも でる。🗾ボタンで いつでも 見られる。</li>
+      <li><b>🙇 降参した へい</b>：城を おとすと、のこった てきの へいの 3割くらい（せめた 国の 城主の 政が 高いほど ふえる。2〜5割）が 降参して みかたに くわわる。のこりは となりの 国へ にげる。</li>
       <li><b>🏯 城を おとして いく</b>：国ごとに 本城と 支城（2つ）が ある。となりの 国から せめると、まず その 道の 入り口を まもる <b>支城</b>を おとす（地図の 小さな 櫓。赤く 光るのが せめられる 城）。支城を とれば <b>本城</b>を せめられ、本城が おちると その 国が 手に はいる（のこった 支城の 多くは 降参、のこりは 抵抗を つづける）。支城が せめられると 本城から 後詰めが くる。ほかの 家に とられた 支城の ぶん、国の 収入の 1/5 が へる。支城を タップすると 守備兵の 出し入れが できる。</li>
       <li><b>中国地方は 1まいの ヘックス地図</b>：海岸線・国境は 国土数値情報、山・峠・川は 地理の 知識で つくった もの。国取りの 地図の こい 茶色が <b>けわしい山（とおれない）</b>。国どうしは <b>道</b>で つながる：🛤 陸路・⛰ <b>峠道</b>（四十曲峠・志戸坂峠・明地峠 など。守りが すこし ゆうり）・⛵ <b>海路</b>（船で 上陸。騎馬は つれていけない）。🚫 は 山が けわしくて 国境が あっても せめられない ところ。</li>
       <li><b>合戦の ちずは その 場所の 地形</b>：同じ 地図から 城の まわりを きりだす。<b>攻め手が とおってきた 道が ちずの 下</b>（左上の 方位で 北が わかる）。点線は 国ざかい、こい 茶色の 山は とおれない。</li>
@@ -439,7 +440,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v4.1';
+var VERSION = 'v4.2';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2334,6 +2335,17 @@ function startBattle(S, b) {
   S.pendingBattle = b;
 }
 // 合戦の けっか を 国に もどす
+// 降参した へい：のこった てきの 何割かが かった がわに くわわる（城主の 政で かわる）
+function prisonerRate(S, b) { var o = b.atkOff && S.officers ? S.officers[b.atkOff] : null; return Math.max(0.2, Math.min(0.5, 0.3 + (offP(o) - 50) / 250)); }
+function takePrisoners(S, b, list) {
+  var rate = prisonerRate(S, b), joined = [], rest = [], men = 0;
+  list.forEach(function (u) {
+    var j = Math.round(u.hp * rate);
+    if (j >= 1) { var nu = newUnit(S, u.type); nu.hp = j; joined.push(nu); men += j * UNIT_TYPES[u.type].men / 10; }
+    if (u.hp - j >= 1) rest.push({ uid: u.uid, type: u.type, hp: u.hp - j });
+  });
+  return { joined: joined, rest: rest, men: Math.round(men), rate: rate };
+}
 function applyBattle(S, b, res) {
   var A = S.provs[b.from], B = S.provs[b.to];
   // 退き口から にげた 隊：その 国へ（じぶんの 国の ときだけ）
@@ -2348,9 +2360,12 @@ function applyBattle(S, b, res) {
     var C0 = S.castles[b.castleId];
     sendFled(res.atkFled, b.atkClan); sendFled(res.defFled, b.defClan);
     if (res.winner === 'atk') {
-      C0.owner = b.atkClan; C0.units = res.atkSurv.slice(0, 8);
+      var pr = takePrisoners(S, b, res.defSurv); res.defSurv = pr.rest; res.prisMen = pr.men;
+      var winners = res.atkSurv.concat(pr.joined);
+      C0.owner = b.atkClan; C0.units = winners.slice(0, 8);
       // 支城に はいりきらない へいは 出陣した 国へ もどる
-      if (res.atkSurv.length > 8 && A.owner === b.atkClan) A.units = A.units.concat(res.atkSurv.slice(8, 8 + Math.max(0, PROV_CAP - A.units.length)));
+      if (winners.length > 8 && A.owner === b.atkClan) A.units = A.units.concat(winners.slice(8, 8 + Math.max(0, PROV_CAP - A.units.length)));
+      if (pr.men) logC(S, 'てきの へい ' + pr.men.toLocaleString('ja-JP') + '人が 降参して ' + atkName + 'に くわわった', b.atkClan === S.player ? 'good' : 'sys');
       // まけた 守りは その国の 本城（自分の 国なら）か となりの 自分の 国へ
       if (b.defClan && res.defSurv.length) {
         var home = S.provs[b.to].owner === b.defClan ? b.to : (ADJ[b.to].filter(function (q) { return S.provs[q].owner === b.defClan; })[0] || null);
@@ -2374,7 +2389,10 @@ function applyBattle(S, b, res) {
       if (cRand(S) < 0.6) { c.owner = b.atkClan; c.units = c.units.map(function (u) { return { uid: u.uid, type: u.type, hp: Math.max(1, Math.floor(u.hp / 2)) }; }); logC(S, brName(c.id) + 'は 降参した', b.atkClan === S.player ? 'good' : 'sys'); }
       else logC(S, brName(c.id) + 'は まだ 抵抗している', b.defClan === S.player ? 'good' : 'sys');
     });
-    B.owner = b.atkClan; B.units = res.atkSurv.slice(0, PROV_CAP); B.acted = true;
+    // のこった 守りの 何割かは 降参して みかたに
+    var pr2 = takePrisoners(S, b, res.defSurv); res.defSurv = pr2.rest; res.prisMen = pr2.men;
+    B.owner = b.atkClan; B.units = res.atkSurv.concat(pr2.joined).slice(0, PROV_CAP); B.acted = true;
+    if (pr2.men) logC(S, 'てきの へい ' + pr2.men.toLocaleString('ja-JP') + '人が 降参して ' + atkName + 'に くわわった', b.atkClan === S.player ? 'good' : 'sys');
     sendFled(res.atkFled, b.atkClan); sendFled(res.defFled, b.defClan);
     // にげおくれた 守り手は 兵が 半分に
     if (res.defFled) res.defSurv = res.defSurv.map(function (u) { return { uid: u.uid, type: u.type, hp: Math.floor(u.hp / 2) }; }).filter(function (u) { return u.hp > 0; });
@@ -4930,7 +4948,7 @@ function kFinishBattle(b, res, auto) {
   (win ? SFX.win : SFX.lose)();
   var img = SPR[(win ? charById(KS.face).win : charById(KS.face).lose) || 'fute_joy'];
   kModal(win ? 'しょうり！' : 'はいぼく…', '<div class="kres"><img src="' + img + '" alt=""><p><b>' + txt + '</b>' + (auto ? '（おまかせ）' : '') + '</p>' +
-    '<p class="small">みかた ' + menStr(before) + ' → ' + menStr(after) + '　／　てき ' + menStr(eBefore) + ' → ' + menStr(eAfter) + fledTxt + '</p></div>',
+    '<p class="small">みかた ' + menStr(before) + ' → ' + menStr(after) + '　／　てき ' + menStr(eBefore) + ' → ' + menStr(eAfter) + fledTxt + (res.prisMen ? '<br>' + (pSide === 'atk' ? '🙇 てきの へい ' + menStr(res.prisMen) + 'が 降参して みかたに くわわった' : '🙇 みかたの へい ' + menStr(res.prisMen) + 'が てきに 降参した') : '') + '</p></div>',
     [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); kAfterBattle(); } }]);
 }
 function kAfterBattle() {
