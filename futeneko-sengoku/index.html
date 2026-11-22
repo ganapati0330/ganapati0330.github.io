@@ -437,7 +437,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.11';
+var VERSION = 'v3.12';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2911,7 +2911,35 @@ function generalName(u) { return (G && G.generals && G.generals[u.side]) ? G.gen
 
 // ---- サウンド（Web Audio） ----
 var AC = null;
-function audio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } } if (AC && AC.state === 'suspended') AC.resume(); return AC; }
+function audio() {
+  if (!AC) {
+    // iPhone：マナーモードでも 音が でるように（Safari 17〜）
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; }
+  }
+  // suspended（はじめ）・interrupted（アプリ切りかえ・画面ロックの あと）なら また ならす
+  if (AC && AC.state !== 'running' && AC.state !== 'closed') { try { var pr = AC.resume(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
+  return AC;
+}
+// タップした ときに 音を 出せるように する（iPhone は タップの 中で ないと 音が でない）
+var audioUnlocked = false, keepAlive = null;
+function silentWavUrl() {
+  var n = 4000, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  function ws(o, t) { for (var i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); }
+  ws(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); ws(36, 'data'); v.setUint32(40, n * 2, true);
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+function unlockAudio() {
+  var ac = audio(); if (!ac) return;
+  if (!audioUnlocked) {
+    audioUnlocked = true;
+    try { var b = ac.createBuffer(1, 1, 22050), src = ac.createBufferSource(); src.buffer = b; src.connect(ac.destination); src.start(0); } catch (e) {}
+    // むかしの iPhone：音の ない 音声を ながしつづけると マナーモードでも Web Audio が きこえる
+    if (!navigator.audioSession) { try { keepAlive = new Audio(silentWavUrl()); keepAlive.loop = true; keepAlive.setAttribute('playsinline', ''); var pp = keepAlive.play(); if (pp && pp.catch) pp.catch(function () {}); } catch (e) {} }
+  } else if (keepAlive && keepAlive.paused) { try { var p2 = keepAlive.play(); if (p2 && p2.catch) p2.catch(function () {}); } catch (e) {} }
+  if (BGM.on && !BGM.src) bgmStart();
+}
 function tone(f, dur, type, vol, slide) {
   var ac = audio(); if (!ac) return;
   var o = ac.createOscillator(), g = ac.createGain();
@@ -3982,7 +4010,9 @@ window.addEventListener('load', function () {
   ['bgmBtn', 'bgmBtn2', 'bgmBtn3'].forEach(function (id) { var b = $(id); if (b) b.onclick = function (e) { e.stopPropagation(); audio(); bgmToggle(); }; });
   bgmLabel();
   // どこかを さわったら（iPhone の 音の ロック 解除）
-  document.addEventListener('pointerdown', function () { if (BGM.on && !BGM.src) bgmStart(); }, { once: false, passive: true });
+  // iPhone は touchend / click の 中で ないと 音を ならせない
+  ['touchend', 'click', 'pointerup', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlockAudio, { capture: true, passive: true }); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && AC) audio(); });
   $('helpBtn').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
   $('helpBtn2').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
   $('helpClose').onclick = function () { SFX.tap(); $('helpBox').classList.remove('on'); };
