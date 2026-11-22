@@ -440,7 +440,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v4.2';
+var VERSION = 'v4.3';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -3492,6 +3492,10 @@ var GFX_NAMES = ['t_grass', 't_court', 't_water', 't_sea', 'forest', 'sakura', '
   'yumi_stand_b', 'yumi_stand_r', 'yumi_atk_b', 'yumi_atk_r', 'yumi_down_b', 'yumi_down_r',
   'taisho_stand_b', 'taisho_stand_r', 'taisho_atk_b', 'taisho_atk_r', 'taisho_down_b', 'taisho_down_r',
   'ninja_stand_b', 'ninja_stand_r', 'ninja_atk_b', 'ninja_atk_r', 'ninja_down_b', 'ninja_down_r', 'arrow', 'smoke', 'spark', 'dust', 'crumble', 'shutsujin', 'kachidoki'];
+// 攻撃アニメ（4コマ）
+var ANIM_UNITS = ['ashigaru', 'yumi', 'kiba', 'teppo', 'kosaku', 'ninja', 'taisho'];
+ANIM_UNITS.forEach(function (u) { for (var f = 1; f <= 4; f++) GFX_NAMES.push('anim_' + u + '_' + f + '_b', 'anim_' + u + '_' + f + '_r'); });
+var ATK_MS = 600;
 var GFX = {};
 GFX_NAMES.forEach(function (n) { var im = new Image(); im.onload = function () { terrCache = null; }; im.src = 'img/' + n + '.webp'; GFX[n] = im; });
 function gx(n) { var im = GFX[n]; return im && im.complete && im.naturalWidth ? im : null; }
@@ -3636,7 +3640,7 @@ function fxAdd(name, x, y, opt) { if (!gx(name)) return; opt = opt || {}; FX.pus
 function fxAttack(u, tc, tr, isWall) {
   var a = hexCenter(u.c, u.r), b = hexCenter(tc, tr);
   u._face = b[0] < a[0] - 1 ? -1 : b[0] > a[0] + 1 ? 1 : (u._face || 1);
-  u._atk = nowMs() + 450;
+  u._atk = nowMs() + ATK_MS;
   if (u.type === 'yumi') { fxAdd('arrow', a[0], a[1] - 18, { x2: b[0], y2: b[1] - 10, dur: 0.35, w: R * 0.9 }); }
   if (u.type === 'teppo') { fxAdd('smoke', a[0] + 16 * u._face, a[1] - 14, { dur: 0.9, w: R * 1.2, rise: 14 }); }
   if (isWall) { fxAdd('dust', b[0], b[1] - 8, { dur: 0.8, w: R * 1.3, delay: 0.1, rise: 10 }); fxAdd('crumble', b[0], b[1], { dur: 0.6, w: R * 1.1, delay: 0.15 }); }
@@ -3674,13 +3678,18 @@ function unitSpr(type, pose, side) { var p = SPR_PRE[type]; return p ? gx(p + '_
 // 高さを そろえて おく
 function putSprH(im, x, by, h, flip) { putSpr(im, x, by, h * im.naturalWidth / im.naturalHeight, flip); }
 function drawAshigaru(u, x, y, col) {
-  var pose = u._atk && u._atk > nowMs() ? 'atk' : 'stand', im = unitSpr(u.type, pose, u.side);
-  if (!im) return false;
+  var now = nowMs(), pose = u._atk && u._atk > now ? 'atk' : 'stand', im = unitSpr(u.type, pose, u.side), anim = null;
+  if (pose === 'atk') {   // 攻撃中は 4コマを じゅんに
+    var fr = Math.min(4, Math.max(1, Math.floor((1 - (u._atk - now) / ATK_MS) * 4) + 1));
+    anim = gx('anim_' + u.type + '_' + fr + '_' + (u.side === G.playerSide ? 'b' : 'r'));
+  }
+  if (!im && !anim) return false;
   var face = u._face || (u.side === G.playerSide ? 1 : -1);
   if (u.type === 'ninja' && !u.revealed) ctx.globalAlpha *= 0.6;   // かくれている 忍者は うすく
   ctx.fillStyle = col; ctx.globalAlpha *= 0.55; ctx.beginPath(); ctx.ellipse(x, y + R * 0.5, R * 0.55, R * 0.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha /= 0.55;
   ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(x, y + R * 0.5, R * 0.55, R * 0.2, 0, 0, Math.PI * 2); ctx.stroke();
-  putSprH(im, x + (pose === 'atk' ? 6 * face : 0), y + R * 0.58, R * (u.type === 'kiba' ? 1.78 : 1.72), face < 0);
+  if (anim) putSprH(anim, x + 4 * face, y + R * 0.66, R * (u.type === 'kiba' ? 1.9 : u.type === 'taisho' ? 1.95 : 1.85), face < 0);
+  else putSprH(im, x + (pose === 'atk' ? 6 * face : 0), y + R * 0.58, R * (u.type === 'kiba' ? 1.78 : 1.72), face < 0);
   return true;
 }
 function hpBar(x, y, f) {
