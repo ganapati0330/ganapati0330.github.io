@@ -439,7 +439,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v4.0';
+var VERSION = 'v4.1';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -4141,41 +4141,62 @@ function gameOver() {
 }
 
 // ---- 入力（タップ／ドラッグ／ピンチ） ----
-function initInput() {
-  var ptrs = {}, dragging = false, startDist = 0, startS = 1, moved = false, startPos = null, camStart = null, pinchMid = null;
-  canvas.addEventListener('pointerdown', function (e) {
-    ptrs[e.pointerId] = [e.clientX, e.clientY];
-    var ids = Object.keys(ptrs);
-    if (ids.length === 1) { dragging = true; moved = false; startPos = [e.clientX, e.clientY]; camStart = [cam.x, cam.y]; }
-    else if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; startDist = Math.hypot(a[0] - b[0], a[1] - b[1]); startS = cam.s; pinchMid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; moved = true; }
-    e.preventDefault();
+// ---- ドラッグ・ピンチ（3つの 画面で 共通） ----
+// opt: cam() → {x,y,s}, set(x,y,s), minS, maxS, tap(x,y), after()
+function panZoom(cv, opt) {
+  var ptrs = {}, mode = null, moved = false, base = null;
+  function rel(e) { var rc = cv.getBoundingClientRect(); return [e.clientX - rc.left, e.clientY - rc.top]; }
+  // いまの 指の かずに あわせて 基準を とりなおす（指を はなした ときに とばないように）
+  function rebase() {
+    var ids = Object.keys(ptrs), c = opt.cam();
+    if (ids.length === 1) { mode = 'drag'; base = { p: ptrs[ids[0]].slice(), x: c.x, y: c.y }; }
+    else if (ids.length >= 2) {
+      var a = ptrs[ids[0]], b = ptrs[ids[1]], mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      mode = 'pinch'; base = { d: Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1])), s: c.s, wx: (mid[0] - c.x) / c.s, wy: (mid[1] - c.y) / c.s };
+    } else { mode = null; base = null; }
+  }
+  cv.addEventListener('pointerdown', function (e) {
+    ptrs[e.pointerId] = rel(e);
+    if (Object.keys(ptrs).length === 1) moved = false; else moved = true;
+    rebase(); e.preventDefault();
   });
-  canvas.addEventListener('pointermove', function (e) {
-    if (!ptrs[e.pointerId]) return;
-    ptrs[e.pointerId] = [e.clientX, e.clientY];
+  cv.addEventListener('pointermove', function (e) {
+    if (!ptrs[e.pointerId]) return; ptrs[e.pointerId] = rel(e);
     var ids = Object.keys(ptrs);
-    if (ids.length === 2) {
-      var a = ptrs[ids[0]], b = ptrs[ids[1]]; var d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      var ns = Math.max(0.15, Math.min(3, startS * d / startDist));
-      var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      var wx = (pinchMid[0] - cam.x) / cam.s, wy = (pinchMid[1] - cam.y) / cam.s;
-      cam.s = ns; cam.x = mid[0] - wx * ns; cam.y = mid[1] - wy * ns; clampCam();
-    } else if (dragging && ids.length === 1) {
-      var dx = e.clientX - startPos[0], dy = e.clientY - startPos[1];
-      if (Math.hypot(dx, dy) > 8) moved = true;
-      if (moved) { cam.x = camStart[0] + dx; cam.y = camStart[1] + dy; clampCam(); }
+    if (mode === 'pinch' && ids.length >= 2) {
+      var a = ptrs[ids[0]], b = ptrs[ids[1]], d = Math.hypot(a[0] - b[0], a[1] - b[1]), mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      var ns = Math.max(opt.minS, Math.min(opt.maxS, base.s * d / base.d));
+      // さいしょに 指の まんなかに あった 場所が、いまの 指の まんなかに くるように
+      opt.set(mid[0] - base.wx * ns, mid[1] - base.wy * ns, ns);
+    } else if (mode === 'drag' && ids.length === 1) {
+      var p = ptrs[ids[0]], dx = p[0] - base.p[0], dy = p[1] - base.p[1];
+      if (!moved && Math.hypot(dx, dy) > 8) moved = true;
+      if (moved) opt.set(base.x + dx, base.y + dy, opt.cam().s);
     }
+    if (opt.after) opt.after();
   });
   function up(e) {
     if (!ptrs[e.pointerId]) return;
-    delete ptrs[e.pointerId];
-    if (Object.keys(ptrs).length === 0) {
-      if (dragging && !moved) { var rect = canvas.getBoundingClientRect(); var w = screenToWorld(e.clientX - rect.left, e.clientY - rect.top); var h = worldToHex(w[0], w[1]); onTapHex(h[0], h[1], nearestTargetUnit(w[0], w[1])); }
-      dragging = false;
-    } else { dragging = false; }
+    var last = ptrs[e.pointerId]; delete ptrs[e.pointerId];
+    var left = Object.keys(ptrs).length;
+    if (left === 0) { if (!moved && opt.tap) opt.tap(last[0], last[1]); mode = null; base = null; }
+    else rebase();   // のこった 指で つづけて ドラッグ
   }
-  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up); canvas.addEventListener('pointerleave', up);
-  canvas.addEventListener('wheel', function (e) { e.preventDefault(); var rect = canvas.getBoundingClientRect(); var mx = e.clientX - rect.left, my = e.clientY - rect.top; var wx = (mx - cam.x) / cam.s, wy = (my - cam.y) / cam.s; var ns = Math.max(0.15, Math.min(3, cam.s * (e.deltaY < 0 ? 1.1 : 0.9))); cam.s = ns; cam.x = mx - wx * ns; cam.y = my - wy * ns; clampCam(); }, { passive: false });
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('wheel', function (e) {
+    e.preventDefault(); var p = rel(e), c = opt.cam(), wx = (p[0] - c.x) / c.s, wy = (p[1] - c.y) / c.s;
+    var ns = Math.max(opt.minS, Math.min(opt.maxS, c.s * (e.deltaY < 0 ? 1.1 : 0.9)));
+    opt.set(p[0] - wx * ns, p[1] - wy * ns, ns); if (opt.after) opt.after();
+  }, { passive: false });
+  // iPhone の ページごと 拡大を とめる
+  cv.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+}
+function initInput() {
+  panZoom(canvas, {
+    cam: function () { return cam; }, minS: 0.15, maxS: 3,
+    set: function (x, y, s) { cam.x = x; cam.y = y; cam.s = s; clampCam(); },
+    tap: function (x, y) { var w = screenToWorld(x, y); var h = worldToHex(w[0], w[1]); onTapHex(h[0], h[1], nearestTargetUnit(w[0], w[1])); }
+  });
 }
 
 // ---- 起動 ----
@@ -4748,31 +4769,12 @@ function kTap(sx, sy) {
   SFX.tap(); kSel = pid; kUpdate();
 }
 function kInitInput() {
-  var cv = $('kcv'), ptrs = {}, start = null, cam0 = null, moved = false, pinch = null;
-  cv.addEventListener('pointerdown', function (e) {
-    ptrs[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(ptrs);
-    if (ids.length === 1) { start = [e.clientX, e.clientY]; cam0 = [kMap.x, kMap.y]; moved = false; }
-    else if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: kMap.s, mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }; moved = true; }
-    e.preventDefault();
+  panZoom($('kcv'), {
+    cam: function () { return { x: kMap.x, y: kMap.y, s: kMap.s }; }, minS: 0.3, maxS: 4,
+    set: function (x, y, s) { kMap.x = x; kMap.y = y; kMap.s = s; },
+    after: function () { kRender(); },
+    tap: function (x, y) { kTap(x, y); }
   });
-  cv.addEventListener('pointermove', function (e) {
-    if (!ptrs[e.pointerId]) return; ptrs[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(ptrs);
-    if (ids.length === 2 && pinch) {
-      var a = ptrs[ids[0]], b = ptrs[ids[1]], d = Math.hypot(a[0] - b[0], a[1] - b[1]), ns = Math.max(0.3, Math.min(4, pinch.s * d / pinch.d));
-      var wx = (pinch.mid[0] - kMap.x) / kMap.s, wy = (pinch.mid[1] - kMap.y) / kMap.s, mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      kMap.s = ns; kMap.x = mid[0] - wx * ns; kMap.y = mid[1] - wy * ns; kRender();
-    } else if (ids.length === 1 && start) {
-      var dx = e.clientX - start[0], dy = e.clientY - start[1];
-      if (Math.hypot(dx, dy) > 8) moved = true;
-      if (moved) { kMap.x = cam0[0] + dx; kMap.y = cam0[1] + dy; kRender(); }
-    }
-  });
-  function up(e) {
-    if (!ptrs[e.pointerId]) return; delete ptrs[e.pointerId];
-    if (!Object.keys(ptrs).length) { if (!moved && start) { var rc = cv.getBoundingClientRect(); kTap(e.clientX - rc.left, e.clientY - rc.top); } start = null; pinch = null; }
-  }
-  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up); cv.addEventListener('pointerleave', up);
-  cv.addEventListener('wheel', function (e) { e.preventDefault(); var rc = cv.getBoundingClientRect(), mx = e.clientX - rc.left, my = e.clientY - rc.top; var wx = (mx - kMap.x) / kMap.s, wy = (my - kMap.y) / kMap.s; var ns = Math.max(0.3, Math.min(4, kMap.s * (e.deltaY < 0 ? 1.1 : 0.9))); kMap.s = ns; kMap.x = mx - wx * ns; kMap.y = my - wy * ns; kRender(); }, { passive: false });
 }
 
 // ---- モーダル ----
@@ -5295,17 +5297,13 @@ function domUndo() {
 }
 function closeDomain() { DS.ctx = null; DS.stack = []; kMode = 'idle'; openMap(); }
 function initDomainInput() {
-  var cv = $('dcv'), ptrs = {}, drag = false, moved = false, st = null, cam0 = null, pinch = null;
-  cv.addEventListener('pointerdown', function (e) { ptrs[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(ptrs);
-    if (ids.length === 1) { drag = true; moved = false; st = [e.clientX, e.clientY]; cam0 = [DS.x, DS.y]; }
-    else if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: DS.s, m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }; moved = true; }
-    e.preventDefault(); });
-  cv.addEventListener('pointermove', function (e) { if (!ptrs[e.pointerId]) return; ptrs[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(ptrs);
-    if (ids.length === 2 && pinch) { var a = ptrs[ids[0]], b = ptrs[ids[1]], ns = Math.max(3, Math.min(60, pinch.s * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d)), wx = (pinch.m[0] - DS.x) / DS.s, wy = (pinch.m[1] - DS.y) / DS.s; DS.s = ns; DS.x = pinch.m[0] - wx * ns; DS.y = pinch.m[1] - wy * ns; domRender(); }
-    else if (drag) { var dx = e.clientX - st[0], dy = e.clientY - st[1]; if (Math.hypot(dx, dy) > 8) moved = true; if (moved) { DS.x = cam0[0] + dx; DS.y = cam0[1] + dy; domRender(); } } });
-  function up(e) { if (!ptrs[e.pointerId]) return; delete ptrs[e.pointerId]; if (!Object.keys(ptrs).length) { if (drag && !moved) { var rc = cv.getBoundingClientRect(); domTap(e.clientX - rc.left, e.clientY - rc.top); } drag = false; pinch = null; } }
-  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-  cv.addEventListener('wheel', function (e) { e.preventDefault(); var rc = cv.getBoundingClientRect(), mx = e.clientX - rc.left, my = e.clientY - rc.top, ns = Math.max(3, Math.min(60, DS.s * (e.deltaY < 0 ? 1.15 : 0.87))), wx = (mx - DS.x) / DS.s, wy = (my - DS.y) / DS.s; DS.s = ns; DS.x = mx - wx * ns; DS.y = my - wy * ns; domRender(); }, { passive: false });
+  var cv = $('dcv');
+  panZoom(cv, {
+    cam: function () { return { x: DS.x, y: DS.y, s: DS.s }; }, minS: 3, maxS: 60,
+    set: function (x, y, s) { DS.x = x; DS.y = y; DS.s = s; },
+    after: function () { domRender(); },
+    tap: function (x, y) { domTap(x, y); }
+  });
   $('dDoneBtn').onclick = function () { SFX.tap(); closeDomain(); };
   $('dFitBtn').onclick = function () { SFX.tap(); domFit(); domRender(); };
   window.addEventListener('resize', function () { if (DS.ctx && $('domScreen').classList.contains('on')) { domResize(); domRender(); } });
