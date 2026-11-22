@@ -171,6 +171,9 @@ button{font-family:inherit;cursor:pointer;}
 #kBody h4{margin:10px 0 4px;color:#7a3a1a;}
 #kBody .small,.small{font-size:12px;color:#777;}
 .kodds{margin:8px 0;padding:6px 10px;background:#f3ead6;border-radius:8px;font-size:14px;}
+.kamt{display:flex;align-items:center;gap:10px;margin:6px 0;}
+.kamt input{flex:1;height:34px;accent-color:#c0392b;}
+.kamt b{min-width:96px;text-align:right;font-size:16px;}
 .kodds .g{color:#2f8a2f;}.kodds .y{color:#b08a00;}.kodds .r{color:#d9452f;}
 .kintro{display:flex;gap:12px;align-items:center;}
 .kintro .kcrest{width:72px;height:72px;}
@@ -399,7 +402,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v3.6';
+var VERSION = 'v3.7';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1953,13 +1956,23 @@ function recruit(S, pid, order) {   // order: {type: count}
   markCmd(P, 'recruit');
   return { ok: true, cost: cost, n: n };
 }
-function develop(S, pid) {
-  var P = S.provs[pid], cid = P.owner;
-  if (S.clans[cid].gold < DEVELOP_COST) return { ok: false, msg: 'お金が たりない（' + DEVELOP_COST + '金）' };
+// 内政：つかう お金（amount）を じぶんで きめる。たまった ぶん（P.devp）が DEVELOP_COST に なるごとに 石高 +1万石
+function devRate(S, pid) { var pp = offP(officerAt(S, pid)); return pp >= 80 ? 2 : Math.max(0.8, Math.min(1.5, 1 + (pp - 50) / 100)); }
+function devNeed(S, pid) { var P = S.provs[pid], left = maxKoku(pid) - P.koku; return left <= 0 ? 0 : Math.max(0, Math.ceil((left * DEVELOP_COST - (P.devp || 0)) / devRate(S, pid))); }
+function develop(S, pid, amount) {
+  var P = S.provs[pid], cid = P.owner, gold = S.clans[cid].gold;
+  amount = Math.round(amount === undefined ? DEVELOP_COST : amount);
   if (P.koku >= maxKoku(pid)) return { ok: false, msg: 'これいじょう ふやせない' };
-  var add = offP(officerAt(S, pid)) >= 80 ? 2 : 1;
-  S.clans[cid].gold -= DEVELOP_COST; P.koku = Math.min(maxKoku(pid), P.koku + add); markCmd(P, 'develop');
-  return { ok: true, add: add };
+  amount = Math.min(amount, devNeed(S, pid));
+  if (amount < 1) return { ok: false, msg: 'つかう お金を きめてね' };
+  if (gold < amount) return { ok: false, msg: 'お金が たりない' };
+  S.clans[cid].gold -= amount;
+  P.devp = (P.devp || 0) + amount * devRate(S, pid);
+  var add = 0;
+  while (P.devp >= DEVELOP_COST && P.koku < maxKoku(pid)) { P.devp -= DEVELOP_COST; P.koku++; add++; }
+  if (P.koku >= maxKoku(pid)) P.devp = 0;
+  markCmd(P, 'develop');
+  return { ok: true, add: add, prog: P.devp / DEVELOP_COST };
 }
 function moveUnits(S, from, to, uids) {
   var A = S.provs[from], B = S.provs[to];
@@ -2383,12 +2396,19 @@ function schemeOdds(S, from, to, kind) {
   return Math.max(0.1, Math.min(0.8, 0.3 + (myI - thI) / 150));
 }
 function totalArmy(S, cid) { var u = []; provsOf(S, cid).forEach(function (pid) { u = u.concat(S.provs[pid].units); }); return u; }
-function scheme(S, from, to, kind) {
+// 調略に つかう お金で せいこうの 見こみが かわる（きほんは SCHEME_COST）
+var SCHEME_MIN = 10, SCHEME_MAX = 120;
+function schemeOddsAmt(S, from, to, kind, amount) {
+  var p = schemeOdds(S, from, to, kind); if (p <= 0) return 0;
+  return Math.max(0.02, Math.min(0.9, p * Math.pow(amount / SCHEME_COST, 0.6)));
+}
+function scheme(S, from, to, kind, amount) {
   var A = S.provs[from], cid = A.owner, B = S.provs[to], tc = B.owner;
-  if (S.clans[cid].gold < SCHEME_COST) return { ok: false, msg: 'お金が たりない（' + SCHEME_COST + '金）' };
-  var p = schemeOdds(S, from, to, kind);
+  amount = Math.round(amount === undefined ? SCHEME_COST : Math.max(SCHEME_MIN, Math.min(SCHEME_MAX, amount)));
+  if (S.clans[cid].gold < amount) return { ok: false, msg: 'お金が たりない' };
+  var p = schemeOddsAmt(S, from, to, kind, amount);
   if (p <= 0) return { ok: false, msg: kind === 'submit' ? 'あいてが 大きすぎて したがわない' : 'もう 同盟して いる' };
-  S.clans[cid].gold -= SCHEME_COST; markCmd(A, 'scheme');
+  S.clans[cid].gold -= amount; markCmd(A, 'scheme');
   var me = officerAt(S, from), who = me ? me.name : CLANS[cid].lord;
   var win = cRand(S) < p;
   if (!win) {
@@ -4441,13 +4461,26 @@ function kRecruitBox() {
   upd();
 }
 // ---- 内政 ----
+// お金を えらぶ スライダー（500貫きざみ）
+function amtHtml(id, min, max, val) { return '<div class="kamt"><input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="5" value="' + val + '"><b id="' + id + 'V"></b></div>'; }
 function kDevelopBox() {
-  var P = KS.provs[kSel], mx = Math.round(PROV_BY[kSel].koku * 1.5);
-  var ok = KS.clans[KS.player].gold >= DEVELOP_COST && P.koku < mx;
-  var add = offP(officerAt(KS, kSel)) >= 80 ? 2 : 1;
-  kModal('内政（' + PROV_BY[kSel].name + '）', '<p>💰' + kan(DEVELOP_COST) + ' つかって 田畑を ひらき、石高を <b>+' + add + '万石</b> ふやします。' + (add > 1 ? '（城主の 政が 高いので 2ばい！）' : '') + '</p><p class="small">いまの 石高 ' + P.koku + '万石（さいだい ' + mx + '）。石高が ふえると 秋の 年貢が ふえる。</p>',
-    [{ label: '🌾 内政する', cls: 'act', disabled: !ok, fn: function () { kSnap('内政'); var r = develop(KS, kSel); if (!r.ok) kUndoStack.pop(); if (r.ok) { logC(KS, PROV_BY[kSel].name + 'の 石高が ' + KS.provs[kSel].koku + '万石に ふえた', 'good'); kSave(); } kCloseModal(); kUpdate(); } },
+  var P = KS.provs[kSel], mx = maxKoku(kSel), gold = KS.clans[KS.player].gold, need = devNeed(KS, kSel), rate = devRate(KS, kSel);
+  var hi = Math.max(0, Math.min(gold, need)), one = Math.ceil(DEVELOP_COST / rate / 5) * 5, def = Math.min(hi, one);
+  var full = P.koku >= mx;
+  var body = '<p>お金を つかって 田畑を ひらく。つかった ぶんが たまって <b>💰' + kan(Math.ceil(DEVELOP_COST / rate)) + 'ごとに 石高 +1万石</b>' + (rate !== 1 ? '（城主の 政で ' + (rate > 1 ? 'おとく' : 'すこし 高い') + '）' : '') + '。のこりは つぎの 内政に もちこす。</p>' +
+    '<p class="small">いまの 石高 ' + P.koku + '万石（さいだい ' + mx + '）　たまっている ぶん ' + Math.round((P.devp || 0) / DEVELOP_COST * 100) + '%</p>' +
+    (full ? '<p class="r">これいじょう ふやせない</p>' : hi < 5 ? '<p class="r">お金が たりない</p>' : '<h4>つかう お金</h4>' + amtHtml('kDevAmt', 5, Math.max(5, hi - hi % 5 || 5), Math.max(5, def - def % 5)) + '<div id="kDevRes" class="kodds"></div>');
+  kModal('内政（' + PROV_BY[kSel].name + '）', body,
+    [{ label: '🌾 内政する', cls: 'act', id: 'kDevOk', disabled: full || hi < 5, fn: function () { var amt = +$('kDevAmt').value; kSnap('内政'); var r = develop(KS, kSel, amt); if (!r.ok) { kUndoStack.pop(); banner(r.msg, 1200); return; }
+        logC(KS, PROV_BY[kSel].name + 'で 内政（💰' + kan(amt) + '）' + (r.add ? '　石高が ' + KS.provs[kSel].koku + '万石に ふえた' : '　石高まで あと ' + Math.round((1 - r.prog) * 100) + '%'), 'good'); kSave(); kCloseModal(); kUpdate(); } },
      { label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
+  var sl = $('kDevAmt'); if (!sl) return;
+  function upd() {
+    var a = +sl.value, tot = (P.devp || 0) + a * rate, add = Math.min(mx - P.koku, Math.floor(tot / DEVELOP_COST)), rest = add >= mx - P.koku ? 0 : tot - add * DEVELOP_COST;
+    sl.nextElementSibling.textContent = '💰' + kan(a);
+    $('kDevRes').innerHTML = 'けっか：石高 <b class="g">+' + add + '万石</b>' + (rest > 0 ? '（つぎの +1まで ' + Math.round(rest / DEVELOP_COST * 100) + '% たまる）' : '') + '　のこり 💰' + kan(gold - a);
+  }
+  sl.oninput = upd; upd();
 }
 // ---- 移動 ----
 function kMoveBox(from, to) {
@@ -4526,18 +4559,29 @@ function kOfficersBox() {
 // ---- 調略 ----
 function kSchemeBox(from, to) {
   var B = KS.provs[to], tc = B.owner, me = officerAt(KS, from), th = officerAt(KS, to);
-  function pct(k) { return Math.round(schemeOdds(KS, from, to, k) * 100); }
-  var ps = pct('submit'), pn = pct('naio'), pa = pct('ally');
-  var gold = KS.clans[KS.player].gold, poor = gold < SCHEME_COST;
+  var gold = KS.clans[KS.player].gold, hi = Math.min(SCHEME_MAX, gold - gold % 5), poor = gold < SCHEME_MIN;
+  var def = Math.max(SCHEME_MIN, Math.min(hi, SCHEME_COST));
   var h = '<div class="kintro">' + crestHtml(tc, 52) + '<p><b>' + CLANS[tc].lord + '</b>（' + CLANS[tc].name + '・' + provsOf(KS, tc).length + 'りょうち）<br><small>' + PROV_BY[to].name + 'の 城主：' + offTxt(th) + '</small></p></div>' +
-    '<p class="small">はたらく 人：' + offTxt(me) + (me ? '' : '（城主が いないと せいこうしにくい）') + '　💰' + kan(SCHEME_COST) + '</p>' +
+    '<p class="small">はたらく 人：' + offTxt(me) + (me ? '' : '（城主が いないと せいこうしにくい）') + '</p>' +
+    (poor ? '<p class="r">お金が たりない（💰' + kan(SCHEME_MIN) + 'から）</p>' : '<h4>つかう お金（おおいほど せいこうしやすい）</h4>' + amtHtml('kSchAmt', SCHEME_MIN, Math.max(SCHEME_MIN, hi), def)) +
     '<div class="kschemes">' +
-    '<button class="kopt" id="ksSubmit"' + (ps <= 0 || poor ? ' disabled' : '') + '><b>🙇 したがわせる</b><small>家ごと みかたに（りょうち・へい・家臣も）。小さな 家だけ。</small><em>' + (ps <= 0 ? 'むり' : ps + '%') + '</em></button>' +
-    '<button class="kopt" id="ksNaio"' + (poor ? ' disabled' : '') + '><b>🦊 内応させる</b><small>' + PROV_BY[to].name + 'の 城の へいを よわらせ、つぎの 攻撃で 城を もろくする。</small><em>' + pn + '%</em></button>' +
-    '<button class="kopt" id="ksAlly"' + (pa <= 0 || poor ? ' disabled' : '') + '><b>🤝 同盟を むすぶ</b><small>おたがい せめなくなる（政が 大事）。</small><em>' + (pa <= 0 ? '同盟ずみ' : pa + '%') + '</em></button></div>';
+    '<button class="kopt" id="ksSubmit"><b>🙇 したがわせる</b><small>家ごと みかたに（りょうち・へい・家臣も）。小さな 家だけ。</small><em id="ksSubmitP"></em></button>' +
+    '<button class="kopt" id="ksNaio"><b>🦊 内応させる</b><small>' + PROV_BY[to].name + 'の 城の へいを よわらせ、つぎの 攻撃で 城を もろくする。</small><em id="ksNaioP"></em></button>' +
+    '<button class="kopt" id="ksAlly"><b>🤝 同盟を むすぶ</b><small>おたがい せめなくなる（政が 大事）。</small><em id="ksAllyP"></em></button></div>';
   kModal('調略（' + PROV_BY[from].name + ' → ' + PROV_BY[to].name + '）', h, [{ label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
+  function amt() { return $('kSchAmt') ? +$('kSchAmt').value : SCHEME_COST; }
+  function upd() {
+    var a = amt();
+    if ($('kSchAmt')) $('kSchAmt').nextElementSibling.textContent = '💰' + kan(a);
+    [['ksSubmit', 'submit', 'むり'], ['ksNaio', 'naio', 'むり'], ['ksAlly', 'ally', '同盟ずみ']].forEach(function (q) {
+      var pc = Math.round(schemeOddsAmt(KS, from, to, q[1], a) * 100);
+      $(q[0] + 'P').textContent = pc <= 0 ? q[2] : pc + '%'; $(q[0]).disabled = poor || pc <= 0;
+    });
+  }
+  if ($('kSchAmt')) $('kSchAmt').oninput = upd;
+  upd();
   function go(kind) {
-    var r = scheme(KS, from, to, kind); kUndoClear(); kMode = 'idle'; kCloseModal(); kSave();
+    var r = scheme(KS, from, to, kind, amt()); kUndoClear(); kMode = 'idle'; kCloseModal(); kSave();
     if (!r.ok) { banner(r.msg, 1400); kUpdate(); return; }
     (r.win ? SFX.win : SFX.lose)();
     banner(r.win ? '調略 せいこう！' : '調略 しっぱい…', 1400);
