@@ -440,7 +440,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v4.3';
+var VERSION = 'v4.4';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1964,17 +1964,27 @@ function income(S, cid) {
 }
 function totalKoku(S, cid) { var k = 0; provsOf(S, cid).forEach(function (pid) { k += S.provs[pid].koku; }); return k; }
 function totalUnits(S, cid) { var n = 0; provsOf(S, cid).forEach(function (pid) { n += S.provs[pid].units.length; }); if (S.castles) for (var k in S.castles) if (S.castles[k].owner === cid) n += S.castles[k].units.length; return n; }
-// 支城の 守備兵を 出し入れ（その国の 本城の 軍と）
-function garrison(S, castleId, uidsIn, uidsOut) {
-  var C0 = S.castles[castleId], P = S.provs[C0.prov];
-  if (C0.owner !== P.owner) return { ok: false, msg: '本城が じぶんの もので ないと 出し入れ できない' };
+// 支城と 兵を 出し入れ できる 国：本城が 同じ 家なら 本城、ちがえば となりの じぶんの 国
+function castleLinks(S, castleId) {
+  var C0 = S.castles[castleId]; if (!C0 || !C0.owner) return [];
+  if (S.provs[C0.prov].owner === C0.owner) return [C0.prov];
+  return ADJ[C0.prov].filter(function (q) { return S.provs[q].owner === C0.owner && routeOf(C0.prov, q) && routeOf(C0.prov, q).type !== 'none'; });
+}
+// 支城の 守備兵を 出し入れ（pid の 軍と。省略で 本城）
+function garrison(S, castleId, uidsIn, uidsOut, pid) {
+  var C0 = S.castles[castleId], links = castleLinks(S, castleId);
+  pid = pid || links[0];
+  if (!pid || links.indexOf(pid) < 0) return { ok: false, msg: '兵を 出し入れ できる みかたの 国が ない' };
+  var P = S.provs[pid];
   var mvIn = P.units.filter(function (u) { return uidsIn.indexOf(u.uid) >= 0; }), mvOut = C0.units.filter(function (u) { return uidsOut.indexOf(u.uid) >= 0; });
   if (C0.units.length - mvOut.length + mvIn.length > 8) return { ok: false, msg: '支城には 8たいまで' };
-  if (P.units.length - mvIn.length + mvOut.length > PROV_CAP) return { ok: false, msg: '本城に はいりきらない' };
+  if (P.units.length - mvIn.length + mvOut.length > PROV_CAP) return { ok: false, msg: PROV_BY[pid].name + 'に はいりきらない' };
   P.units = P.units.filter(function (u) { return uidsIn.indexOf(u.uid) < 0; }).concat(mvOut);
   C0.units = C0.units.filter(function (u) { return uidsOut.indexOf(u.uid) < 0; }).concat(mvIn);
   return { ok: true };
 }
+// おとした 支城に のこす 守備兵の かず
+var BRANCH_KEEP = 3;
 function unitCost(type) { return UNIT_TYPES[type].cost * GOLD_PER_COST; }
 function recruitCost(S, pid, type) { var o = S.officers ? officerAt(S, pid) : null; return Math.max(5, Math.round(unitCost(type) * (1 - (offP(o) - 50) / 400))); }
 function maxKoku(pid) { return Math.round(PROV_BY[pid].koku * 1.5); }   // CPU の 内政の めやすに だけ つかう（ルールの 上限では ない）
@@ -2362,9 +2372,16 @@ function applyBattle(S, b, res) {
     if (res.winner === 'atk') {
       var pr = takePrisoners(S, b, res.defSurv); res.defSurv = pr.rest; res.prisMen = pr.men;
       var winners = res.atkSurv.concat(pr.joined);
-      C0.owner = b.atkClan; C0.units = winners.slice(0, 8);
-      // 支城に はいりきらない へいは 出陣した 国へ もどる
-      if (winners.length > 8 && A.owner === b.atkClan) A.units = A.units.concat(winners.slice(8, 8 + Math.max(0, PROV_CAP - A.units.length)));
+      C0.owner = b.atkClan;
+      // 支城には 3隊だけ のこす（降参した へいと よわった 隊から）。のこりは 出陣した 国へ もどる
+      var jid = pr.joined.map(function (u) { return u.uid; });
+      var order = winners.slice().sort(function (x, y) { return (jid.indexOf(y.uid) >= 0) - (jid.indexOf(x.uid) >= 0) || x.hp - y.hp; });
+      var room = A.owner === b.atkClan ? Math.max(0, PROV_CAP - A.units.length) : 0;
+      var keep = b.atkClan === S.player ? BRANCH_KEEP : 8;   // CPU は これまでどおり 支城に つめる
+      var nKeep = Math.min(8, Math.max(Math.min(keep, order.length), order.length - room));
+      C0.units = order.slice(0, nKeep);
+      if (A.owner === b.atkClan) A.units = A.units.concat(order.slice(nKeep));
+      res.keptN = nKeep; res.backN = order.length - nKeep;
       if (pr.men) logC(S, 'てきの へい ' + pr.men.toLocaleString('ja-JP') + '人が 降参して ' + atkName + 'に くわわった', b.atkClan === S.player ? 'good' : 'sys');
       // まけた 守りは その国の 本城（自分の 国なら）か となりの 自分の 国へ
       if (b.defClan && res.defSurv.length) {
@@ -4839,22 +4856,24 @@ function pickerUids(units) {
 
 // ---- 支城 ----
 function kCastleBox(id) {
-  var C0 = KS.castles[id], P = KS.provs[C0.prov], mine = C0.owner === KS.player, canG = mine && P.owner === KS.player && KS.phase === 'player';
+  var C0 = KS.castles[id], P = KS.provs[C0.prov], mine = C0.owner === KS.player, links = mine && KS.phase === 'player' ? castleLinks(KS, id) : [];
   var body = '<div class="kintro">' + (C0.owner ? crestHtml(C0.owner, 48) : '') + '<p><b>' + brName(id) + '</b>（' + PROV_BY[C0.prov].name + 'の 支城・' + CASTLES[castleIndexOf(brTpl(id))].kana + '）<br>もちぬし：' + (C0.owner ? CLANS[C0.owner].name : 'なし') + '</p></div>' +
     '<p class="small">守備兵 ' + menStr(menTotal(C0.units)) + '（' + (C0.units.length ? unitSummary(C0.units) : 'なし') + '）</p>' +
-    '<p class="small">' + (P.owner === C0.owner ? '本城と 同じ 家。せめられると 本城から 後詰めが くる。' : C0.owner === KS.player ? 'てきの 国の 中の みかたの 城。ここが あれば ' + castleNameOf(KS, C0.prov) + '（本城）を せめられる。国の 収入の 1/5 が はいる。' : 'この 城を おとさないと、この 道から 本城へは せめられない。') + '</p>';
+    '<p class="small">' + (P.owner === C0.owner ? '本城と 同じ 家。せめられると 本城から 後詰めが くる。' : C0.owner === KS.player ? 'てきの 国の 中の みかたの 城。ここが あれば ' + castleNameOf(KS, C0.prov) + '（本城）を せめられる。国の 収入の 1/5 が はいる。' : 'この 城を おとさないと、この 道から 本城へは せめられない。') + '</p>' +
+    (mine && P.owner !== C0.owner ? '<p class="small">兵の 出し入れ：' + (links.length ? links.map(function (q) { return PROV_BY[q].name; }).join('・') + 'と できる（行為は つかわない）' : '<span class="r">となりに みかたの 国が ないので できない</span>') + '</p>' : '');
   var btns = [];
-  if (canG) {
-    btns.push({ label: '⬆ 守備兵を いれる', cls: 'act', disabled: !P.units.length || C0.units.length >= 8, fn: function () { kGarrisonBox(id, 'in'); } });
-    btns.push({ label: '⬇ 本城へ もどす', cls: 'act sub', disabled: !C0.units.length, fn: function () { kGarrisonBox(id, 'out'); } });
-  }
+  links.forEach(function (q) {
+    var nm = q === C0.prov ? '本城' : PROV_BY[q].name, Q = KS.provs[q];
+    btns.push({ label: '⬆ ' + nm + 'から 守備兵を いれる', cls: 'act', disabled: !Q.units.length || C0.units.length >= 8, fn: function () { kGarrisonBox(id, 'in', q); } });
+    btns.push({ label: '⬇ ' + nm + 'へ もどす', cls: 'act sub', disabled: !C0.units.length, fn: function () { kGarrisonBox(id, 'out', q); } });
+  });
   btns.push({ label: 'とじる', cls: 'act sub', fn: kCloseModal });
   kModal('🏯 支城', body, btns);
 }
-function kGarrisonBox(id, dir) {
-  var C0 = KS.castles[id], P = KS.provs[C0.prov], src = dir === 'in' ? P.units : C0.units;
-  kModal(dir === 'in' ? brName(id) + 'に 守備兵を いれる' : brName(id) + 'から 本城へ もどす', '<p class="small">' + (dir === 'in' ? '本城の 軍から えらぶ（支城は 8たいまで）' : '支城の 守備兵から えらぶ') + '</p>' + pickerHtml(src, 0), [
-    { label: 'けってい', cls: 'act', fn: function () { var ids = pickerUids(src); kSnap('守備兵'); var r = dir === 'in' ? garrison(KS, id, ids, []) : garrison(KS, id, [], ids); if (!r.ok) { kUndoStack.pop(); banner(r.msg, 1400); return; } kSave(); kCloseModal(); kUpdate(); } },
+function kGarrisonBox(id, dir, pid) {
+  var C0 = KS.castles[id], P = KS.provs[pid], src = dir === 'in' ? P.units : C0.units, nm = pid === C0.prov ? '本城' : PROV_BY[pid].name;
+  kModal(dir === 'in' ? brName(id) + 'に 守備兵を いれる' : brName(id) + 'から ' + nm + 'へ もどす', '<p class="small">' + (dir === 'in' ? nm + 'の 軍から えらぶ（支城は 8たいまで）' : '支城の 守備兵から えらぶ') + '</p>' + pickerHtml(src, 0), [
+    { label: 'けってい', cls: 'act', fn: function () { var ids = pickerUids(src); kSnap('守備兵'); var r = dir === 'in' ? garrison(KS, id, ids, [], pid) : garrison(KS, id, [], ids, pid); if (!r.ok) { kUndoStack.pop(); banner(r.msg, 1400); return; } kSave(); kCloseModal(); kUpdate(); } },
     { label: 'やめる', cls: 'act sub', fn: function () { kCastleBox(id); } }]);
   pickerBind();
 }
@@ -4957,7 +4976,8 @@ function kFinishBattle(b, res, auto) {
   (win ? SFX.win : SFX.lose)();
   var img = SPR[(win ? charById(KS.face).win : charById(KS.face).lose) || 'fute_joy'];
   kModal(win ? 'しょうり！' : 'はいぼく…', '<div class="kres"><img src="' + img + '" alt=""><p><b>' + txt + '</b>' + (auto ? '（おまかせ）' : '') + '</p>' +
-    '<p class="small">みかた ' + menStr(before) + ' → ' + menStr(after) + '　／　てき ' + menStr(eBefore) + ' → ' + menStr(eAfter) + fledTxt + (res.prisMen ? '<br>' + (pSide === 'atk' ? '🙇 てきの へい ' + menStr(res.prisMen) + 'が 降参して みかたに くわわった' : '🙇 みかたの へい ' + menStr(res.prisMen) + 'が てきに 降参した') : '') + '</p></div>',
+    '<p class="small">みかた ' + menStr(before) + ' → ' + menStr(after) + '　／　てき ' + menStr(eBefore) + ' → ' + menStr(eAfter) + fledTxt + (res.prisMen ? '<br>' + (pSide === 'atk' ? '🙇 てきの へい ' + menStr(res.prisMen) + 'が 降参して みかたに くわわった' : '🙇 みかたの へい ' + menStr(res.prisMen) + 'が てきに 降参した') : '') +
+    (b.castleId && win && pSide === 'atk' && res.keptN ? '<br>🏯 ' + b.castleName + 'に ' + res.keptN + '隊を のこし' + (res.backN ? '、' + res.backN + '隊は ' + PROV_BY[b.from].name + 'へ もどった' : 'た') : '') + '</p></div>',
     [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); kAfterBattle(); } }]);
 }
 function kAfterBattle() {
