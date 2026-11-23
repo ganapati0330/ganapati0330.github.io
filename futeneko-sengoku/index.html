@@ -505,7 +505,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v9.1';
+var VERSION = 'v9.2';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -3616,7 +3616,64 @@ var OFFICERS = [
   // 浦上家・三村家
   { id:'yoshiie',  name:'宇喜多能家', st:[74,70,80], c:'urakami', y0:1523, y1:1534 },
   { id:'naoie',    name:'宇喜多直家', st:[76,82,99], c:'urakami', y0:1550, y1:1581 },
-  { id:'motochika',name:'三村元親',   st:[76,58,60], c:'mimura', y0:1555, y1:1575 }
+  { id:'motochika',name:'三村元親',   st:[76,58,60], c:'mimura', y0:1555, y1:1575 },
+  // ---- ふやした 武将（史実を もとに） ----
+  // 毛利家
+  { id:'watanabeK',name:'渡辺通',     st:[72,45,50], c:'mori', y0:1523, y1:1543 },
+  { id:'kodamaN',  name:'児玉就方',   st:[70,55,60], c:'mori', y0:1540, y1:1586 },
+  { id:'hiragaH',  name:'平賀広相',   st:[62,58,60], c:'mori', y0:1548, y1:1567 },
+  { id:'amanoT',   name:'天野隆重',   st:[72,60,62], c:'ouchi', cs:{ '1554':'mori' }, y0:1530, y1:1584, df:{ y:1551, to:'mori' } },
+  { id:'sugihara', name:'杉原盛重',   st:[82,55,68], c:'mori', y0:1553, y1:1581 },
+  { id:'murakami', name:'村上武吉',   st:[80,62,74], c:'mori', y0:1555, y1:1604 },
+  { id:'masuda',   name:'益田藤兼',   st:[66,68,64], c:'ouchi', y0:1550, y1:1597, df:{ y:1557, to:'mori' } },
+  { id:'motoharuN',name:'吉川元長',   st:[82,60,66], c:'mori', y0:1565, y1:1587 },
+  { id:'hiroie',   name:'吉川広家',   st:[74,72,82], c:'mori', y0:1577, y1:1625 },
+  { id:'motokiyo', name:'毛利元清',   st:[72,68,70], c:'mori', y0:1566, y1:1597 },
+  { id:'hidekane', name:'毛利秀包',   st:[74,62,64], c:'mori', y0:1582, y1:1601 },
+  { id:'ekei',     name:'安国寺恵瓊', st:[22,84,92], c:'mori', y0:1569, y1:1600 },
+  { id:'shimizu',  name:'清水宗治',   st:[72,66,74], c:'mimura', cs:{ '1523':'sho' }, y0:1555, y1:1582, df:{ y:1567, to:'mori' } },
+  // 大内家・陶家
+  { id:'sugiO',    name:'杉興運',     st:[62,64,60], c:'ouchi', y0:1523, y1:1551 },
+  { id:'miyagawa', name:'宮川房長',   st:[70,40,50], c:'ouchi', y0:1548, y1:1554 },
+  { id:'miuraF',   name:'三浦房清',   st:[66,40,48], c:'ouchi', y0:1548, y1:1555 },
+  { id:'naitoT',   name:'内藤隆世',   st:[60,55,52], c:'ouchi', y0:1551, y1:1557 },
+  // 尼子家
+  { id:'akana',    name:'赤穴光清',   st:[72,48,58], c:'amago', y0:1523, y1:1542 },
+  { id:'tagoT',    name:'多胡辰敬',   st:[68,74,82], c:'amago', y0:1523, y1:1562 },
+  { id:'okihisa',  name:'塩冶興久',   st:[70,45,48], c:'amago', y0:1523, y1:1534 },
+  { id:'kawazoe',  name:'河副久盛',   st:[60,60,60], c:'amago', y0:1540, y1:1566 },
+  { id:'yonehara', name:'米原綱寛',   st:[66,50,56], c:'amago', y0:1550, y1:1571 },
+  { id:'yoshihisa',name:'尼子義久',   st:[52,62,58], c:'amago', y0:1556, y1:1566 },
+  { id:'tomohisa', name:'尼子倫久',   st:[60,55,55], c:'amago', y0:1561, y1:1566 },
+  { id:'katsuhisa',name:'尼子勝久',   st:[62,60,64], c:'amago', y0:1568, y1:1578 },
+  // 安芸武田家・小早川家・山内家
+  { id:'nobuzane', name:'武田信実',   st:[50,48,46], c:'takeda', y0:1530, y1:1541 },
+  { id:'masahira', name:'小早川正平', st:[58,55,52], c:'kobayakawa', y0:1538, y1:1543 },
+  { id:'okikage',  name:'小早川興景', st:[55,56,52], c:'kobayakawa', y0:1523, y1:1541 },
+  { id:'takamichi',name:'山内隆通',   st:[62,60,60], c:'yamanouchi', cs:{ '1554':'mori' }, y0:1538, y1:1598 },
+  // 山名家
+  { id:'suketoyo', name:'山名祐豊',   st:[58,60,58], c:'yamana', y0:1528, y1:1580 },
+  { id:'kakiya',   name:'垣屋続成',   st:[64,58,62], c:'yamana', y0:1523, y1:1573 },
+  { id:'takanobu', name:'武田高信',   st:[74,50,60], c:'yamana', y0:1550, y1:1582 },
+  { id:'toyokuni', name:'山名豊国',   st:[50,64,64], c:'yamana', y0:1565, y1:1626 },
+  // 吉見家・小笠原家・庄家・三村家
+  { id:'masayori', name:'吉見正頼',   st:[74,64,70], c:'yoshimi', y0:1530, y1:1588, sameAs:'吉見正頼' },
+  { id:'shimose',  name:'下瀬頼定',   st:[66,52,58], c:'yoshimi', y0:1550, y1:1590 },
+  { id:'hiroyori', name:'吉見広頼',   st:[58,58,58], c:'yoshimi', y0:1555, y1:1598 },
+  { id:'nagakatsu',name:'小笠原長雄', st:[70,56,60], c:'ogasawara', y0:1540, y1:1569 },
+  { id:'shoT',     name:'庄高資',     st:[62,50,52], c:'sho', y0:1545, y1:1571 },
+  { id:'iechika',  name:'三村家親',   st:[80,66,70], c:'mimura', cs:{ '1523':'sho' }, y0:1540, y1:1566, sameAs:'三村家親' },
+  { id:'chikashige',name:'三村親成',  st:[62,64,68], c:'mimura', y0:1550, y1:1604 },
+  { id:'ishikawa', name:'石川久式',   st:[62,58,56], c:'mimura', y0:1560, y1:1575 },
+  // 浦上家・宇喜多家
+  { id:'masamune', name:'浦上政宗',   st:[60,60,58], c:'urakami', y0:1531, y1:1564 },
+  { id:'munekage', name:'浦上宗景',   st:[74,72,78], c:'urakami', y0:1540, y1:1580, sameAs:'浦上宗景' },
+  { id:'shimamura',name:'島村盛実',   st:[68,48,52], c:'urakami', y0:1523, y1:1559 },
+  { id:'tadaie',   name:'宇喜多忠家', st:[62,52,54], c:'urakami', y0:1555, y1:1609 },
+  { id:'togawa',   name:'戸川秀安',   st:[72,60,62], c:'urakami', y0:1560, y1:1597 },
+  { id:'akashi',   name:'明石景親',   st:[60,66,66], c:'urakami', y0:1560, y1:1600 },
+  { id:'okaI',     name:'岡家利',     st:[62,64,60], c:'urakami', y0:1565, y1:1592 },
+  { id:'osafune',  name:'長船貞親',   st:[68,50,50], c:'urakami', y0:1565, y1:1589 }
 ];
 var OFF_BY = {}; OFFICERS.forEach(function (o) { OFF_BY[o.id] = o; });
 function offClan(def, S) { return (def.cs && def.cs[S.scenario]) || def.c; }
