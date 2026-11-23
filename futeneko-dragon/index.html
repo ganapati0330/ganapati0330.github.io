@@ -805,6 +805,11 @@ button{font-family:inherit;cursor:pointer;border:none}
 .meic.fl .md{left:50px;transform:scaleX(-1)}
 .leaflet-top.leaflet-left{top:52px}
 .leaflet-touch .leaflet-bar a{width:38px;height:38px;line-height:38px;font-size:22px}
+.dpad{position:absolute;right:10px;bottom:240px;z-index:2001;width:150px;height:150px;touch-action:none}
+.dpad button{position:absolute;width:52px;height:52px;border-radius:14px;background:rgba(30,20,60,.72);color:#fff;font-size:22px;border:2px solid #fff8;box-shadow:0 3px 0 rgba(0,0,0,.3);touch-action:none;-webkit-user-select:none;user-select:none}
+.dpad button.on{background:#e8812a}
+.dpad .du{left:49px;top:0}.dpad .dd{left:49px;bottom:0}.dpad .dl{left:0;top:49px}.dpad .dr{right:0;top:49px}
+@media (max-height:500px) and (orientation:landscape){.dpad{left:10px;right:auto;bottom:10px!important}}
 @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
 </style>
@@ -843,6 +848,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 <section id="mapScr" class="screen">
   <div id="dmap"></div>
   <div class="mtop"><button class="hbtn" id="mBack">← こやへ</button><div class="mttl">🗺️ ドラゴンさがし</div><div class="pill2">🔎 きょう <span id="mSteps">0</span></div></div>
+  <div class="dpad" id="dpad"><button data-k="ArrowUp" class="du">▲</button><button data-k="ArrowLeft" class="dl">◀</button><button data-k="ArrowRight" class="dr">▶</button><button data-k="ArrowDown" class="dd">▼</button></div>
   <div class="mcard" id="mCard"></div>
 </section>
 
@@ -859,7 +865,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.3';
+const VER='1.4';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1580,8 +1586,11 @@ function startGeo(force){
   if(GEO.me&&!force)return;
   const fallback=()=>{GEO.state='ok';setMe(G.mapPos||HOME_LL,true);if(!G.mapPos)toast('いまの ばしょが わからないので','とうきょうえきから スタート！');renderMapCard();};
   if(!navigator.geolocation){fallback();return;}
+  // いちの きょかを まっている あいだも うごけるように、まず かりの ばしょで スタート
+  if(!GEO.me){setMe(G.mapPos||HOME_LL,true);}
+  const t0=MOVE.walked||0;
   GEO.state='pending';renderMapCard();
-  try{navigator.geolocation.getCurrentPosition(p=>{setMe({lat:p.coords.latitude,lng:p.coords.longitude},true);toast('📍 いまの ばしょから スタート！');renderMapCard();},
+  try{navigator.geolocation.getCurrentPosition(p=>{GEO.state='ok';if(!force&&(MOVE.walked||0)>t0+30){renderMapCard();return;}setMe({lat:p.coords.latitude,lng:p.coords.longitude},true);toast('📍 いまの ばしょから スタート！');renderMapCard();},
     err=>{GEO.geoErr=err&&err.code===1?'denied':'fail';fallback();},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});}catch(e){fallback();}
 }
 function stopGeo(){GSTEP.anchor=null;if(GEO.watch!==null){try{navigator.geolocation.clearWatch(GEO.watch);}catch(e){}GEO.watch=null;}}
@@ -1595,7 +1604,7 @@ function mapTick(dt){
   if(!MAPV.on||!GEO.me||!MAPV.map)return;
   let vx=0,vy=0;const k=MOVE.keys;
   if($('modal').classList.contains('on')){setMoving(false);return;}
-  if(k.ArrowLeft||k.KeyA)vx-=1;if(k.ArrowRight||k.KeyD)vx+=1;if(k.ArrowUp||k.KeyW)vy+=1;if(k.ArrowDown||k.KeyS)vy-=1;
+  if(k.ArrowLeft||k.KeyA||k.padArrowLeft)vx-=1;if(k.ArrowRight||k.KeyD||k.padArrowRight)vx+=1;if(k.ArrowUp||k.KeyW||k.padArrowUp)vy+=1;if(k.ArrowDown||k.KeyS||k.padArrowDown)vy-=1;
   let lim=Infinity;
   if(vx||vy)MOVE.target=null;
   else if(MOVE.target){const d=distM(GEO.me,MOVE.target);if(d<1){MOVE.target=null;}else{const cosl=Math.cos(GEO.me.lat*Math.PI/180);vx=(MOVE.target.lng-GEO.me.lng)*111320*cosl;vy=(MOVE.target.lat-GEO.me.lat)*110540;lim=d;}}
@@ -1605,6 +1614,7 @@ function mapTick(dt){
   const m=Math.min(MOVE.speed*dt,lim);
   if(Math.abs(vx)>0.25)MOVE.face=vx>0?1:-1;
   setMoving(true);
+  MOVE.walked=(MOVE.walked||0)+m;
   setMe(offsetLL(GEO.me,vx*m,vy*m));
   MOVE.uiT+=dt;if(MOVE.uiT>0.4){MOVE.uiT=0;renderMapCard();}
 }
@@ -1636,8 +1646,15 @@ function mapPointer(){
     }
   };
   el.addEventListener('pointerup',up);el.addEventListener('pointercancel',e=>{FLK.n=Math.max(0,FLK.n-1);if(FLK.id===e.pointerId)FLK.id=null;});
-  window.addEventListener('keydown',e=>{if(!MAPV.on||$('modal').classList.contains('on'))return;if(/^(Arrow|Key[WASD])/.test(e.code)){MOVE.keys[e.code]=true;e.preventDefault();}});
-  window.addEventListener('keyup',e=>{MOVE.keys[e.code]=false;});
+  const kc=e=>{const k=e.code||'';if(/^(Arrow(Up|Down|Left|Right)|Key[WASD])$/.test(k))return k;const m={ArrowUp:'ArrowUp',ArrowDown:'ArrowDown',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',Up:'ArrowUp',Down:'ArrowDown',Left:'ArrowLeft',Right:'ArrowRight',w:'KeyW',a:'KeyA',s:'KeyS',d:'KeyD',W:'KeyW',A:'KeyA',S:'KeyS',D:'KeyD'}[e.key];return m||'';};
+  document.addEventListener('keydown',e=>{if(!MAPV.on||$('modal').classList.contains('on'))return;const k=kc(e);if(k){MOVE.keys[k]=true;e.preventDefault();}},true);
+  document.addEventListener('keyup',e=>{const k=kc(e);if(k)MOVE.keys[k]=false;},true);
+  $('dpad').querySelectorAll('button').forEach(b=>{
+    const on=e=>{e.preventDefault();audioInit();MOVE.target=null;MOVE.keys['pad'+b.dataset.k]=true;b.classList.add('on');};
+    const off=()=>{MOVE.keys['pad'+b.dataset.k]=false;b.classList.remove('on');};
+    b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off);
+    b.addEventListener('contextmenu',e=>e.preventDefault());
+  });
   window.addEventListener('blur',()=>{MOVE.keys={};});
 }
 function loadPts(c){
@@ -1789,7 +1806,7 @@ function openMap(){
   if(!GEO.me){if(G.mapPos){setMe(G.mapPos,true);}else startGeo(true);}
   renderMapCard();
   if(!G.tut.map2){G.tut.map2=1;save();
-    modal('<h2>🗺️ ドラゴンの たまごさがし</h2><p>ちずの うえで フテ猫を うごかして<br>🥚 の ばしょへ いこう！</p><p style="font-size:13px;text-align:left">👆 <b>フリック</b>：その むきへ あるく<br>👆 <b>タッチ</b>：その ばしょまで あるく（🥚を タッチでも OK）<br>⌨️ <b>やじるしキー</b>：おしている あいだ あるく<br><br>🥚 の ちかく（40m）まで いくと ドラゴンが いるかも！<br>🍎 ごはん・🪙 コインも おちているよ。ポイントは まいにち かわるよ。</p><p style="font-size:13px">ドラゴンを そだてるのは <b>👣 おさんぽ</b>（ほんとうに あるいた ほすう）だよ。</p>',[{t:'さがしに いく！',c:'go'}]);}
+    modal('<h2>🗺️ ドラゴンの たまごさがし</h2><p>ちずの うえで フテ猫を うごかして<br>🥚 の ばしょへ いこう！</p><p style="font-size:13px;text-align:left">🎮 <b>やじるしボタン</b>（がめんの みぎ下）：おしている あいだ あるく<br>👆 <b>フリック</b>：その むきへ あるく<br>👆 <b>タッチ</b>：その ばしょまで あるく（🥚を タッチでも OK）<br>⌨️ <b>やじるしキー</b>：おしている あいだ あるく<br><br>🥚 の ちかく（40m）まで いくと ドラゴンが いるかも！<br>🍎 ごはん・🪙 コインも おちているよ。ポイントは まいにち かわるよ。</p><p style="font-size:13px">ドラゴンを そだてるのは <b>👣 おさんぽ</b>（ほんとうに あるいた ほすう）だよ。</p>',[{t:'さがしに いく！',c:'go'}]);}
 }
 function leaveMap(){
   MAPV.on=false;MOVE.keys={};MOVE.target=null;MOVE.moving=false;save();
@@ -1798,19 +1815,20 @@ function renderMapCard(){
   if(!MAPV.on||!G)return;
   const w=walkToday();$('mSteps').textContent=w.found;
   const d=cur();let h='';
-  if(GEO.state==='pending')h+='<div class="mrow">📡 いまの ばしょを しらべているよ…</div>';
-  else if(GEO.me){
+  if(GEO.state==='pending')h+='<div class="mrow"><small>📡 いまの ばしょを しらべているよ（そのあいだも うごけるよ）</small></div>';
+  if(GEO.me){
     const n=nearestPt();
     if(!GEO.pts)h+='<div class="mrow">🔎 まわりの ばしょを しらべているよ…</div>';
     else if(n){const c=CAT[n.pt.cat]||CAT.spot;h+='<div class="mrow"><b>'+c.i+' '+esc(n.pt.name)+'</b> まで あと <b>'+fmtM(n.d-PT_RADIUS)+'</b><br><small>'+(n.pt.kind==='dragon'?'🥚 ':'')+KIND_TXT[n.pt.kind]+'</small></div>';}
     else h+='<div class="mrow">この あたりの ポイントは ぜんぶ しらべたよ！ とおくへ いくか、またあした</div>';
     if(GEO.src==='grid'&&!GEO.loading)h+='<div class="mrow" style="font-size:11px">（ちずの データが よめないので「ひみつの ばしょ」を だしているよ）</div>';
   }
-  h+='<div class="mrow"><small>👆 フリック・タッチ・やじるしキーで フテ猫が あるくよ'+(MOVE.moving?'（タッチで とまる）':'')+'</small></div>';
+  h+='<div class="mrow"><small>👆 やじるしボタン・フリック・タッチで フテ猫が あるくよ'+(MOVE.moving?'（タッチで とまる）':'')+'</small></div>';
   if(d)h+='<div class="mrow"><b>🐉 '+esc(d.name)+' Lv'+d.lv+'</b>　<small>そだてるのは 👣おさんぽで</small></div>';
   else h+='<div class="mrow"><small>まだ ドラゴンが いないよ。🥚 の ばしょへ いってみよう！</small></div>';
   h+='<div class="mbtn2"><button id="mFood">🍎 ごはん</button><button id="mCenter">📍 ほんとうの いまの ばしょ</button></div>';
   $('mCard').innerHTML=h;
+  const dp=$('dpad');if(dp&&!(window.innerHeight<=500&&window.innerWidth>window.innerHeight))dp.style.bottom=($('mCard').offsetHeight+12)+'px';
   $('mFood').onclick=()=>{sfx.tap();if(!cur())return noDragon();openFood(()=>renderMapCard());};
   $('mCenter').onclick=()=>{sfx.tap();MOVE.target=null;startGeo(true);};
 }
