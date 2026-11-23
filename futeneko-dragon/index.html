@@ -944,7 +944,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.20';
+const VER='1.21';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1950,7 +1950,7 @@ function hatchStory(sp){
   sfx.find();
   modal('<h2>たまごが かえった！</h2><img src="dr/story4.webp" class="storyimg" alt=""><p><b>'+SP[sp].name+'</b>（'+SP[sp].el+'ぞくせい）の あかちゃんが うまれたよ！<br>あかりちゃんが そだてる ことに なりました。</p>',
     [{t:'なまえを つける',c:'go',f:()=>{G.dragons.push(d);seeDex(sp,true);G.sel=G.dragons.length-1;G.found++;G.story=1;save();
-      nameDragon(d,()=>{renderHome();modal('<h2>🐉 '+esc(d.name)+'と いっしょ！</h2><p style="text-align:left;font-size:14px">👣 <b>おさんぽ</b>：ほんとうに あるいた ほすうで そだつよ<br>🏁 <b>レース</b>：すぐに でられるよ<br>⚔️ <b>バトル</b>：Lv10から<br>🗺️ <b>さがす</b>：まちで ほかの たまごも みつかるかも</p>',[{t:'がんばるぞ！',c:'go'}]);});}}]);
+      nameDragon(d,()=>{renderHome();modal('<h2>🐉 '+esc(d.name)+'と いっしょ！</h2><p style="text-align:left;font-size:14px">👣 <b>おさんぽ</b>：ほんとうに あるいた ほすうで そだつよ<br>🏁 <b>レース</b>：すぐに でられるよ<br>⚔️ <b>バトル</b>：Lv10から<br>🗺️ <b>さがす</b>：Lv20に なったら つぎの たまごを さがしに いけるよ</p>',[{t:'がんばるぞ！',c:'go'}]);});}}]);
 }
 function drawStory(c,W2,H2){
   const st=mdStory,sp=st.sp,tt=T-st.t0;
@@ -2019,7 +2019,6 @@ function renderHome(){
   }
   const lv=d?d.lv:0;
   h+='</div><div class="acts">';
-  h+='<button class="act a1" id="aTown"><span>🗺️</span>さがす<small>たまごを さがす</small></button>';
   h+='<button class="act a2'+(d?'':' lock')+'" id="aWalk"><span>👣</span>おさんぽ<small>あるいて そだてる</small></button>';
   h+='<button class="act a3'+(d?'':' lock')+'" id="aFood"><span>🍎</span>ごはん<small>おなかいっぱい</small></button>';
   h+='<button class="act a4'+(d?'':' lock')+'" id="aRace"><span>🏁</span>レース<small>Lv1から</small></button>';
@@ -2027,6 +2026,8 @@ function renderHome(){
   h+='<button class="act a7" id="aShop"><span>🏪</span>おみせ<small>ごはんを かう</small></button>';
   h+='<button class="act a6" id="aDex"><span>📖</span>ずかん<small>'+Object.keys(G.dex).length+' / '+SP_ORDER.length+'</small></button>';
   h+='<button class="act a8" id="aHelp"><span>❔</span>あそびかた<small>&nbsp;</small></button>';
+  const tOpen=townOpen();
+  h+='<button class="act a1'+(tOpen?'':' lock')+'" id="aTown"><span>'+(tOpen?'🗺️':'🔒')+'</span>さがす<small>'+(tOpen?'つぎの たまご':'Lv20で ひらく')+'</small></button>';
   h+='</div>';
   w.innerHTML=h;
   if(G.dragons.length){
@@ -2038,7 +2039,9 @@ function renderHome(){
     });
   }
   w.querySelectorAll('button[data-egg]').forEach(b=>{b.onclick=()=>{if(G.dragons.length>=MAX_DRAGONS)return;const i=+b.dataset.egg,e=G.eggBox[i];G.eggBox.splice(i,1);save();const d2=makeDragon(e.sp,1);foundDragon(d2,'あずかっていた たまごが かえったよ！',()=>renderHome());};});
-  $('aTown').onclick=()=>{sfx.tap();openMap();};
+  $('aTown').onclick=()=>{sfx.tap();if(!townOpen())return townLocked();openMap();};
+  if(townOpen()&&!G.townOpen){G.townOpen=1;save();
+    modal('<h2>🗺️ つぎの たまごを さがしに いけるよ！</h2><p>'+esc((G.dragons.find(x=>x.lv>=TOWN_LV)||{name:'ドラゴン'}).name)+'が Lv'+TOWN_LV+'に なったね！<br>おおきく なったから、あかりちゃんは<br><b>つぎの たまご</b>を さがしに いけるように なったよ。</p><p style="font-size:13px">メニューの いちばん さいごの「さがす」から いけるよ</p>',[{t:'やったー！',c:'go'}]);sfx.find();}
   $('aWalk').onclick=()=>{sfx.tap();if(!d)return noDragon();if(d.hunger<5)return hungry(d);startScene(WALK);};
   $('aFood').onclick=()=>{sfx.tap();if(!d)return noDragon();openFood(()=>renderHome());};
   $('aRace').onclick=()=>{sfx.tap();if(!d)return noDragon();openRaceMenu();};
@@ -2048,8 +2051,13 @@ function renderHome(){
   $('aHelp').onclick=()=>{sfx.tap();openHelp();};
 }
 function openHelp(){
-  modal('<h2>❔ あそびかた</h2><div style="text-align:left;font-size:14px;line-height:1.6"><p>🗺️ <b>さがす</b>：ちずの うえで あかりちゃんを フリック・タッチ・やじるしで うごかして 🥚の ばしょへ。ちかくまで いくと ドラゴンが みつかるかも！ ばしょの しゅるいで みつかる ドラゴンが かわるよ（こうえん→かぜ、えき→かみなり、おみせ→ほのお、みずべ→みず、がっこう→こおり、じんじゃ→ひかり／よるは やみ）。</p><p>👣 <b>おさんぽ</b>：スマホを もって ほんとうに あるいた ほすうだけ すすむよ。3ぽで けいけんち 1。とちゅうの ものを タッチして とっくんも できる！</p><p>🏁 <b>レース</b>：Lv1から。⚔️ <b>バトル</b>：Lv10から（Lv25で ひっさつわざ）。</p><p style="color:#c0392b;font-size:12px">そとを あるく ときは まわりを よく みてね。くるまや でんしゃの いどうは かぞえないよ。</p></div>',[{t:'わかった',c:'go'}]);
+  modal('<h2>❔ あそびかた</h2><div style="text-align:left;font-size:14px;line-height:1.6"><p>🗺️ <b>さがす</b>（ドラゴンが Lv20に なると ひらく）：ちずの うえで あかりちゃんを フリック・タッチ・やじるしで うごかして 🥚の ばしょへ。ちかくまで いくと ドラゴンが みつかるかも！ ばしょの しゅるいで みつかる ドラゴンが かわるよ（こうえん→かぜ、えき→かみなり、おみせ→ほのお、みずべ→みず、がっこう→こおり、じんじゃ→ひかり／よるは やみ）。</p><p>👣 <b>おさんぽ</b>：スマホを もって ほんとうに あるいた ほすうだけ すすむよ。3ぽで けいけんち 1。とちゅうの ものを タッチして とっくんも できる！</p><p>🏁 <b>レース</b>：Lv1から。⚔️ <b>バトル</b>：Lv10から（Lv25で ひっさつわざ）。</p><p style="color:#c0392b;font-size:12px">そとを あるく ときは まわりを よく みてね。くるまや でんしゃの いどうは かぞえないよ。</p></div>',[{t:'わかった',c:'go'}]);
 }
+/* さがす：さいしょは とじていて、ドラゴンを Lv20に すると ひらく（いちど ひらけば ずっと） */
+const TOWN_LV=20;
+function townOpen(){return !!(G&&(G.townOpen||!G.dragons.length&&!(G.eggBox||[]).length||G.dragons.some(x=>x.lv>=TOWN_LV)));}
+function townLocked(){const best=G.dragons.reduce((m,x)=>Math.max(m,x.lv),0);
+  modal('<h2>🔒 さがす</h2><p>ドラゴンが <b>Lv'+TOWN_LV+'</b>に なったら、<br>つぎの たまごを さがしに いけるよ。</p><p>いまの いちばん たかい レベル：<b>Lv'+best+'</b><br>あと <b>'+Math.max(0,TOWN_LV-best)+'</b> レベル！</p><p style="font-size:13px">👣 おさんぽで いっぱい あるいて そだてよう</p>',[{t:'わかった',c:'go'}]);}
 function noDragon(){modal('<h2>ドラゴンが いないよ</h2><p>まずは まちを あるいて ドラゴンを さがそう！</p>',[{t:'さがしに いく',c:'go',f:()=>openMap()},{t:'あとで',c:'sub'}]);}
 function hungry(d){modal('<h2>おなか ぺこぺこ…</h2><p>'+esc(d.name)+'は おなかが すいて うごけない。<br>ごはんを あげよう！</p>',[{t:'ごはんを あげる',c:'go',f:()=>openFood(()=>{if(homeOn)renderHome();})},{t:'とじる',c:'sub'}]);}
 function locked(what,lv,d){modal('<h2>🔒 '+what+'は Lv'+lv+'から</h2><p>'+esc(d.name)+'は いま Lv'+d.lv+'。<br>おさんぽで そだてよう！</p>',[{t:'おさんぽへ',c:'go',f:()=>{if(d.hunger<5)hungry(d);else startScene(WALK);}},{t:'とじる',c:'sub'}]);}
