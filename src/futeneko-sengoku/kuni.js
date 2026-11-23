@@ -122,7 +122,7 @@ function kIntro() {
     '<ul class="khelp"><li>きせつ ごとに、じぶんの 国 1つで <b>3つまで</b> めいれい できる（出陣・徴兵・内政・移動・調略から、おなじ ものは 1回ずつ）。</li>' +
     '<li><b>出陣</b>：となりを せめる。<b>徴兵</b>：へいを やとう。<b>内政</b>：石高を ふやす。<b>移動</b>：へいを となりへ。<b>調略</b>：家ごと したがわせる・内応・同盟。</li>' +
     '<li><b>家臣</b>を 城主に すると つよくなる（武＝合戦、政＝お金・内政、智＝守り・調略）。👥ボタンで 家臣を 見よう。</li>' +
-    '<li>お金（貫）は <b>秋の 年貢</b>で まとめて はいる。ほかの きせつは 商いの 収入だけ。中国地方の ' + PROVS.length + 'の りょうちを ぜんぶ とれば 統一！</li>' + (teppoOk(KS) ? '' : '<li>鉄砲は ' + TEPPO_YEAR + '年に 伝わるまで やとえない。</li>') + '</ul>',
+    '<li>お金（貫）は <b>秋の 年貢</b>で まとめて はいる。ほかの きせつは 商いの 収入だけ。中国地方の ' + PROVS.length + 'の りょうちを ぜんぶ とれば 統一！</li>' + (teppoOk(KS) ? '' : '<li>鉄砲は ' + TEPPO_YEAR + '年の 伝来 までは 明（中国）などから 入る めずらしい 火器（ねだん ' + TEPPO_EARLY + 'ばい）。</li>') + '</ul>',
     [{ label: 'はじめる', cls: 'act', fn: function () { kCloseModal(); kShowEvents(); } }]);
 }
 function continueCampaign() {
@@ -407,6 +407,16 @@ function kNeighborInfo(pid) {
   return Object.keys(set).map(function (q) { var rt = routeOf(pid, q); return { q: q, type: rt ? rt.type : 'none', name: rt ? rt.name : null }; });
 }
 // 地図の しるしの 大きさ：ズームしても 画面で 大きく なりすぎない
+// 鉱脈の しるし（◆ 種類の いろ。ほった あとは ⛏）
+var MINE_COL = { silver: ['#e8edf5', '#4a5a78'], copper: ['#f0a060', '#7a3a10'], iron: ['#8a8a8a', '#2a2a2a'] };
+function mineMark(c, x, y, r, type, built, alpha) {
+  var col = MINE_COL[type] || MINE_COL.iron; c.save(); c.globalAlpha = alpha == null ? 1 : alpha;
+  c.beginPath(); c.moveTo(x, y - r * 1.25); c.lineTo(x + r, y); c.lineTo(x, y + r * 1.25); c.lineTo(x - r, y); c.closePath();
+  c.fillStyle = col[0]; c.fill(); c.lineWidth = Math.max(1.5, r * 0.28); c.strokeStyle = col[1]; c.stroke();
+  c.font = 'bold ' + Math.round(r * 1.05) + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  if (built) c.fillText('⛏', x, y + 1); else { c.fillStyle = col[1]; c.fillText(type === 'silver' ? '銀' : type === 'copper' ? '銅' : '鉄', x, y + 1); }
+  c.restore();
+}
 function kU(base) { return Math.min(1.6, base * Math.max(1, Math.pow(kMap.s, 0.3)) / kMap.s); }
 var RT_COL = { land: '#ffcf5a', pass: '#ff8a3a', sea: '#7fd0ff', none: '#ff3030' };
 function kDrawFocus(c, lw) {
@@ -596,6 +606,13 @@ function kRender() {
       c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(bt9, -12, by9 + 1.5); }
     c.restore();
   });
+  // 鉱脈（◆ 銀・銅・鉄。ほった あとは ⛏）
+  var dd0 = domData();
+  if (w0 && dd0) PROVS.forEach(function (p) { var dp = dd0[p.id].dep, PB = KS.provs[p.id]; for (var dk in dp) {
+    var hh = dk.split(',').map(Number), ll1 = w0.ll(hh[0], hh[1]), q1 = kProj(ll1[0], ll1[1]), u1 = kU(1.1);
+    c.save(); c.translate(q1[0], q1[1]); c.scale(u1, u1); mineMark(c, 0, 0, 9, dp[dk].type, PB.bld && PB.bld[dk] === 'mine', 1);
+    if (kMap.s > 1.1) { var mn1 = dp[dk].name; c.font = 'bold 9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'top'; c.lineWidth = 2.5; c.strokeStyle = 'rgba(255,255,255,0.9)'; c.strokeText(mn1, 0, 12); c.fillStyle = MINE_COL[dp[dk].type][1]; c.fillText(mn1, 0, 12); }
+    c.restore(); } });
   // 山・川・町の 名前（ちかよったとき）
   c.save(); c.setTransform(kMap.dpr, 0, 0, kMap.dpr, 0, 0); kGeoLabels(c); c.restore();
   // 家紋・国名・兵の かず
@@ -689,6 +706,9 @@ function kInfo() {
   }).join(' ');
   html += '<div class="kunits">となりへの 道：' + nbl + '</div>';
   if (KS.castles) html += '<div class="kunits">支城：' + branchesIn(KS, kSel).map(function (c) { return '<span class="kbr" data-br="' + c.id + '" style="border-color:' + (c.owner ? CLANS[c.owner].color : '#999') + '">🏯' + brName(c.id) + '（' + (c.owner ? CLANS[c.owner].name : 'だれも いない') + '・' + c.units.length + '隊・🍙' + castleFood(KS, c.prov, c.id) + '石・所領' + Math.round(branchShare(c.id) * 100) + '%' + (c.ruin ? '・🔥こわれている' : '') + (c.owner === KS.player && P.owner !== KS.player ? '・年貢 約' + kan(nenguOf(KS, kSel, KS.player)) : '') + '）</span>'; }).join(' ') + '</div>';
+  (function () { var dd = domData(), dp = dd ? dd[kSel].dep : {}, ks = Object.keys(dp), nm = bldCount(P, 'meibutsu');
+    html += '<div class="kunits">🏺 名産：<b>' + (MEIBUTSU[kSel] || 'なし') + '</b>' + (nm ? '（工房 ' + nm + '）' : '（町の となりに 工房を たてる）') + '　' +
+      (ks.length ? ks.map(function (k) { var dv = dp[k], bt = P.bld && P.bld[k] === 'mine'; return '<span class="kmine ' + dv.type + '">' + (bt ? '⛏' : '◆') + dv.name + '（' + MINE_NAME[dv.type] + (bt ? '・ほっている' : '・まだ') + '）</span>'; }).join(' ') : '<small>鉱脈なし</small>') + '</div>'; })();
   if (P.bld) { var bs = ['town', 'mine', 'meibutsu', 'salt'].map(function (t) { var n = t === 'town' ? bldCount(P, 'town') : bldCount(P, t); return n ? BLD[t].icon + (t === 'meibutsu' ? MEIBUTSU[kSel] : BLD[t].name + n) : ''; }).filter(Boolean).join(' ');
     html += '<div class="kunits">領内：' + (bs || 'なし') + (mine ? '　収入 +' + kan(provSplit(KS, kSel, false)[KS.player] || 0) + '/きせつ' : '') + '</div>'; }
   // 年貢と 農民の 不満
@@ -1368,9 +1388,8 @@ function kRecruitBox(pid, cs, back) {
     '<div class="kodds">🪖 いま ' + where + 'の へい：<b>' + menStr(menTotal(P.units)) + '</b>（' + P.units.length + '隊）' + (P.units.length ? '<br><small>' + unitSummary(P.units) + '</small>' : '') + '</div>';
   BUY_ORDER.forEach(function (t) {
     var T = UNIT_TYPES[t];
-    if (t === 'teppo' && !teppoOk(KS)) { h += '<div class="arow"><span class="uic blue" style="opacity:.4">' + T.ch + '</span><span class="uname"><b style="color:#aaa">' + T.name + '</b><small>' + TEPPO_YEAR + '年に 伝来するまで やとえない</small></span></div>'; return; }
     var cur = P.units.filter(function (u) { return u.type === t; });
-    h += '<div class="arow kbuy"><span class="uic blue">' + T.ch + '</span><span class="uname"><b>' + T.name + '</b>' + (cur.length ? '<small style="color:#2a6a2a"><b>　いま ' + menTotal(cur).toLocaleString('ja-JP') + menUnit(t) + '（' + cur.length + '隊）</b></small>' : '<small>　いま 0</small>') + '<small id="rcp_' + t + '"></small></span>' +
+    h += '<div class="arow kbuy"><span class="uic blue">' + T.ch + '</span><span class="uname"><b>' + T.name + '</b>' + (t === 'teppo' && !teppoOk(KS) ? '<small style="color:#a04000">　ゆにゅう品（' + TEPPO_YEAR + '年の 伝来 までは ねだん ' + TEPPO_EARLY + 'ばい）</small>' : '') + (cur.length ? '<small style="color:#2a6a2a"><b>　いま ' + menTotal(cur).toLocaleString('ja-JP') + menUnit(t) + '（' + cur.length + '隊）</b></small>' : '<small>　いま 0</small>') + '<small id="rcp_' + t + '"></small></span>' +
       '<div class="kctl"><button class="pm big sub0" data-t="' + t + '" data-d="0" title="0に もどす">0</button><button class="pm big minus" data-t="' + t + '" data-d="-' + T.men + '">−隊</button><button class="pm big minus" data-t="' + t + '" data-d="-10">−10</button>' +
       '<button class="pm" data-t="' + t + '" data-d="-1">－</button><input class="rcin" type="number" inputmode="numeric" min="0" step="1" id="rc_' + t + '" value="0"><button class="pm" data-t="' + t + '" data-d="1">＋</button>' +
       '<button class="pm big" data-t="' + t + '" data-d="10">+10</button><button class="pm big" data-t="' + t + '" data-d="' + T.men + '">+隊</button></div></div>';
@@ -1971,12 +1990,22 @@ function domRender() {
   var fs = Math.max(9, s * 1.15);
   function icon(cc2, rr2, txt, bg) { var q4 = domXY(cc2, rr2), x2 = DS.x + q4[0] * s, y2 = DS.y + q4[1] * s; if (x2 < -s || y2 < -s || x2 > DS.W + s || y2 > DS.H + s) return; if (bg) { c.beginPath(); c.arc(x2, y2, s * 0.8, 0, Math.PI * 2); c.fillStyle = bg; c.fill(); } c.font = fs + 'px sans-serif'; c.fillText(txt, x2, y2 + 1); }
   var dep = d[pid].dep;
-  for (var dk in dep) { var p0 = dk.split(',').map(Number); if (!(P.bld && P.bld[dk])) { icon(p0[0], p0[1], '◆', 'rgba(255,255,255,0.75)'); c.fillStyle = '#7a2fb0'; } }
+  var lrects = [];
   var visP = {}; visP[pid] = 1; Object.keys(DS.myProvs || {}).forEach(function (k9) { visP[k9] = 1; });
-  Object.keys(visP).forEach(function (vp) { if (vp === pid) return; var dp = d[vp].dep, PV = KS.provs[vp]; for (var dk2 in dp) { var p02 = dk2.split(',').map(Number); if (!(PV.bld && PV.bld[dk2]) && regionOwner(KS, p02[0], p02[1]) === KS.player) icon(p02[0], p02[1], '◆', 'rgba(255,255,255,0.75)'); } });
+  function tag(cc2, rr2, txt, col, dim) { if (s < 4) return; var q4 = domXY(cc2, rr2), x2 = DS.x + q4[0] * s, y2 = DS.y + q4[1] * s + Math.max(9, s * 1.05); if (x2 < -s * 4 || y2 < -s || x2 > DS.W + s * 4 || y2 > DS.H + s) return;
+    var fz2 = Math.max(9, Math.min(13, s * 0.62)); c.save(); c.globalAlpha = dim ? 0.6 : 1; c.font = 'bold ' + fz2 + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'top';
+    var tw2 = c.measureText(txt).width; c.fillStyle = 'rgba(255,250,235,0.9)'; c.fillRect(x2 - tw2 / 2 - 3, y2 - 1, tw2 + 6, fz2 + 3); c.strokeStyle = col; c.lineWidth = 1.2; c.strokeRect(x2 - tw2 / 2 - 3, y2 - 1, tw2 + 6, fz2 + 3);
+    c.fillStyle = col; c.fillText(txt, x2, y2 + 1); c.restore(); lrects.push([x2 - tw2 / 2 - 3, y2 - 1, tw2 + 6, fz2 + 3]); }
+  Object.keys(d).forEach(function (vp) { var dp = d[vp].dep, PV = KS.provs[vp]; for (var dk2 in dp) { var p02 = dk2.split(',').map(Number), q5 = domXY(p02[0], p02[1]), x5 = DS.x + q5[0] * s, y5 = DS.y + q5[1] * s;
+    if (x5 < -s * 4 || y5 < -s * 3 || x5 > DS.W + s * 4 || y5 > DS.H + s * 3) continue;
+    var built = PV.bld && PV.bld[dk2] === 'mine', mineHere = regionOwner(KS, p02[0], p02[1]) === DS.who, dv = dp[dk2];
+    if (DS.mode === 'mine' && mineHere && !built) { c.beginPath(); c.arc(x5, y5, s * 1.35, 0, Math.PI * 2); c.strokeStyle = '#fff36a'; c.lineWidth = Math.max(2, s * 0.18); c.stroke(); }
+    mineMark(c, x5, y5, Math.max(8, s * 0.75), dv.type, built, mineHere ? 1 : 0.75);
+    tag(p02[0], p02[1], (built ? '⛏' : '◆') + dv.name + (built ? ' +' + kan(MINE_INC[dv.type]) : '（' + MINE_NAME[dv.type] + '）'), MINE_COL[dv.type][1], !mineHere); } });
   Object.keys(visP).forEach(function (vp) { var PB = KS.provs[vp]; for (var bk in (PB.bld || {})) { var b = PB.bld[bk], p1 = bk.split(',').map(Number); if (vp !== pid && regionOwner(KS, p1[0], p1[1]) !== DS.who) continue; if (b === 'field') { if (s >= 14) icon(p1[0], p1[1], '🌾'); continue; }
       if (b === 'toride' && gx('castle_toride')) { var ti = gx('castle_toride'), q9 = domXY(p1[0], p1[1]), tw9 = s * 2.2, th9 = tw9 * ti.naturalHeight / ti.naturalWidth; c.drawImage(ti, DS.x + q9[0] * s - tw9 / 2, DS.y + q9[1] * s + s * 0.6 - th9, tw9, th9); continue; }
-      icon(p1[0], p1[1], BLD[b === 'town0' ? 'town' : b].icon, 'rgba(255,250,235,0.85)'); } });
+      if (b === 'mine' && d[vp].dep[bk]) continue;
+      icon(p1[0], p1[1], BLD[b === 'town0' ? 'town' : b].icon, b === 'meibutsu' ? 'rgba(255,215,150,0.95)' : 'rgba(255,250,235,0.85)'); if (b === 'meibutsu') tag(p1[0], p1[1], '🏺' + MEIBUTSU[vp], '#7a3a10'); } });
   // 支城（持ち主の いろの わく と 名前）
   var bhx = branchHexes() || {};
   DS.ctaps = [];
@@ -1998,7 +2027,6 @@ function domRender() {
     var lab = name + (own && CLANS[own] ? '（' + CLANS[own].name + '）' : ''); c.strokeText(lab, x7, y7 - rr7 - fz * 0.7); c.fillStyle = own && CLANS[own] ? '#2a1a0a' : '#555'; c.fillText(lab, x7, y7 - rr7 - fz * 0.7);
     var tw7 = c.measureText(lab).width; lrects.push([x7 - tw7 / 2 - 2, y7 - rr7 - fz * 1.3, tw7 + 4, fz + 4], [x7 - rr7, y7 - rr7, rr7 * 2, rr7 * 2]);
   }
-  var lrects = [];
   // 見えている 国の 城を ぜんぶ（本城・支城）
   PROVS.forEach(function (p9) {
     var ch = castleHex(p9.id); if (ch && ch[1] >= r0 - 2 && ch[1] <= r1 + 2 && ch[0] >= c0 - 2 && ch[0] <= c1 + 2) castleTag(ch, castleNameOf(KS, p9.id), KS.provs[p9.id].owner, true, castleArtOf(KS, p9.id, null), p9.id);
@@ -2008,7 +2036,6 @@ function domRender() {
   domLabels(c, s, lrects);
   c.textAlign = 'center'; c.textBaseline = 'middle';
   // 鉱脈の 名前
-  if (s >= 10) for (dk in dep) { var p2 = dk.split(',').map(Number), q5 = domXY(p2[0], p2[1]); c.font = 'bold ' + Math.max(10, s * 0.75) + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = '#fff'; c.strokeText(dep[dk].name, DS.x + q5[0] * s, DS.y + (q5[1] + 1.25) * s); c.fillStyle = '#5a1f80'; c.fillText(dep[dk].name, DS.x + q5[0] * s, DS.y + (q5[1] + 1.25) * s); }
   // えらんだ マス
   if (DS.sel) { var q6 = domXY(DS.sel[0], DS.sel[1]); domHexPath(c, DS.x + q6[0] * s, DS.y + q6[1] * s, s * 0.98); c.strokeStyle = '#ffe24a'; c.lineWidth = Math.max(2, s * 0.18); c.stroke(); }
   // カーソルが のっている じぶんの 城：白い わく
@@ -2049,7 +2076,20 @@ function domPanel() {
   if (!DS.sel) info += '<br><small>🏯 じぶんの 城を タップすると、その 城の 徴兵・家臣の 配置が できる。</small>';
   if (DS.canBuild && !DS.sel) info += '<br><small>くらい ところは ほかの 家の 土地。黄色い 点線が 持ち主の さかい。</small>';
   if (DS.built) info += '<br><small>この 内政で たてた もの：' + DS.built + 'つ（↩で とりけし できる）</small>';
+  // 領地の 鉱脈と 名産（タップで その 場所へ）
+  {
+    var rl = [], myP0 = Object.keys(DS.myProvs || {}); if (myP0.indexOf(pid) < 0) myP0.unshift(pid);
+    myP0.forEach(function (q) { var dp = d[q].dep, PQ = KS.provs[q];
+      Object.keys(dp).forEach(function (dk) { var h = dk.split(',').map(Number), own = regionOwner(KS, h[0], h[1]) === who, bt = PQ.bld && PQ.bld[dk] === 'mine', dv = dp[dk];
+        rl.push('<button class="dres ' + dv.type + (own ? '' : ' far') + '" data-h="' + dk + '" data-m="' + (own && !bt ? 'mine' : '') + '">' + (bt ? '⛏' : '◆') + dv.name + '<small>' + MINE_NAME[dv.type] + '・' + (bt ? 'ほっている +' + kan(MINE_INC[dv.type]) : !own ? 'ほかの 家の 所領' : dv.type === 'silver' && KS.year < 1527 ? '1527年に みつかる' : 'まだ ほって いない') + '</small></button>'); });
+      if (MEIBUTSU[q]) { var nm = bldCountIn(KS, q, who, 'meibutsu'), ch0 = castleHex(q), tw = null;
+        for (var bk in (PQ.bld || {})) if (PQ.bld[bk] === 'meibutsu' || (!tw && PQ.bld[bk] === 'town0')) tw = bk;
+        rl.push('<button class="dres mei" data-h="' + (tw || hkey(ch0[0], ch0[1])) + '" data-m="meibutsu">🏺' + MEIBUTSU[q] + '<small>' + PROV_BY[q].name + '・' + (nm ? '工房 ' + nm + '（+' + kan(BLD.meibutsu.inc * nm) + '）' : '町の となりに 工房を たてる') + '</small></button>'); } });
+    if (rl.length) info += '<div class="dresl"><b>📍 鉱脈と 名産</b><small>（タップで その 場所へ）</small><br>' + rl.join('') + '</div>';
+  }
   $('dInfo').innerHTML = info;
+  Array.prototype.forEach.call($('dInfo').querySelectorAll('.dres'), function (b9) { b9.onclick = function () { SFX.tap(); var h = b9.getAttribute('data-h').split(',').map(Number), q = domXY(h[0], h[1]);
+    if (DS.s < 14) DS.s = 14; var a9 = domArea(); DS.x = DS.W / 2 - q[0] * DS.s; DS.y = a9.top + a9.h / 2 - q[1] * DS.s; var m9 = b9.getAttribute('data-m'); if (m9 && DS.canBuild) { DS.mode = m9; DS.sel = null; } else DS.sel = h; domPanel(); domRender(); }; });
   if ($('dOff')) $('dOff').onchange = function () { KS.curOff = $('dOff').value || null; domPanel(); domRender(); };
   var acts = $('dActs'); acts.innerHTML = '';
   var bk = document.createElement('button'); bk.className = 'dbld dback'; bk.innerHTML = '↩ 地図へ もどる<small>国取りの 地図に もどる</small>'; bk.onclick = function () { SFX.tap(); closeDomain(); }; acts.appendChild(bk);
@@ -2086,7 +2126,7 @@ function domPanel() {
     var any = type === 'mine' ? deps > 0 : type === 'salt' ? sea : true;
     var cost = bldCost(KS, pid, type, -1, -1, who);   // 平地の ねだん（森・丘は たかい）
     var b = document.createElement('button'); b.className = 'dbld' + (DS.mode === type ? ' on' : ''); b.disabled = !any;
-    var sub = type === 'meibutsu' ? meis.slice(0, 3).join('・') : type === 'field' ? '石高 +0.5' : type === 'town' ? '+' + kan(B0.inc) + '・あと ' + townLeft : type === 'mine' ? (any ? '鉱脈 ' + deps + 'か所' : '鉱脈なし') : type === 'salt' ? (any ? '+' + kan(B0.inc) : '海が ない') : B0.war ? (type === 'toride' ? '合戦で 小さな 城に' : type === 'saku' ? '合戦で てきの 足どめ' : '合戦で わたりにくい') : '+' + kan(B0.inc);
+    var sub = type === 'meibutsu' ? meis.slice(0, 3).join('・') : type === 'field' ? '石高 +0.5' : type === 'town' ? '+' + kan(B0.inc) + '・あと ' + townLeft : type === 'mine' ? (any ? '鉱脈 ' + deps + 'か所（◆）' : '領地に 鉱脈なし') : type === 'salt' ? (any ? '+' + kan(B0.inc) : '海が ない') : B0.war ? (type === 'toride' ? '合戦で 小さな 城に' : type === 'saku' ? '合戦で てきの 足どめ' : '合戦で わたりにくい') : '+' + kan(B0.inc);
     b.innerHTML = B0.icon + ' ' + B0.name + (cnt ? '×' + cnt : '') + '<small>💰' + kan(cost) + '・' + sub + '</small>';
     b.onclick = function () { SFX.tap(); DS.mode = DS.mode === type ? null : type; domPanel(); if (DS.mode && !DS.wide) { DS.wide = true; var b0 = DS.bb; DS.bb = DS.bbAll; domFit(); DS.bb = b0; } domRender(); };
     acts.appendChild(b);

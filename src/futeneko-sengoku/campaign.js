@@ -470,7 +470,8 @@ function redeploy(S, castleId, pid, uids, keep) {
 // おとした 支城に のこす 守備兵の かず
 var BRANCH_KEEP = 3;
 function unitCost(type) { return UNIT_TYPES[type].cost * GOLD_PER_COST; }
-function recruitCost(S, pid, type, o) { if (o === undefined) o = S.officers ? officerAt(S, pid) : null; return Math.max(5, Math.round(unitCost(type) * (1 - (offP(o) - 50) / 400))); }
+var TEPPO_EARLY = 2;   // 伝来 まえの 鉄砲は 南蛮・明からの ゆにゅう品で ねだん 2ばい
+function recruitCost(S, pid, type, o) { if (o === undefined) o = S.officers ? officerAt(S, pid) : null; return Math.max(5, Math.round(unitCost(type) * (type === 'teppo' && !teppoOk(S) ? TEPPO_EARLY : 1) * (1 - (offP(o) - 50) / 400))); }
 function maxKoku(pid) { return Math.round(PROV_BY[pid].koku * 1.5); }   // CPU の 内政の めやすに だけ つかう（ルールの 上限では ない）
 function cpuKokuGoal(S, pid) { return PROV_BY[pid].koku * (S.difficulty === 'hard' ? 2 : 1.5); }
 
@@ -544,7 +545,6 @@ function planRecruit(S, pid, pts, o, cs) {
 function recruitPts(S, pid, pts, oid, cs) {
   var P = cs ? S.castles[cs] : S.provs[pid], cid = P.owner, o = oid ? S.officers[oid] : undefined, pl = planRecruit(S, pid, pts, o, cs), CAP = cs ? 8 : PROV_CAP;
   if (!pl.fill && !pl.newN) return { ok: false, msg: 'へいを えらんでね' };
-  if (pts.teppo && !teppoOk(S)) return { ok: false, msg: '鉄砲は ' + TEPPO_YEAR + '年に 伝わるまで つかえない' };
   if (pl.cost > S.clans[cid].gold) return { ok: false, msg: 'お金が たりない' };
   if (cs && P.rec === S.turn) return { ok: false, msg: 'この 支城は この きせつ もう 徴兵した' };
   if (P.units.length + pl.newN > CAP) return { ok: false, msg: 'この 城には もう はいれない（' + CAP + 'たいまで）' };

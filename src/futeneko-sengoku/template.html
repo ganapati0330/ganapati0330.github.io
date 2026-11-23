@@ -133,6 +133,11 @@ body.mh520 #logLine .lg:not(:last-child){display:none;}body.mh520 #infoBox .stat
 #dhud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top));background:rgba(40,25,15,.9);color:#fff;font-size:15px;z-index:5;}
 #dhud .hrow span{font-size:13px;color:#ffe8b0;margin-left:8px;}
 #dbottom{position:absolute;left:0;right:0;bottom:0;z-index:5;background:rgba(40,25,15,.92);color:#fff;padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
+.dresl{margin-top:6px;padding:6px;background:rgba(255,255,255,0.06);border-radius:8px;}
+.dres{display:inline-flex;flex-direction:column;align-items:flex-start;margin:3px 4px 0 0;padding:3px 8px;border-radius:8px;border:2px solid #888;background:#fff8ea;color:#2a1a0a;font-size:13px;font-weight:bold;cursor:pointer;line-height:1.25;}
+.dres small{font-weight:normal;font-size:11px;color:#6a4a2a;}
+.dres.silver{border-color:#4a5a78;}.dres.copper{border-color:#b05a20;}.dres.iron{border-color:#3a3a3a;}.dres.mei{border-color:#b07a20;background:#fff0d6;}.dres.far{opacity:.6;}
+.kmine{display:inline-block;margin:1px 3px;padding:0 5px;border-radius:6px;border:1.5px solid #888;background:#fff;font-size:12px;}.kmine.silver{border-color:#4a5a78;}.kmine.copper{border-color:#b05a20;}.kmine.iron{border-color:#3a3a3a;}
 #dInfo{font-size:14px;line-height:1.5;margin-bottom:6px;min-height:40px;}
 #dActs{display:flex;flex-wrap:wrap;gap:6px;}
 #dActs .dbld{flex:1 1 30%;min-width:100px;padding:6px 6px;border-radius:10px;border:2px solid #8a6a40;background:#f6ecd6;color:#3a2210;font-size:13px;font-weight:bold;cursor:pointer;line-height:1.25;}
@@ -342,7 +347,7 @@ body.side #dbottom{display:flex;flex-direction:column;}body.side #dActs{order:-1
       <button class="hb" id="kEndBtn">きせつを おわる ▶</button>
     </div>
   </div>
-  <div id="kLegend"><i style="background:#ffcf5a"></i>陸路　<i style="background:#ff8a3a"></i>⛰峠道　<i style="background:#7fd0ff"></i>⛵海路<br><i style="background:#ff3030"></i>🚫山で とおれない　<i style="background:#3e2e24;height:8px"></i>けわしい山</div>
+  <div id="kLegend"><i style="background:#ffcf5a"></i>陸路　<i style="background:#ff8a3a"></i>⛰峠道　<i style="background:#7fd0ff"></i>⛵海路<br><i style="background:#ff3030"></i>🚫山で とおれない　<i style="background:#3e2e24;height:8px"></i>けわしい山<br><b style="color:#4a5a78">◆銀</b>・<b style="color:#b05a20">◆銅</b>・<b>◆鉄</b> 鉱脈（⛏は ほっている）</div>
   <div id="kbottom">
     <div id="kLog"></div>
     <div id="kInfo"></div>
@@ -435,7 +440,7 @@ body.side #dbottom{display:flex;flex-direction:column;}body.side #dActs{order:-1
       <li><b>調略</b>（💰30）：となりの 家を まるごと <b>したがわせる</b>（小さな 家だけ）・城に <b>内応</b>させて よわらせる・<b>同盟</b>を むすぶ。</li>
       <li><b>史実の できごと</b>：その 年に なると 武将たちが 話し、「📖 史実では」で ほんとうの 歴史を しょうかい。歴史が うごく できごとも（当主の 交代・養子・厳島の 戦い など）。📖ボタンで あとから 読みかえせる。</li>
       <li><b>同盟</b>（🤝）の あいてとは おたがい せめない。でも ときどき きれる。じぶんから せめると 同盟は きれる。</li>
-      <li>鉄砲は <b>1543年</b>に 伝わるまで やとえない。石見の 銀山は <b>1527年</b>に みつかって お金が ふえる。</li>
+      <li>鉄砲は <b>1543年</b>に 伝わるまでは めずらしい 火器で ねだん 2ばい。石見の 銀山は <b>1527年</b>に みつかって お金が ふえる。</li>
       <li>きせつ（はる・なつ・あき・ふゆ）ごとに、じぶんの 国 1つで <b>出陣</b>（となりを せめる）・<b>徴兵</b>（お金で へいを ふやす）・<b>内政</b>（石高 +1）・<b>移動</b>（へいを となりの じぶんの 国へ）・<b>調略</b> から <b>3つまで</b> えらんで できる（おなじ めいれいは 1回ずつ。徴兵して から 出陣、なども できる）。うごいた へいは その きせつ もう 移動 できない。とったばかりの 国は その きせつ めいれい できない。</li>
       <li>お金の たんいは <b>貫</b>。石高からの <b>年貢は 秋に まとめて</b> はいる。ほかの きせつは 商いの 収入だけ。石見の 銀山は まいきせつ お金が ふえる。</li>
       <li>へいは <b>隊</b>で うごく。1隊の 人数：足軽 300人・弓 200人・騎馬 50騎・鉄砲 50挺・工作 150人・忍び 20人。騎馬と 鉄砲は 人数は すくないが 高くて つよい。数字は いまの 人数。</li>
