@@ -445,7 +445,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>🤝 関係</b>：地図の 国名の 下に、じぶんとの 関係が でる。<b>🤝同盟</b>（おたがい せめない。せめると 同盟が きれる）・<b>〰中立</b>（いまは 合戦して いない。せめて くる ことも ある）・<b>⚔敵対</b>（この 1年に 合戦した あいて）。📜の「大名との 関係」で 一覧に できる。</li>
       <li><b>🏯 城 ごとの めいれい</b>：本城・支城の 画面から ⚔出陣・🪖徴兵・🌾内政・🦊調略 が できる。本城は 国の めいれい（3つまで）、支城は それぞれ きせつに 1かい。📜の「城と めいれい」の 表から まとめて めいれい できる。</li>
       <li><b>📜 領地の 一覧</b>：上の 📜ボタンで、じぶんの 国と 城（本城・支城、てきの 国の なかの 支城も）を 一覧で 見られる。国ごとの 石高・収入・秋の 年貢・不満・めいれいの かず、城ごとの へい・兵糧（なん日 もつか）・いる 家臣。城の 行を タップすると その 城の 画面へ。</li>
-      <li><b>🗾 内政の 画面</b>：田畑・町などは 本城と 支城の 所領を まとめて たてられる。<b>城を タップ</b>すると その 城の 守備兵を 見て、<b>その 城で 徴兵</b>（支城は 城 ごとに きせつ 1かい・8たいまで、本城は 国の 徴兵の めいれい）、<b>家臣を よぶ／ほかの 城へ うつす</b>、本城の 城主えらびが できる。「↩ 地図へ もどる」で 国取りの 地図へ。</li>
+      <li><b>🗾 内政の 画面</b>：田畑・町・改築などは <b>領地 ぜんぶ</b>（どの 国の 本城・支城の 所領でも）に、めいれいを つかわずに お金の かぎり たてられる。⤢で 領地 ぜんぶを 見わたせる。<b>城を タップ</b>すると その 城の 守備兵を 見て、<b>その 城で 徴兵</b>（支城は 城 ごとに きせつ 1かい・8たいまで、本城は 国の 徴兵の めいれい）、<b>家臣を よぶ／ほかの 城へ うつす</b>、本城の 城主えらびが できる。「↩ 地図へ もどる」で 国取りの 地図へ。</li>
       <li><b>🚶 兵を うつす・🍙 兵糧を はこぶ</b>：城の 画面から、<b>領地の なか</b>（じぶんの 城が ある 国が となりづたいに つながって いる はんい）なら どの 城へでも すぐ うつせる。めいれいは つかわない。うつした 隊は その きせつ もう うつせない。城には 入る かず（本城19隊・支城8隊、蔵の 大きさ）の かぎりが ある。</li>
       <li><b>🏳 撤退</b>：合戦中、じぶんの ばんに 上の「🏳撤退」で 全軍を ひかせられる。攻めのときは 合戦を やめて もとの 城へ もどる（しんがりで 1わり ほど へり、のこった 兵糧の 一部は てきに とられる）。守りのときは 城を すてて 退き口の 国へ にげる（1.5わり ほど へる）。退き口が ない 籠城では 撤退 できない。</li>
       <li><b>🔗 合流</b>：へった 隊は おなじ 兵種の 隊に まとめられる。国取りでは 本城・支城の 画面の「🔗 隊を まとめる」（人数は そのまま、隊の かずが へる。めいれいは つかわない）。合戦では となりに いる おなじ 兵種の みかたを えらんで「🔗 合流」（その 隊の 行動は おわり。もどせない）。</li>
@@ -505,7 +505,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v9.2';
+var VERSION = 'v9.3';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2534,7 +2534,7 @@ function upgradeCastle(S, pid, cid, who) {
   var ch = canUpgrade(S, pid, cid, who); if (!ch.ok) return ch;
   var own = cid ? S.castles[cid].owner : S.provs[pid].owner;
   S.clans[own].gold -= ch.cost;
-  if (cid) { S.castles[cid].lv = ch.lv; S.castles[cid].dev = S.turn; } else { S.provs[pid].clv = ch.lv; markCmd(S.provs[pid], 'develop'); }
+  if (cid) S.castles[cid].lv = ch.lv; else S.provs[pid].clv = ch.lv;
   return ch;
 }
 function lvMult(lv) { return 1 + 0.12 * (lv || 0); }
@@ -2699,8 +2699,7 @@ function build(S, pid, c, r, type, who) {
   }
   if (bo && bo.clan === who) bo.busy = S.turn;
   chk.premium = prem;
-  if (who === P.owner) markCmd(P, 'develop');
-  else branchesIn(S, pid).forEach(function (c0) { if (c0.owner === who) c0.dev = S.turn; });   // 支城の 内政は きせつに 1回（何こでも たてられる）
+  // 内政は めいれいを つかわない（お金の かぎり、領地の どこでも）
   return { ok: true, cost: chk.cost, premium: prem };
 }
 // 建物の 収入（まいきせつ）
@@ -6596,7 +6595,7 @@ function kMainCastleBox(pid) {
     var rdone = didCmd(P, 'recruit') || P.acted || cmdFull(P);
     btns.push({ label: '⚔ 出陣' + (didCmd(P, 'attack') ? '✓' : ''), cls: 'act', disabled: full0 || didCmd(P, 'attack') || !P.units.length || !hasEn, fn: go0('attack') });
     btns.push({ label: '🪖 徴兵' + (didCmd(P, 'recruit') ? '✓' : ''), cls: 'act', disabled: rdone || (P.units.length >= PROV_CAP && !P.units.some(function (u) { return u.hp < 10; })), fn: function () { kRecruitBox(pid, null, function () { kMainCastleBox(pid); }); } });
-    btns.push({ label: '🌾 内政' + (didCmd(P, 'develop') ? '✓' : ''), cls: 'act', fn: function () { kCloseModal(); kSel = pid; openDomain(pid); } });
+    btns.push({ label: '🌾 内政', cls: 'act', fn: function () { kCloseModal(); kSel = pid; openDomain(pid); } });
     btns.push({ label: '🦊 調略' + (didCmd(P, 'scheme') ? '✓' : ''), cls: 'act', disabled: full0 || didCmd(P, 'scheme') || !hasEn, fn: go0('scheme') });
     btns.push({ label: '🎖 城主', cls: 'act sub', fn: function () { kAssignBox(pid, function () { kMainCastleBox(pid); }); } });
     btns.push({ label: '🍙 兵糧を かう', cls: 'act', fn: function () { kRiceBox(pid, null, function () { kMainCastleBox(pid); }); } });
@@ -6624,7 +6623,7 @@ function kCastleBox(id) {
     btns.push({ label: '🪖 徴兵' + (C0.rec === KS.turn ? '✓' : ''), cls: 'act', disabled: C0.rec === KS.turn || (C0.units.length >= 8 && !C0.units.some(function (u) { return u.hp < 10; })), fn: function () { kRecruitBox(C0.prov, id, function () { kCastleBox(id); }); } });
     btns.push({ label: '🍙 兵糧を かう', cls: 'act', fn: function () { kRiceBox(C0.prov, id, function () { kCastleBox(id); }); } });
   }
-  if (mine) btns.push({ label: '🗾 所領を ひらく（内政・改築）' + (C0.dev === KS.turn ? '✓' : ''), cls: 'act kdev', fn: function () { kCloseModal(); openDomain(C0.prov, id); } });
+  if (mine) btns.push({ label: '🌾 内政（改築）', cls: 'act kdev', fn: function () { kCloseModal(); openDomain(C0.prov, id); } });
   btns.push({ label: 'とじる', cls: 'act sub', fn: kCloseModal });
   kModal('🏯 支城', body, btns);
   bindLinkSection(id, function () { kCastleBox(id); });
@@ -7059,10 +7058,10 @@ function kCastleTable() {
     if (g.mine) { nC++; totMen += menTotal(P.units); totU += P.units.length;
       var full = P.acted || cmdFull(P), hasEn = ADJ[pid].some(function (q) { return KS.provs[q].owner !== me; });
       h += '<tr class="kcrow" data-main="' + pid + '"><td>🏯 ' + castleNameOf(KS, pid) + '<br><small>本城・改築Lv' + (P.clv || 0) + (P.ruin ? '・<b class="r">🔥こわれ</b>' : '') + '</small></td><td>' + menStr(menTotal(P.units)) + '<br><small>' + P.units.length + '/' + PROV_CAP + '隊</small></td><td>' + foodCell(pid, null, P.units) + '</td><td><small>' + offCell(pid, officerAt(KS, pid)) + '</small></td><td class="kacts">' +
-        act('⚔', didCmd(P, 'attack'), !full && hasEn && P.units.length, pid, 'atk') + act('🪖', didCmd(P, 'recruit'), !full, pid, 'rec') + act('🌾', didCmd(P, 'develop'), !full, pid, 'dev') + act('🦊', didCmd(P, 'scheme'), !full && hasEn, pid, 'sch') + '</td></tr>'; }
+        act('⚔', didCmd(P, 'attack'), !full && hasEn && P.units.length, pid, 'atk') + act('🪖', didCmd(P, 'recruit'), !full, pid, 'rec') + act('🌾', false, true, pid, 'dev') + act('🦊', didCmd(P, 'scheme'), !full && hasEn, pid, 'sch') + '</td></tr>'; }
     g.brs.forEach(function (c) { nC++; totMen += menTotal(c.units); totU += c.units.length;
       h += '<tr class="kcrow" data-br="' + c.id + '"><td>🏰 ' + brName(c.id) + '<br><small>支城・所領' + Math.round(branchShare(c.id) * 100) + '%' + (c.ruin ? '・<b class="r">🔥こわれ</b>' : '') + (c.lv ? '・改築Lv' + c.lv : '') + '</small></td><td>' + menStr(menTotal(c.units)) + '<br><small>' + c.units.length + '/8隊</small></td><td>' + foodCell(pid, c.id, c.units) + '</td><td><small>' + offCell(c.id, null) + '</small></td><td class="kacts">' +
-        act('⚔', c.atk === KS.turn, canBranchAttack(KS, c.id) && branchTargets(KS, c.id).length, c.id, 'atk') + act('🪖', c.rec === KS.turn, true, c.id, 'rec') + act('🌾', c.dev === KS.turn, true, c.id, 'dev') + act('🦊', c.sch === KS.turn, branchSchemeTargets(KS, c.id).length, c.id, 'sch') + '</td></tr>'; });
+        act('⚔', c.atk === KS.turn, canBranchAttack(KS, c.id) && branchTargets(KS, c.id).length, c.id, 'atk') + act('🪖', c.rec === KS.turn, true, c.id, 'rec') + act('🌾', false, true, c.id, 'dev') + act('🦊', c.sch === KS.turn, branchSchemeTargets(KS, c.id).length, c.id, 'sch') + '</td></tr>'; });
   });
   h += '</table>';
   var nP = provsOf(KS, me).length;
@@ -7326,23 +7325,24 @@ var TER_NAME = { '.': '平地', '=': '道', f: '森', h: '丘', m: '山', M: '�
 function openDomain(pid, branchId) {
   var d = domData(); if (!d || !KS) return;
   if (!KS.provs[pid].bld) initDomain(KS, pid);
-  DS.pid = pid; DS.mode = null; DS.sel = null; DS.built = 0; DS.snapped = false; DS.branch = branchId || null;
+  DS.pid = pid; DS.mode = null; DS.sel = null; DS.built = 0; DS.snapped = false; DS.branch = branchId || null; DS.wide = false;
   var C0 = branchId ? KS.castles[branchId] : null;
   DS.who = C0 ? C0.owner : KS.provs[pid].owner;
-  DS.provOK = !C0 && KS.provs[pid].owner === KS.player && KS.phase === 'player' && !KS.provs[pid].acted && (!didCmd(KS.provs[pid], 'develop')) && !cmdFull(KS.provs[pid]);
-  DS.who = KS.player;
-  // この 画面で いっしょに 内政できる：となりの 国に ある じぶんの 支城の 所領
+  // 内政は 領地 ぜんぶが 対象（めいれいは つかわない・お金の かぎり）
+  var canAct = KS.phase === 'player';
+  DS.provOK = KS.provs[pid].owner === KS.player && canAct;
   DS.devBr = {}; DS.brOK = {};
-  if (KS.castles) Object.keys(KS.castles).forEach(function (k) {
-    var c9 = KS.castles[k]; if (c9.owner !== KS.player || KS.provs[c9.prov].owner === KS.player) return;
-    if (k === branchId || castleLinks(KS, k).indexOf(pid) >= 0) DS.brOK[k] = KS.phase === 'player' && c9.dev !== KS.turn;
-  });
+  if (KS.castles) Object.keys(KS.castles).forEach(function (k) { if (KS.castles[k].owner === KS.player) DS.brOK[k] = canAct; });
+  // はじめに うつす はんい：えらんだ 城の まわり。⤢で 領地 ぜんぶ
   var hx = d[pid].hexes, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-  if (C0) hx = hx.filter(function (h) { return regionAt(h[0], h[1]) === branchId; });   // 支城の 所領を 大きく
-  else Object.keys(DS.brOK).forEach(function (k) { hx = hx.concat(d[KS.castles[k].prov].hexes.filter(function (h) { return regionAt(h[0], h[1]) === k; })); });
+  if (C0) hx = hx.filter(function (h) { return regionAt(h[0], h[1]) === branchId; });
   hx.forEach(function (h) { var q = domXY(h[0], h[1]); x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
   DS.bb = [x0 - 2, y0 - 2, x1 + 2, y1 + 2];
-  DS.canBuild = DS.provOK || Object.keys(DS.brOK).some(function (k) { return DS.brOK[k]; });
+  var ax0 = 1e9, ax1 = -1e9, ay0 = 1e9, ay1 = -1e9; DS.myProvs = {};
+  PROVS.forEach(function (p9) { d[p9.id].hexes.forEach(function (h) { if (regionOwner(KS, h[0], h[1]) !== KS.player) return; DS.myProvs[p9.id] = 1; var q = domXY(h[0], h[1]); ax0 = Math.min(ax0, q[0]); ax1 = Math.max(ax1, q[0]); ay0 = Math.min(ay0, q[1]); ay1 = Math.max(ay1, q[1]); }); });
+  DS.bbAll = ax0 < 1e9 ? [ax0 - 2, ay0 - 2, ax1 + 2, ay1 + 2] : DS.bb;
+  Object.keys(DS.myProvs).forEach(function (q) { if (!KS.provs[q].bld) initDomain(KS, q); });
+  DS.canBuild = canAct && Object.keys(DS.myProvs).length > 0;
   // 担当の 奉行（政）：城主が あいていれば 城主、いなければ 政の いちばん 高い 家臣
   KS.curOff = null;
   if (DS.canBuild) { var fr0 = freeOfficers(KS, KS.player).filter(domOffOK).sort(function (a, b) { return b.st[1] - a.st[1]; }), h0 = officerAt(KS, pid); if (h0 && !domOffOK(h0)) h0 = null; KS.curOff = h0 && !offBusy(KS, h0) && h0.clan === KS.player ? h0.id : (fr0[0] ? fr0[0].id : null); }
@@ -7351,7 +7351,7 @@ function openDomain(pid, branchId) {
   domResize(); domFit(); domPanel(); domRender();
 }
 // 内政の 奉行に なれる 家臣：この 国の 城か、いっしょに 内政する 支城に いる
-function domOffOK(o) { return o && (offHere(KS, o, DS.pid) || (DS.brOK && DS.brOK[o.at] !== undefined) || o.at === DS.branch); }
+function domOffOK(o) { return !!(o && o.clan === KS.player); }   // 内政の 奉行は どの 城の 家臣でも
 function domXY(c, r) { return [(c + 0.5 * (r & 1)) * 1.7320508, r * 1.5]; }   // 半径1の ヘックス
 function domResize() { var cv = DS.cv; DS.dpr = Math.min(2, window.devicePixelRatio || 1); DS.W = cv.offsetWidth; DS.H = cv.offsetHeight; cv.width = Math.round(DS.W * DS.dpr); cv.height = Math.round(DS.H * DS.dpr); }
 function domArea() { var top = ($('dhud').offsetHeight || 50) + 4, bot = ($('dbottom').offsetHeight || 150) + 4; return { top: top, h: Math.max(80, DS.H - top - bot) }; }
@@ -7359,17 +7359,14 @@ function domFit() {
   var a = domArea(), bb = DS.bb, bw = bb[2] - bb[0], bh = bb[3] - bb[1];
   DS.s = Math.min(DS.W / bw, a.h / bh) * 0.96;
   // 小さすぎると タップしにくいので 城の まわりを 大きめに
-  if (DS.s < 9) { DS.s = Math.min(16, Math.max(9, DS.s * 2.2)); var cas = DS.branch ? branchHexes()[DS.branch] : castleHex(DS.pid), q = domXY(cas[0], cas[1]); DS.x = DS.W / 2 - q[0] * DS.s; DS.y = a.top + a.h / 2 - q[1] * DS.s; return; }
+  if (DS.s < 9 && !DS.wide) { DS.s = Math.min(16, Math.max(9, DS.s * 2.2)); var cas = DS.branch ? branchHexes()[DS.branch] : castleHex(DS.pid), q = domXY(cas[0], cas[1]); DS.x = DS.W / 2 - q[0] * DS.s; DS.y = a.top + a.h / 2 - q[1] * DS.s; return; }
   DS.x = (DS.W - bw * DS.s) / 2 - bb[0] * DS.s; DS.y = a.top + (a.h - bh * DS.s) / 2 - bb[1] * DS.s;
 }
 function domHexPath(c, x, y, r) { c.beginPath(); for (var i = 0; i < 6; i++) { var a = Math.PI / 180 * (60 * i - 30); var px = x + r * Math.cos(a), py = y + r * Math.sin(a); if (i) c.lineTo(px, py); else c.moveTo(px, py); } c.closePath(); }
 // この 画面で その マスに たてて よいか（本国の 内政、または じぶんの 支城の 所領）
 function domHexOK(cc, r) {
-  var w = worldMap(), pv = w.provAt(cc, r); if (!pv) return null;
-  var rg = regionAt(cc, r);
-  if (rg && rg.indexOf('_') > 0 && DS.brOK[rg] !== undefined) return (DS.brOK[rg] || DS.devBr[rg]) ? pv : null;
-  if (pv === DS.pid && DS.provOK) return pv;
-  return null;
+  var w = worldMap(), pv = w.provAt(cc, r); if (!pv || KS.phase !== 'player') return null;
+  return regionOwner(KS, cc, r) === KS.player ? pv : null;   // じぶんの 領地なら どこでも
 }
 // ---- 地名（町・村・湖・島・山）。[名前, 経度, 緯度, しゅるい] ----
 var GEO_NAMES = [
@@ -7509,7 +7506,8 @@ function domRender() {
   function icon(cc2, rr2, txt, bg) { var q4 = domXY(cc2, rr2), x2 = DS.x + q4[0] * s, y2 = DS.y + q4[1] * s; if (x2 < -s || y2 < -s || x2 > DS.W + s || y2 > DS.H + s) return; if (bg) { c.beginPath(); c.arc(x2, y2, s * 0.8, 0, Math.PI * 2); c.fillStyle = bg; c.fill(); } c.font = fs + 'px sans-serif'; c.fillText(txt, x2, y2 + 1); }
   var dep = d[pid].dep;
   for (var dk in dep) { var p0 = dk.split(',').map(Number); if (!(P.bld && P.bld[dk])) { icon(p0[0], p0[1], '◆', 'rgba(255,255,255,0.75)'); c.fillStyle = '#7a2fb0'; } }
-  var visP = {}; visP[pid] = 1; Object.keys(DS.brOK).forEach(function (k9) { visP[KS.castles[k9].prov] = 1; });
+  var visP = {}; visP[pid] = 1; Object.keys(DS.myProvs || {}).forEach(function (k9) { visP[k9] = 1; });
+  Object.keys(visP).forEach(function (vp) { if (vp === pid) return; var dp = d[vp].dep, PV = KS.provs[vp]; for (var dk2 in dp) { var p02 = dk2.split(',').map(Number); if (!(PV.bld && PV.bld[dk2]) && regionOwner(KS, p02[0], p02[1]) === KS.player) icon(p02[0], p02[1], '◆', 'rgba(255,255,255,0.75)'); } });
   Object.keys(visP).forEach(function (vp) { var PB = KS.provs[vp]; for (var bk in (PB.bld || {})) { var b = PB.bld[bk], p1 = bk.split(',').map(Number); if (vp !== pid && regionOwner(KS, p1[0], p1[1]) !== DS.who) continue; if (b === 'field') { if (s >= 14) icon(p1[0], p1[1], '🌾'); continue; }
       if (b === 'toride' && gx('castle_toride')) { var ti = gx('castle_toride'), q9 = domXY(p1[0], p1[1]), tw9 = s * 2.2, th9 = tw9 * ti.naturalHeight / ti.naturalWidth; c.drawImage(ti, DS.x + q9[0] * s - tw9 / 2, DS.y + q9[1] * s + s * 0.6 - th9, tw9, th9); continue; }
       icon(p1[0], p1[1], BLD[b === 'town0' ? 'town' : b].icon, 'rgba(255,250,235,0.85)'); } });
@@ -7559,7 +7557,7 @@ function domPanel() {
   var who = DS.who, regs = provRegions(KS, pid).filter(function (g) { return g.owner === who; }), fsh = 0, nF = 0;
   regs.forEach(function (g) { fsh += g.fshare; nF += g.fields; });
   var sp = provSplit(KS, pid, false), nen = nenguOf(KS, pid, who);
-  $('dTitle').textContent = DS.branch ? '🏰 ' + brName(DS.branch) + 'の 所領（' + PROV_BY[pid].name + '）' : '🗾 ' + PROV_BY[pid].name + 'の 領内';
+  $('dTitle').textContent = '🗾 ' + CLANS[KS.player].name + 'の 領地（' + (DS.branch ? brName(DS.branch) : PROV_BY[pid].name) + ' ふきん）';
   $('dStat').textContent = '💰' + kan(KS.clans[KS.player].gold) + '　🌾' + Math.round(P.koku * fsh * 10) / 10 + '万石（田畑 ' + nF + '）　秋の 年貢 約' + kan(nen) + '　🏘 +' + kan(Math.max(0, (sp[who] || 0))) + '/きせつ';
   var info = '';
   if (DS.sel) {
@@ -7571,9 +7569,9 @@ function domPanel() {
     if (b) info += '　' + (b === 'town0' ? '🏘 城下町' : BLD[b].icon + ' ' + BLD[b].name + (b === 'meibutsu' ? '（' + MEIBUTSU[spv] + '）' : b === 'mine' && dep ? '（' + MINE_NAME[dep.type] + '・+' + kan(MINE_INC[dep.type]) + '/きせつ）' : ''));
     if (dep && !b) info += '　◆ 鉱脈：' + dep.name + '（' + MINE_NAME[dep.type] + '）';
     var ro2 = regionAt(DS.sel[0], DS.sel[1]); if (ro2 && w.provAt(DS.sel[0], DS.sel[1])) { var ow2 = regOwnerOf(KS, ro2) || SP.owner; info += '　<small>（' + (ro2.indexOf('_') > 0 ? brName(ro2) : castleNameOf(KS, spv)) + 'の 所領・' + (CLANS[ow2] ? CLANS[ow2].name : '') + '）</small>'; }
-    if (DS.mode && DS.canBuild) { var hp1 = domHexOK(DS.sel[0], DS.sel[1]); var ch = hp1 ? canBuild(KS, hp1, DS.sel[0], DS.sel[1], DS.mode, DS.who) : { ok: false, msg: ro2 && DS.brOK[ro2] === false ? 'この 支城の 所領は この きせつ もう 内政した' : 'ここは この 画面では 内政 できない' }; if (!ch.ok && ch.msg) info += '<br><span style="color:#ffb0a0">' + ch.msg + '</span>'; }
+    if (DS.mode && DS.canBuild) { var hp1 = domHexOK(DS.sel[0], DS.sel[1]); var ch = hp1 ? canBuild(KS, hp1, DS.sel[0], DS.sel[1], DS.mode, DS.who) : { ok: false, msg: 'ここは じぶんの 領地では ない' }; if (!ch.ok && ch.msg) info += '<br><span style="color:#ffb0a0">' + ch.msg + '</span>'; }
   } else info = DS.canBuild ? (DS.mode ? 'みどりの マスを タップすると ' + BLD[DS.mode].name + 'を たてる。' + BLD[DS.mode].desc : 'たてたい ものを えらんで、マップの みどりの マスを タップ。いくつでも たてられる（お金の かぎり）。') :
-    (DS.branch ? (KS.castles[DS.branch].dev === KS.turn ? 'この きせつの 所領の 内政は おわった。見るだけ。' : 'いまは 見るだけ。') : KS.provs[pid].owner !== KS.player ? 'ほかの 家の 国。見るだけ。' : didCmd(P, 'develop') ? 'この きせつの 内政は おわった。見るだけ。' : 'いまは 見るだけ。');
+    'いまは 見るだけ（ほかの 大名の ばん）。';
   // 担当の 奉行
   if (DS.canBuild) {
     var fr1 = officersOf(KS, KS.player).filter(function (o) { return (!offBusy(KS, o) || o.id === KS.curOff) && domOffOK(o); }).sort(function (a, b) { return b.st[1] - a.st[1]; });
@@ -7581,7 +7579,7 @@ function domPanel() {
     info = '<div class="koffpick">🧑‍💼 奉行（政）：<select id="dOff">' + (fr1.length ? fr1.map(function (o) { return '<option value="' + o.id + '"' + (o.id === KS.curOff ? ' selected' : '') + '>' + (premiumP(o.st[1]) > 0 ? '★' : '') + o.name + '（政' + o.st[1] + '）</option>'; }).join('') : '<option value="">この 城に あいている 家臣なし</option>') + '</select><small>' + (co ? offPremTxt(co, 1) + '（田畑は 石高 倍・ほかは 費用 半分 もどる）' : '') + '</small></div>' + info;
   }
   var brL = Object.keys(DS.brOK || {}).filter(function (k2) { return k2 !== DS.branch; });
-  if (!DS.sel && brL.length) info += '<br><small>🏰 この 画面で いっしょに 内政できる 所領：' + brL.map(function (k2) { return brName(k2) + '（' + PROV_BY[KS.castles[k2].prov].name + '）' + (DS.brOK[k2] || DS.devBr[k2] ? '' : '✓済'); }).join('・') + '</small>';
+  if (!DS.sel && DS.canBuild) info += '<br><small>🗾 <b>領地 ぜんぶ</b>（本城・支城の 所領、' + Object.keys(DS.myProvs || {}).length + 'か国）で たてられる。めいれいは つかわない（お金の かぎり）。⤢で 領地 ぜんぶを 見る。</small>';
   if (!DS.sel) info += '<br><small>🏯 じぶんの 城を タップすると、その 城の 徴兵・家臣の 配置が できる。</small>';
   if (DS.canBuild && !DS.sel) info += '<br><small>くらい ところは ほかの 家の 土地。黄色い 点線が 持ち主の さかい。</small>';
   if (DS.built) info += '<br><small>この 内政で たてた もの：' + DS.built + 'つ（↩で とりけし できる）</small>';
@@ -7705,7 +7703,7 @@ function initDomainInput() {
     tap: function (x, y) { domTap(x, y); }
   });
   $('dDoneBtn').onclick = function () { SFX.tap(); closeDomain(); };
-  $('dFitBtn').onclick = function () { SFX.tap(); domFit(); domRender(); };
+  $('dFitBtn').onclick = function () { SFX.tap(); DS.wide = !DS.wide; var b0 = DS.bb; if (DS.wide && DS.bbAll) DS.bb = DS.bbAll; domFit(); DS.bb = b0; domRender(); };
   window.addEventListener('resize', function () { if (DS.ctx && $('domScreen').classList.contains('on')) { domResize(); domRender(); } });
 }
 
