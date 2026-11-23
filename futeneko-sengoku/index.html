@@ -412,6 +412,8 @@ button{font-family:inherit;cursor:pointer;}
       <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
       <li><b>🌾 内政は 領内マップで</b>：じぶんの 国の 中の ヘックスに たてる。<b>🌾田畑</b>（開墾：川や 田畑の 近く。石高 +0.5万石。石高の 上限は なく、水を ひける 土地が あるだけ ふやせる。ただし ひらくほど 人手が たりなくなって 高くなる。森・丘は 割高）・<b>🏘町</b>（道や 城の となり。まいきせつ +200貫。町 1つを 田畑 6マスで ささえる）・<b>⛏鉱山</b>（◆鉱脈の ある 国だけ：石見銀山・吉岡銅山・奥出雲の たたら など）・<b>🏺名産</b>（町の となり。備前焼・因州和紙・備後表 など）・<b>🧂塩田</b>（海べ）。お金の かぎり いくつでも たてられ、↩で 1つずつ もどせる。たてた ものは 合戦の ちずにも でる。🗾ボタンで いつでも 見られる。</li>
       <li><b>🙇 降参した へい</b>：城を おとすと、のこった てきの へいの 3割くらい（せめた 国の 城主の 政が 高いほど ふえる。2〜5割）が 降参して みかたに くわわる。のこりは となりの 国へ にげる。</li>
+      <li><b>🙇 たおした てきも 仲間に</b>：合戦に かつと、せめても 守りも、たおした てきの へいの 1〜2割くらい（大将の 政が 高いほど ふえる）が けがから たちなおって 降参し、みかたに くわわる。まけると みかたの へいが てきに くだる。</li>
+      <li><b>🍙 にげた てきの 兵糧</b>：攻めてきた てきが ひきあげたり にげたり したら、のこした 兵糧の 半分（ぜんめつ させたら 8わり。とどいて いない 小荷駄の 荷も）が 城の 蔵に はいる。兵糧ぎれで ひきあげた ときは なにも のこらない。</li>
       <li><b>🏯 城を おとして いく</b>：国ごとに 本城と 支城（2つ）が ある。となりの 国から せめると、まず その 道の 入り口を まもる <b>支城</b>を おとす（地図の 小さな 櫓。赤く 光るのが せめられる 城）。支城を とれば <b>本城</b>を せめられ、本城が おちると その 国が 手に はいる（のこった 支城の 多くは 降参、のこりは 抵抗を つづける）。支城が せめられると 本城から 後詰めが くる。支城の まわりは その城の <b>所領</b>（国の 1〜3わりほど）。支城を とると 所領が じぶんの 色に かわり、その ぶんの 年貢・収入が はいる（とられた 側は へる。とられた 所領には 田畑や 町を つくれない）。じぶんの 支城を タップして「所領を ひらく」と、その まわりに 田畑・町などを つくれる（支城ごとに きせつに 1回。年貢は 田畑の かずで わける）。支城を タップすると 守備兵の 出し入れが できる。</li>
       <li><b>⚔ 合戦は 国ざかいから</b>：となりの 国から 道を すすみ、国ざかいを こえて 城へ むかう。<b>本丸に はいれば かち</b>（大将を たおしても かち）。ターンの かぎりは なく、<b>兵糧</b>が つきると ひきあげ。出陣の とき なん日ぶん もっていくか えらぶ（お金が かかる。へいが へると ながもち）。城が とおい 国ほど 日数が いる。合戦中は「🐴補給」で <b>小荷駄隊</b>を よべる（お金が かかる）。攻め口に あらわれるので、本隊（みかた 3隊いじょう）の 2マス いないまで はこぶと 兵糧が ふえる。小荷駄隊は たたかえず、森・山・丘を みかたなしで すすむと 伏兵に おそわれ、てきにも ねらわれる。てきの 小荷駄隊を おそえば 兵糧ぎれを ねらえる。出陣の とき、おなじ 城を せめられる ほかの 国が あれば「＋◯◯からも せめる」で <b>何か所からも 同時に</b> せめられる（それぞれの 攻め口から あらわれる）。</li>
       <li><b>🚧 普請と 改築</b>：領内（内政）で <b>柵・堀・砦</b>を つくれる。合戦の とき 地図に そのまま あらわれ、柵は てきの 足どめ、堀は わたりにくく、砦は 柵に かこまれた 小さな 城に なる。<b>城の 改築</b>（Lv3まで）で 石垣と 門が かたくなり 守りが つよく なる。支城も 所領の 内政から 改築 できる。</li>
@@ -470,7 +472,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v6.2';
+var VERSION = 'v6.3';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2976,12 +2978,60 @@ function backReinf(S, b, list) {
     else if (S.provs[src] && S.provs[src].owner === b.defClan && S.provs[src].units.length < PROV_CAP) S.provs[src].units.push(u);
   });
 }
+// たおした てきの へいの 一部は 降参して かった がわに くわわる（けがの かるい へい）
+var KILL_JOIN = 0.15;
+function killJoinRate(S, b, side) { var o = S.officers ? S.officers[side === 'atk' ? b.atkOff : b.defOff] : null; return Math.max(0.08, Math.min(0.25, KILL_JOIN + (offP(o) - 50) / 400)); }
+// まけた がわが うしなった へい（にげた・生きのこった ぶんは のぞく）を 兵種ごとに
+function lostByType(init, surv, fled) {
+  var left = {}; (surv || []).concat(fled || []).forEach(function (u) { left[u.uid] = (left[u.uid] || 0) + u.hp; });
+  var by = {}; (init || []).forEach(function (u) { if (u.type === 'taisho' || u.type === 'konida') return; var l = Math.max(0, u.hp - (left[u.uid] || 0)); if (l > 0) by[u.type] = (by[u.type] || 0) + l; });
+  return by;
+}
+function killJoin(S, b, res) {
+  var w = res.winner, lose = w === 'atk' ? 'def' : 'atk';
+  var by = lostByType(lose === 'atk' ? b.atkUnits : b.defUnits, lose === 'atk' ? res.atkSurv : res.defSurv, lose === 'atk' ? res.atkFled : res.defFled);
+  var rate = killJoinRate(S, b, w), out = [], men = 0;
+  Object.keys(by).forEach(function (t) {
+    var hp = Math.round(by[t] * rate);
+    while (hp >= 1) { var nu = newUnit(S, t); nu.hp = Math.min(10, hp); hp -= nu.hp; out.push(nu); men += nu.hp * UNIT_TYPES[t].men / 10; }
+  });
+  return { list: out, men: Math.round(men) };
+}
+// 攻めてが ひきあげた とき：のこした 兵糧（石）
+function lootRice(b, res) {
+  if (res.winner !== 'def' || res.foodOut) return 0;
+  var left = res.atkFood !== undefined ? res.atkFood : menOfUnits(b.atkUnits) * RICE_PER_MAN * (b.foodDays || 0) * 0.35;   // おまかせは めやす
+  var share = res.atkSurv && res.atkSurv.length ? 0.5 : 0.8;   // ぜんめつなら ほとんど、にげたなら 半分を おいていく
+  return Math.round(left * share);
+}
 function applyBattle(S, b, res) {
   // 援軍の 生きのこりは あとで じぶんの 城へ もどる
   var rein = [];
   if (b.reinf && res.defSurv) { rein = res.defSurv.filter(function (u) { return b.reinf[u.uid]; }); res.defSurv = res.defSurv.filter(function (u) { return !b.reinf[u.uid]; }); }
+  var kj = killJoin(S, b, res), loot = lootRice(b, res);
   var out = applyBattle0(S, b, res);
   if (rein.length) { backReinf(S, b, rein); res.reinBack = rein.length; }
+  // たおした てきの 降参兵：かった がわの 城へ（いっぱいなら となりの 国へ）
+  var wc = res.winner === 'atk' ? b.atkClan : b.defClan;
+  if (kj.list.length && wc) {
+    var put = 0, C1 = b.castleId ? S.castles[b.castleId] : null, P1 = S.provs[b.to];
+    // 支城を おとした ときは 出陣した 国へ（城に のこす 隊の かずは かえない）
+    var spots = C1 && res.winner === 'atk' ? [[S.provs[b.from].units, PROV_CAP, S.provs[b.from].owner], [P1.units, PROV_CAP, P1.owner]]
+      : [[C1 ? C1.units : null, 8, C1 ? C1.owner : null], [P1.units, PROV_CAP, P1.owner]].concat(res.winner === 'atk' ? [[S.provs[b.from].units, PROV_CAP, S.provs[b.from].owner]] : []);
+    kj.list.forEach(function (u) {
+      for (var i = 0; i < spots.length; i++) { var sp = spots[i]; if (sp[0] && sp[2] === wc && sp[0].length < sp[1]) { sp[0].push(u); put += u.hp * UNIT_TYPES[u.type].men / 10; return; } }
+    });
+    put = Math.round(put);
+    if (put) { res.killMen = put; res.killSide = res.winner; logC(S, 'たおした てきの へい ' + put.toLocaleString('ja-JP') + '人が 降参して ' + CLANS[wc].name + 'に くわわった', wc === S.player ? 'good' : (b.atkClan === S.player || b.defClan === S.player ? 'bad' : 'sys')); }
+  }
+  // 攻めてが にげた：のこした 兵糧を 城の 蔵へ
+  if (loot > 0 && b.defClan) {
+    var cid = b.castleId || null, own = cid ? S.castles[cid].owner : S.provs[b.to].owner;
+    if (own === b.defClan) {
+      var cap = castleFoodCap(S, b.to, cid), cur = castleFood(S, b.to, cid), add = Math.max(0, Math.min(loot, Math.round(cap * 1.5) - cur));
+      if (add > 0) { setCastleFood(S, b.to, cid, cur + add); res.lootRice = add; logC(S, CLANS[b.defClan].name + 'は にげた てきの 兵糧 ' + add + '石を てに いれた', b.defClan === S.player ? 'good' : (b.atkClan === S.player ? 'bad' : 'sys')); }
+    }
+  }
   return out;
 }
 function applyBattle0(S, b, res) {
@@ -6042,6 +6092,8 @@ function kFightBattle(b) {
 function kBattleFinished() {
   var b = G.kBattle, pSide = G.playerSide;
   var res = { winner: G.winner, atkSurv: survivors(G, 'atk'), defSurv: survivors(G, 'def'), atkFled: escaped(G, 'atk'), defFled: escaped(G, 'def'), defFood: G.defFood };
+  // 攻めての のこり 兵糧（人日 → 石）。とどいて いない 小荷駄の 荷も
+  if (G.food !== undefined) { var cv = 0; G.units.forEach(function (u) { if (u.type === 'konida' && u.side === 'atk' && u.hp > 0 && !u.delivered) cv += u.cargo || 0; }); res.atkFood = (G.food + cv) * RICE_PER_MAN; res.foodOut = G.food <= 0; }
   // 大将を うしなった がわは、のこりの へいも すこし にげる
   G = null;
   $('resultBox').classList.remove('on');
@@ -6069,6 +6121,8 @@ function kFinishBattle(b, res, auto) {
   var img = SPR[(win ? charById(KS.face).win : charById(KS.face).lose) || 'fute_joy'];
   kModal(win ? 'しょうり！' : 'はいぼく…', '<div class="kres"><img src="' + img + '" alt=""><p><b>' + txt + '</b>' + (auto ? '（おまかせ）' : '') + '</p>' +
     '<p class="small">みかた ' + menStr(before) + ' → ' + menStr(after) + '　／　てき ' + menStr(eBefore) + ' → ' + menStr(eAfter) + fledTxt + (res.prisMen ? '<br>' + (pSide === 'atk' ? '🙇 てきの へい ' + menStr(res.prisMen) + 'が 降参して みかたに くわわった' : '🙇 みかたの へい ' + menStr(res.prisMen) + 'が てきに 降参した') : '') +
+    (res.killMen ? '<br>🙇 ' + (res.killSide === pSide ? 'たおした てきの へい ' + menStr(res.killMen) + 'が 降参して みかたに くわわった' : 'やぶれた みかたの へい ' + menStr(res.killMen) + 'が てきに くだった') : '') +
+    (res.lootRice ? '<br>🍙 ' + (pSide === 'def' ? 'にげた てきの 兵糧 ' + res.lootRice + '石を てに いれた（城の 蔵へ）' : 'ひきあげる とき 兵糧 ' + res.lootRice + '石を てきに うばわれた') : '') +
     (res.reinBack ? '<br>🚩 援軍 ' + res.reinBack + '隊は もとの 城へ もどった' : '') +
     (b.castleId && win && pSide === 'atk' && res.keptN ? '<br>🏯 ' + b.castleName + 'に ' + res.keptN + '隊を のこし' + (res.backN ? '、' + res.backN + '隊は ' + PROV_BY[b.from].name + 'へ もどった' : 'た') : '') + '</p></div>',
     [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); if (b.castleId && win && pSide === 'atk' && res.backUids && KS.provs[b.from].owner === KS.player && KS.castles[b.castleId].owner === KS.player) kDeployBox(b.castleId, b.from, res.backUids, kAfterBattle); else kAfterBattle(); } }]);
