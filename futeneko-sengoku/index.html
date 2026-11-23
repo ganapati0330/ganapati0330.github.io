@@ -452,7 +452,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v5.3';
+var VERSION = 'v5.4';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -4937,6 +4937,21 @@ function kBuildTerrain() {
   var sx = KK / w.KX / 2, sy = 0.8660254 * KK * KLAT / w.KY;
   kMap.terrRect = [(WORLD.lon0 - KLON0) * KK - 0.5 * sx * 2 * 0.5, (KLAT0 - WORLD.lat0) * KK * KLAT - 0.5 * sy, cv.width * sx, cv.height * sy];
   var land = new Path2D(); PROVS.forEach(function (p) { land.addPath(kMap.paths[p.id]); }); kMap.land = land;
+  // ヘックスの 中心（国取り地図の 座標）と 大きさ
+  var N = w.w * w.h, HX = new Float32Array(N), HY = new Float32Array(N);
+  for (var r1 = 0; r1 < w.h; r1++) for (var c1 = 0; c1 < w.w; c1++) { var l1 = w.ll(c1, r1), q0 = kProj(l1[0], l1[1]); HX[r1 * w.w + c1] = q0[0]; HY[r1 * w.w + c1] = q0[1]; }
+  kMap.HX = HX; kMap.HY = HY;
+  var mr = Math.floor(w.h / 2), mc = Math.floor(w.w / 2);
+  kMap.hexW = HX[mr * w.w + mc + 1] - HX[mr * w.w + mc];           // となりとの きょり（よこ）
+  kMap.hexRow = HY[(mr + 1) * w.w + mc] - HY[mr * w.w + mc];        // 行の たかさ
+  // 国ごとの ヘックスの かたち（えらんだ 国・ねらう 国の ぬりに つかう）
+  kMap.hexPaths = {};
+  var hw = kMap.hexW / 2, hr = kMap.hexRow / 1.5;
+  for (r1 = 0; r1 < w.h; r1++) for (c1 = 0; c1 < w.w; c1++) {
+    var pv1 = w.provAt(c1, r1); if (!pv1) continue;
+    var P1 = kMap.hexPaths[pv1] || (kMap.hexPaths[pv1] = new Path2D()), x1 = HX[r1 * w.w + c1], y1 = HY[r1 * w.w + c1];
+    P1.moveTo(x1, y1 - hr); P1.lineTo(x1 + hw, y1 - hr / 2); P1.lineTo(x1 + hw, y1 + hr / 2); P1.lineTo(x1, y1 + hr); P1.lineTo(x1 - hw, y1 + hr / 2); P1.lineTo(x1 - hw, y1 - hr / 2); P1.closePath();
+  }
   // 国ざかいの 線（ヘックスの へり）：となりあう 2国ごと
   kMap.borders = {};
   for (var rr = 0; rr < w.h; rr++) for (var cc = 0; cc < w.w; cc++) {
@@ -4964,6 +4979,67 @@ function kBuildTerrain() {
     return { a: rt.a, b: rt.b, type: rt.type, name: rt.name, pts: pts, mid: mid };
   });
 }
+// ---- ヘックスで かいた 中国地方（地形 ＋ 持ち主の いろ）----
+var KHEX_GLYPH = { f: 'forest', h: 'hill', m: 'mount', M: 'snow' };
+function kHash(c, r) { var h = (c * 374761393 + r * 668265263) >>> 0; h = (h ^ (h >>> 13)) * 1274126177 >>> 0; return (h & 1023) / 1023; }
+function kShade(hex, k) { var n = parseInt(hex.slice(1), 16), R = n >> 16, G = (n >> 8) & 255, B = n & 255; return 'rgb(' + Math.round(R * k) + ',' + Math.round(G * k) + ',' + Math.round(B * k) + ')'; }
+function kHexOwner(c, r, pv) {
+  var rg = regionAt(c, r); if (rg && rg.indexOf('_') > 0 && KS.castles[rg] && KS.castles[rg].owner) return KS.castles[rg].owner;
+  return KS.provs[pv].owner;
+}
+function kHexLayer() {
+  var w = worldMap(); if (!w || !kMap.HX) return null;
+  var key = PROVS.map(function (p) { return KS.provs[p.id].owner; }).join(',') + '|' + (KS.castles ? Object.keys(KS.castles).map(function (k) { return KS.castles[k].owner; }).join(',') : '');
+  var gOK = gfxOn && gfxOn() ? 1 : 0; key += gOK;
+  if (kMap.hexKey === key && kMap.hexCv) return kMap.hexCv;
+  var T0 = performance.now(), t = kMap.terrRect, P = Math.min(3900 / t[2], 2900 / t[3], 11 / kMap.hexW);   // 1ヘックス 11px くらい（スマホの 上限に おさまる）
+  var cv = kMap.hexCv || document.createElement('canvas'); cv.width = Math.ceil(t[2] * P); cv.height = Math.ceil(t[3] * P);
+  var x = cv.getContext('2d'); x.clearRect(0, 0, cv.width, cv.height);
+  var hw = kMap.hexW / 2 * P, hr = kMap.hexRow / 1.5 * P;
+  function hexP(cx, cy, k) { x.beginPath(); x.moveTo(cx, cy - hr * k); x.lineTo(cx + hw * k, cy - hr * k / 2); x.lineTo(cx + hw * k, cy + hr * k / 2); x.lineTo(cx, cy + hr * k); x.lineTo(cx - hw * k, cy + hr * k / 2); x.lineTo(cx - hw * k, cy - hr * k / 2); x.closePath(); }
+  // ちいさな 地形の 絵（さきに 縮小して おく）
+  var gl = {}, gw = Math.max(6, Math.round(hw * 2.1));
+  if (gOK) for (var gk in KHEX_GLYPH) { var im = gx(KHEX_GLYPH[gk]); if (!im) continue; var gc = document.createElement('canvas'), gh = Math.round(gw * im.naturalHeight / im.naturalWidth); gc.width = gw; gc.height = gh; gc.getContext('2d').drawImage(im, 0, 0, gw, gh); gl[gk] = gc; }
+  var rgbC = {};
+  for (var r = 0; r < w.h; r++) for (var c = 0; c < w.w; c++) {
+    var i = r * w.w + c, tt = w.T[i]; if (tt === 's') continue;
+    var cx = (kMap.HX[i] - t[0]) * P, cy = (kMap.HY[i] - t[1]) * P, pv = w.provAt(c, r), nz = 0.92 + kHash(c, r) * 0.16;
+    hexP(cx, cy, 1.04);
+    if (tt === 'X') { x.fillStyle = '#d9cfb4'; x.fill(); continue; }   // 中国地方の そと
+    x.fillStyle = kShade(TER_COL[tt] || '#ccc', nz); x.fill();
+    if (pv && tt !== 'X') {
+      var ow = kHexOwner(c, r, pv);
+      if (ow && CLANS[ow]) { x.globalAlpha = tt === 'r' ? 0.18 : tt === 'M' ? 0.3 : 0.46; x.fillStyle = CLANS[ow].color; x.fill(); x.globalAlpha = 1; }
+    }
+    var g = gl[tt]; if (g) x.drawImage(g, cx - g.width / 2, cy + hr * 0.75 - g.height);
+  }
+  // ヘックスの へり（うすく）
+  x.strokeStyle = 'rgba(40,30,20,0.14)'; x.lineWidth = 0.7; x.beginPath();
+  for (r = 0; r < w.h; r++) for (c = 0; c < w.w; c++) {
+    var j = r * w.w + c; if (w.T[j] === 's' || w.T[j] === 'X') continue;
+    var ex = (kMap.HX[j] - t[0]) * P, ey = (kMap.HY[j] - t[1]) * P;   // 上・右上・右下 の 3辺だけ（となりと 重ならない）
+    x.moveTo(ex - hw, ey - hr / 2); x.lineTo(ex, ey - hr); x.lineTo(ex + hw, ey - hr / 2); x.lineTo(ex + hw, ey + hr / 2);
+  }
+  x.stroke();
+  kMap.hexCv = cv; kMap.hexKey = key; kMap.hexP = P; kMap.hexMs = Math.round(performance.now() - T0);
+  return cv;
+}
+// ちかよったら：見えている ヘックスを くわしく（大きな 絵で）
+function kHexDetail(c) {
+  var w = worldMap(), s = kMap.s; if (!w || !kMap.HX || kMap.hexW * s < 20) return;
+  var t = kMap.terrRect, x0 = -kMap.x / s, y0 = -kMap.y / s, x1 = (kMap.W - kMap.x) / s, y1 = (kMap.H - kMap.y) / s;
+  var sx = t[2] / (w.w * 2 + 1), sy = t[3] / w.h;
+  var r0 = Math.max(0, Math.floor((y0 - t[1]) / sy) - 2), r1 = Math.min(w.h - 1, Math.ceil((y1 - t[1]) / sy) + 2);
+  var c0 = Math.max(0, Math.floor((x0 - t[0]) / sx / 2) - 3), c1 = Math.min(w.w - 1, Math.ceil((x1 - t[0]) / sx / 2) + 3);
+  if ((r1 - r0) * (c1 - c0) > 9000) return;
+  var hw = kMap.hexW / 2, hr = kMap.hexRow / 1.5, gw = hw * 2.15;
+  for (var r = r0; r <= r1; r++) for (var cc = c0; cc <= c1; cc++) {
+    var i = r * w.w + cc, tt = w.T[i], g = KHEX_GLYPH[tt]; if (!g) continue;
+    var im = gx(g); if (!im) continue;
+    var cx = kMap.HX[i], cy = kMap.HY[i], gh = gw * im.naturalHeight / im.naturalWidth;
+    c.drawImage(im, cx - gw / 2, cy + hr * 0.75 - gh, gw, gh);
+  }
+}
 // 支城の 所領：持ち主が 本城と ちがえば その家の いろで ぬる。どの 所領も さかいを うすく
 function kRegionLayer() {
   var w = worldMap(), R0 = castleRegions(); if (!w || !R0 || !KS.castles) return null;
@@ -4985,6 +5061,42 @@ function kRegionLayer() {
   x.putImageData(img, 0, 0);
   kMap.reg = cv; kMap.regKey = key; return cv;
 }
+// 国ざかい：ヘックスの へり。pid を わたすと その 国の まわり（海岸も）だけ
+function kDrawHexBorders(c, lw, pid, col, wd) {
+  var w = worldMap(); if (!w || !kMap.HX) return;
+  var hw = kMap.hexW / 2, hr = kMap.hexRow / 1.5;
+  // かど： 0=上 1=右上 2=右下 3=下 4=左下 5=左上 ／ となり（hexNbs の じゅん）： 0=右 1=左 2=左上 3=右上 4=左下 5=右下
+  var CX = [0, hw, hw, 0, -hw, -hw], CY = [-hr, -hr / 2, hr / 2, hr, hr / 2, -hr / 2], EDGE = { 0: [1, 2], 1: [4, 5], 2: [5, 0], 3: [0, 1], 4: [3, 4], 5: [2, 3] };
+  if (!pid) {
+    if (!kMap.bordPath) {
+      var bp = new Path2D(), cp = new Path2D();
+      for (var r = 0; r < w.h; r++) for (var cc = 0; cc < w.w; cc++) {
+        var a = w.provAt(cc, r); if (!a) continue; var nb = hexNbs(cc, r), i = r * w.w + cc;
+        for (var j = 0; j < 6; j++) {
+          var n = nb[j], b = n[0] >= 0 && n[1] >= 0 && n[0] < w.w && n[1] < w.h ? w.provAt(n[0], n[1]) : null;
+          if (b === a) continue; if (b && (j === 1 || j === 2 || j === 3)) continue;   // 国どうしは かたがわだけ
+          var e = EDGE[j], P0 = b ? bp : cp; P0.moveTo(kMap.HX[i] + CX[e[0]], kMap.HY[i] + CY[e[0]]); P0.lineTo(kMap.HX[i] + CX[e[1]], kMap.HY[i] + CY[e[1]]);
+        }
+      }
+      kMap.bordPath = bp; kMap.coastPath = cp;
+    }
+    c.lineCap = 'round';
+    c.strokeStyle = 'rgba(255,250,235,0.85)'; c.lineWidth = 2.4 * lw; c.stroke(kMap.coastPath);
+    c.strokeStyle = 'rgba(40,25,15,0.8)'; c.lineWidth = 1.8 * lw; c.stroke(kMap.bordPath);
+    return;
+  }
+  kMap.provEdge = kMap.provEdge || {};
+  if (!kMap.provEdge[pid]) {
+    var pp = new Path2D();
+    for (var r2 = 0; r2 < w.h; r2++) for (var c2 = 0; c2 < w.w; c2++) {
+      if (w.provAt(c2, r2) !== pid) continue; var nb2 = hexNbs(c2, r2), i2 = r2 * w.w + c2;
+      for (var j2 = 0; j2 < 6; j2++) { var n2 = nb2[j2]; if (n2[0] >= 0 && n2[1] >= 0 && n2[0] < w.w && n2[1] < w.h && w.provAt(n2[0], n2[1]) === pid) continue; var e2 = EDGE[j2]; pp.moveTo(kMap.HX[i2] + CX[e2[0]], kMap.HY[i2] + CY[e2[0]]); pp.lineTo(kMap.HX[i2] + CX[e2[1]], kMap.HY[i2] + CY[e2[1]]); }
+    }
+    kMap.provEdge[pid] = pp;
+  }
+  c.lineCap = 'round'; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = (wd + 2) * lw; c.stroke(kMap.provEdge[pid]);
+  c.strokeStyle = col; c.lineWidth = wd * lw; c.stroke(kMap.provEdge[pid]);
+}
 function kDrawRegions(c) {
   var cv = kRegionLayer(); if (!cv || !kMap.terrRect) return;
   c.save(); c.clip(kMap.land); c.imageSmoothingEnabled = false; var t = kMap.terrRect; c.drawImage(cv, t[0], t[1], t[2], t[3]); c.restore();
@@ -4999,10 +5111,12 @@ function kNeighborInfo(pid) {
   var set = {}; (CHUGOKU_GEO.adj[pid] || []).forEach(function (q) { set[q] = 1; }); (ADJ[pid] || []).forEach(function (q) { set[q] = 1; });
   return Object.keys(set).map(function (q) { var rt = routeOf(pid, q); return { q: q, type: rt ? rt.type : 'none', name: rt ? rt.name : null }; });
 }
+// 地図の しるしの 大きさ：ズームしても 画面で 大きく なりすぎない
+function kU(base) { return Math.min(1.6, base * Math.max(1, Math.pow(kMap.s, 0.3)) / kMap.s); }
 var RT_COL = { land: '#ffcf5a', pass: '#ff8a3a', sea: '#7fd0ff', none: '#ff3030' };
 function kDrawFocus(c, lw) {
   if (!kSel || !kMap.routes) return;
-  var u = Math.max(0.75, Math.min(1.6, 1 / kMap.s));
+  var u = kU(1);
   kNeighborInfo(kSel).forEach(function (nb) {
     var key2 = [kSel, nb.q].sort().join('|');
     if (nb.type === 'none') {
@@ -5033,7 +5147,7 @@ function kTag(c, x, y, txt, col, u) {
 }
 function kDrawRoutes(c, lw) {
   if (!kMap.routes) return;
-  var u = Math.max(0.7, Math.min(1.5, 1 / kMap.s));
+  var u = kU(1);
   kMap.routes.forEach(function (rt) {
     if (rt.type === 'none') return;
     c.beginPath(); rt.pts.forEach(function (q, i) { if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
@@ -5067,8 +5181,8 @@ function kFit(whole) {
   kMap.s = sFit;
   kMap.x = (kMap.W - bw * kMap.s) / 2 - v[0] * kMap.s; kMap.y = a.top + (a.h - bh * kMap.s) / 2 - v[1] * kMap.s;
   // たて長の 画面では 大きめに して じぶんの 国を まんなかに
-  if (!whole && KS && kMap.W < a.h * 1.2) {
-    kMap.s = Math.min(a.h / bh * 0.95, sFit * 2.2);
+  if (!whole && KS) {
+    kMap.s = kMap.W < a.h * 1.2 ? Math.min(a.h / bh * 0.95, sFit * 2.2) : sFit * 1.9;
     var mine = provsOf(KS, KS.player), cx = 0, cy = 0;
     (mine.length ? mine : [PROVS[0].id]).forEach(function (pid) { var q = kMap.labels[pid]; cx += q[0]; cy += q[1]; });
     var n = Math.max(1, mine.length); cx /= n; cy /= n;
@@ -5100,33 +5214,30 @@ function kRender() {
   for (var wy = v[1]; wy < v[1] + v[3]; wy += 30) for (var wx = v[0] + ((wy / 30) % 2) * 26; wx < v[0] + v[2]; wx += 52) { c.beginPath(); c.arc(wx, wy, 7, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }
   // まわりの 国（四国・九州・播磨）
   kMap.near.forEach(function (p) { c.fillStyle = '#d9cfb4'; c.fill(p); c.strokeStyle = 'rgba(120,100,70,0.5)'; c.lineWidth = 1 * lw; c.stroke(p); });
-  // 海岸の ふち（白い 波うちぎわ）
-  c.lineJoin = 'round';
-  PROVS.forEach(function (p) { c.strokeStyle = 'rgba(255,250,235,0.9)'; c.lineWidth = 5 * lw; c.stroke(kMap.paths[p.id]); });
   var tg = kTargets();
-  // 国の いろ
+  // 中国地方を ヘックスで（地形 ＋ 持ち主の いろ。支城の 所領も）
+  var hl = kHexLayer();
+  if (hl) { var tr = kMap.terrRect; c.imageSmoothingEnabled = kMap.hexW * kMap.s < 22; c.drawImage(hl, tr[0], tr[1], tr[2], tr[3]); c.imageSmoothingEnabled = true; }
+  else PROVS.forEach(function (p) { c.fillStyle = kColorOf(p.id); c.fill(kMap.paths[p.id]); });
+  kHexDetail(c);
+  // えらんだ 国・ねらえる 国
   PROVS.forEach(function (p) {
-    var path = kMap.paths[p.id];
-    c.fillStyle = kColorOf(p.id); c.fill(path);
-    // うすい かげ（山なみの 雰囲気）
-    c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill(path);
-    if (p.id === kSel) { c.fillStyle = 'rgba(255,255,255,0.38)'; c.fill(path); }
+    var path = (kMap.hexPaths && kMap.hexPaths[p.id]) || kMap.paths[p.id];
+    if (p.id === kSel) { c.fillStyle = 'rgba(255,255,230,0.30)'; c.fill(path); }
     else if (tg.indexOf(p.id) >= 0) {
-      c.fillStyle = kMode === 'attack' ? 'rgba(255,50,30,0.35)' : kMode === 'scheme' ? 'rgba(150,60,220,0.38)' : 'rgba(60,140,255,0.35)'; c.fill(path);
+      c.fillStyle = kMode === 'attack' ? 'rgba(255,50,30,0.32)' : kMode === 'scheme' ? 'rgba(150,60,220,0.34)' : 'rgba(60,140,255,0.32)'; c.fill(path);
       c.save(); c.clip(path); c.fillStyle = c.createPattern(kMap.stripe, 'repeat'); c.setTransform(1, 0, 0, 1, 0, 0); c.fillRect(0, 0, kMap.W * kMap.dpr, kMap.H * kMap.dpr); c.restore();
     }
   });
-  // 支城の 所領
-  kDrawRegions(c);
-  // 地形（けわしい山・山・森・川）
-  kDrawTerrain(c, lw);
-  // 国ざかい
-  PROVS.forEach(function (p) { c.strokeStyle = 'rgba(45,30,18,0.75)'; c.lineWidth = 1.6 * lw; c.stroke(kMap.paths[p.id]); });
+  // 隠岐（はこの 中の 島）は ヘックスの 外なので 国の いろで
+  if (kMap.okiBox) { var ob0 = kMap.okiBox; c.save(); c.beginPath(); c.rect(ob0[0], ob0[1], ob0[2], ob0[3]); c.clip(); PROVS.forEach(function (p) { c.fillStyle = kColorOf(p.id); c.fill(kMap.paths[p.id]); c.strokeStyle = 'rgba(255,250,235,0.9)'; c.lineWidth = 2 * lw; c.stroke(kMap.paths[p.id]); }); c.restore(); }
+  // 国ざかい（ヘックスの へりに そって）
+  kDrawHexBorders(c, lw);
   kDrawRoutes(c, lw);
   kDrawFocus(c, lw);
   // えらんだ 国の ふち
-  if (kSel) { c.strokeStyle = '#ffe24a'; c.lineWidth = 3.5 * lw; c.stroke(kMap.paths[kSel]); }
-  tg.forEach(function (q) { c.strokeStyle = kMode === 'attack' ? '#ff5a3a' : kMode === 'scheme' ? '#c48aff' : '#5aa8ff'; c.lineWidth = 3 * lw; c.setLineDash([8 * lw, 5 * lw]); c.stroke(kMap.paths[q]); c.setLineDash([]); });
+  if (kSel) kDrawHexBorders(c, lw, kSel, '#ffe24a', 3.2);
+  tg.forEach(function (q) { kDrawHexBorders(c, lw, q, kMode === 'attack' ? '#ff5a3a' : kMode === 'scheme' ? '#c48aff' : '#5aa8ff', 2.6); });
   // 隠岐の 枠
   if (kMap.okiBox) { var ob = kMap.okiBox; c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 1.5 * lw; c.setLineDash([6 * lw, 4 * lw]); c.strokeRect(ob[0], ob[1], ob[2], ob[3]); c.setLineDash([]);
     c.fillStyle = '#fff'; c.font = 'bold ' + (11 * lw * Math.max(1, kMap.s)) + 'px sans-serif'; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText('隠岐（出雲）', ob[0] + 4 * lw, ob[1] + 3 * lw); }
@@ -5134,7 +5245,7 @@ function kRender() {
   NEAR_LABELS.forEach(function (n) { var q = kProj(n[1], n[2]); c.font = (n[3] ? 'italic ' : 'bold ') + (n[3] ? 14 : 12) * lw + 'px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = n[3] ? 'rgba(255,255,255,0.55)' : 'rgba(110,90,60,0.8)'; c.fillText(n[0], q[0], q[1]); });
   // 城
   PROVS.forEach(function (p) {
-    var pin = kProj(p.pin[0], p.pin[1]), u = Math.max(0.7, Math.min(1.6, 1 / kMap.s)) ;
+    var pin = kProj(p.pin[0], p.pin[1]), u = kU(1) ;
     c.save(); c.translate(pin[0], pin[1]); c.scale(u, u);
     c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.ellipse(0, 6, 11, 3, 0, 0, Math.PI * 2); c.fill();
     c.fillStyle = '#8a7a5a'; c.fillRect(-9, 1, 18, 5);
@@ -5148,7 +5259,7 @@ function kRender() {
   kMap.brPos = {};
   var w0 = worldMap(), bh0 = branchHexes();
   if (w0 && bh0 && KS.castles) Object.keys(KS.castles).forEach(function (id) {
-    var C0 = KS.castles[id], h = bh0[id], ll0 = w0.ll(h[0], h[1]), q = kProj(ll0[0], ll0[1]), u = Math.max(0.6, Math.min(1.4, 0.9 / kMap.s));
+    var C0 = KS.castles[id], h = bh0[id], ll0 = w0.ll(h[0], h[1]), q = kProj(ll0[0], ll0[1]), u = kU(0.9);
     kMap.brPos[id] = q;
     var isT = atkT.some(function (t) { return t.castle === id; });
     c.save(); c.translate(q[0], q[1]); c.scale(u, u);
@@ -5159,8 +5270,10 @@ function kRender() {
     if (kMap.s > 1.6) { c.font = 'bold 8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'top'; c.lineWidth = 2.5; c.strokeStyle = 'rgba(255,255,255,0.9)'; c.strokeText(brName(id), 0, 3); c.fillStyle = '#3a2210'; c.fillText(brName(id), 0, 3); }
     c.restore();
   });
+  // 山・川・町の 名前（ちかよったとき）
+  c.save(); c.setTransform(kMap.dpr, 0, 0, kMap.dpr, 0, 0); kGeoLabels(c); c.restore();
   // 家紋・国名・兵の かず
-  var sc = Math.max(0.75, Math.min(1.5, 1.15 / kMap.s));
+  var sc = kU(1.15);
   PROVS.forEach(function (p) {
     var P = KS.provs[p.id], lab = kMap.labels[p.id];
     c.save(); c.translate(lab[0], lab[1]); c.scale(sc, sc);
@@ -5283,20 +5396,70 @@ function kUndo() {
 }
 
 // ---- 地図の 操作 ----
+// 国取り地図に 地名：ズームすると 山・川・峠、もっと よると 町・村も
+function kGeoLabels(c) {
+  var sZ = kMap.s; if (sZ < 2.2) return;
+  var rects = [], W0 = kMap.W, H0 = kMap.H;
+  function scr(lon, lat) { var q = kProj(lon, lat); return [kMap.x + q[0] * sZ, kMap.y + q[1] * sZ]; }
+  function put(text, x, y, fz, col, rot, bold) {
+    if (x < -40 || y < -20 || x > W0 + 40 || y > H0 + 20) return false;
+    c.font = (bold === false ? '' : 'bold ') + fz + 'px sans-serif'; var tw = c.measureText(text).width + 4, th = fz + 2;
+    for (var i = 0; i < rects.length; i++) { var q = rects[i]; if (x - tw / 2 < q[0] + q[2] && x + tw / 2 > q[0] && y - th / 2 < q[1] + q[3] && y + th / 2 > q[1]) return false; }
+    rects.push([x - tw / 2, y - th / 2, tw, th]);
+    c.save(); c.translate(x, y); if (rot) c.rotate(rot); c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    c.lineWidth = 3; c.strokeStyle = 'rgba(255,255,255,0.88)'; c.strokeText(text, 0, 0); c.fillStyle = col; c.fillText(text, 0, 0); c.restore(); return true;
+  }
+  // 国の 家紋・名前の ところは あける
+  PROVS.forEach(function (p) { var q = kMap.labels[p.id], x = kMap.x + q[0] * sZ, y = kMap.y + q[1] * sZ; rects.push([x - 40, y - 34, 80, 62]); });
+  var fz = sZ >= 5 ? 13 : 12;
+  GEO_NAMES.forEach(function (g) { if (g[3] === 'l') { var p = scr(g[1], g[2]); put(g[0], p[0], p[1], fz + 1, '#1d4f9a'); } });
+  (WORLD.peaks || []).map(function (pk) { return [pk.name, pk.at[0], pk.at[1]]; }).concat(GEO_NAMES.filter(function (g) { return g[3] === 'm'; })).forEach(function (g) { var p = scr(g[1], g[2]); put('▲' + g[0], p[0], p[1], fz, '#6a3a12'); });
+  (WORLD.rivers || []).forEach(function (rv) {
+    var pts = rv.pts.map(function (q) { return scr(q[0], q[1]); }), L = 0, seg = [], i;
+    for (i = 1; i < pts.length; i++) { var dl = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push([pts[i - 1], pts[i], L, dl]); L += dl; }
+    var step = Math.max(260, L / 3), done = 0;
+    for (var pos = Math.min(L / 2, step / 2); pos < L && done < 3; pos += step) {
+      for (i = 0; i < seg.length; i++) if (pos <= seg[i][2] + seg[i][3]) break;
+      if (i >= seg.length) break;
+      var a = seg[i][0], b = seg[i][1], f = (pos - seg[i][2]) / Math.max(1, seg[i][3]), ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+      if (ang > Math.PI / 2) ang -= Math.PI; if (ang < -Math.PI / 2) ang += Math.PI;
+      if (put(rv.name, a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, fz, '#1559b8', ang)) done++;
+    }
+  });
+  if (sZ >= 3.5) GEO_NAMES.forEach(function (g) {
+    if (g[3] === 'l' || g[3] === 'm' || (g[3] === 'v' && sZ < 5.5)) return;
+    var p = scr(g[1], g[2]), big = g[3] === 't';
+    if (put(g[0], p[0], p[1] - 9, big ? fz : fz - 1, g[3] === 'i' ? '#1d4f9a' : big ? '#2a1a0a' : '#4a3a2a', 0, big || g[3] === 'i') && g[3] !== 'i') {
+      c.beginPath(); c.arc(p[0], p[1], big ? 3.5 : 2.5, 0, Math.PI * 2); c.fillStyle = big ? '#3a2410' : '#6a5440'; c.fill(); c.lineWidth = 1.2; c.strokeStyle = '#fff'; c.stroke();
+    }
+  });
+}
+// 地図の 点 → いちばん ちかい ヘックスの 国
+function kProvAtMap(mx, my) {
+  var w = worldMap(); if (!w || !kMap.HX) return null;
+  var t = kMap.terrRect, sx = t[2] / (w.w * 2 + 1), sy = t[3] / w.h, r0 = Math.round((my - t[1]) / sy - 0.5), c0 = Math.round(((mx - t[0]) / sx - 1) / 2), best = null;
+  for (var r = r0 - 2; r <= r0 + 2; r++) for (var c = c0 - 2; c <= c0 + 2; c++) {
+    if (r < 0 || c < 0 || r >= w.h || c >= w.w) continue; var i = r * w.w + c, d = Math.pow(kMap.HX[i] - mx, 2) + Math.pow(kMap.HY[i] - my, 2);
+    if (!best || d < best[1]) best = [i, d, c, r];
+  }
+  if (!best || best[1] > Math.pow(kMap.hexW, 2)) return null;
+  return w.provAt(best[2], best[3]) || null;
+}
 function kTap(sx, sy) {
   if (!KS || KS.over) return;
   var wx = (sx - kMap.x) / kMap.s, wy = (sy - kMap.y) / kMap.s;
-  var i = -1, sc = Math.max(0.75, Math.min(1.5, 1.15 / kMap.s));
+  var i = -1, sc = kU(1.15);
   // 家紋の 上を 優先
   PROVS.forEach(function (p, k) { var q = kMap.labels[p.id], dx = q[0] - wx, dy = q[1] - 6 * sc - wy; if (dx * dx + dy * dy < Math.pow(18 * sc, 2)) i = k; });
   PROVS.forEach(function (p, k) { if (i >= 0) return; var q = kProj(p.pin[0], p.pin[1]), dx = q[0] - wx, dy = q[1] - 4 - wy; if (dx * dx + dy * dy < Math.pow(10 * sc, 2)) i = k; });
   // 支城の 上を タップ
-  var bcid = null, bd0 = Math.pow(9 * Math.max(0.6, Math.min(1.4, 0.9 / kMap.s)), 2);
+  var bcid = null, bd0 = Math.pow(9 * kU(0.9), 2);
   for (var id in (kMap.brPos || {})) { var bq = kMap.brPos[id], ddx = bq[0] - wx, ddy = bq[1] - 5 - wy, d0 = ddx * ddx + ddy * ddy; if (d0 < bd0) { bd0 = d0; bcid = id; } }
   if (bcid && i < 0) {
     if (kMode === 'attack') { var tt = kAtkTargets().filter(function (t) { return t.castle === bcid; })[0]; if (tt) { SFX.tap(); kAttackBox(kSel, tt.to, tt.castle); return; } }
     if (kMode === 'idle' || KS.phase !== 'player') { SFX.tap(); kCastleBox(bcid); return; }
   }
+  if (i < 0) { var hp = kProvAtMap(wx, wy); if (hp) PROVS.forEach(function (p, k) { if (p.id === hp) i = k; }); }
   if (i < 0) PROVS.forEach(function (p, k) { if (i < 0 && kMap.hit.isPointInPath(kMap.paths[p.id], wx, wy)) i = k; });
   if (i < 0) { // 海：いちばん ちかい 家紋
     var bd = Math.pow(40 / kMap.s, 2);
@@ -5312,7 +5475,7 @@ function kTap(sx, sy) {
 }
 function kInitInput() {
   panZoom($('kcv'), {
-    cam: function () { return { x: kMap.x, y: kMap.y, s: kMap.s }; }, minS: 0.3, maxS: 4,
+    cam: function () { return { x: kMap.x, y: kMap.y, s: kMap.s }; }, minS: 0.3, maxS: 14,
     set: function (x, y, s) { kMap.x = x; kMap.y = y; kMap.s = s; },
     after: function () { kRender(); },
     tap: function (x, y) { kTap(x, y); }
