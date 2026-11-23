@@ -42,7 +42,9 @@ var IMGS = {};
   Object.keys(SPR).forEach(function (k) { var im = new Image(); im.src = SPR[k]; IMGS[k] = im; });
 })();
 var ART_ALIAS = { '陶隆房':'陶晴賢', '尼子詮久':'尼子晴久' };
-function lordArt(name) { if (typeof LORD_ART === 'undefined') return null; return LORD_ART[name] || LORD_ART[ART_ALIAS[name]] || null; }
+var CUR_SCEN = '';   // いまの シナリオ（おなじ 人でも シナリオで 絵が ちがう とき：'名前@シナリオ'）
+function lordArtKey(name) { return typeof LORD_ART !== 'undefined' && CUR_SCEN && LORD_ART[name + '@' + CUR_SCEN] ? name + '@' + CUR_SCEN : name; }
+function lordArt(name) { if (typeof LORD_ART === 'undefined') return null; return LORD_ART[lordArtKey(name)] || LORD_ART[ART_ALIAS[name]] || null; }
 function getImg(key) {
   if (IMGS[key]) return IMGS[key];
   if (key && key.indexOf('art:') === 0) { var src = lordArt(key.slice(4)); if (src) { var im = new Image(); im.src = src; IMGS[key] = im; return im; } }

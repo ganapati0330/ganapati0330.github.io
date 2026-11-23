@@ -252,6 +252,7 @@ var SCENARIOS = [
 var SCEN_BY = {}; SCENARIOS.forEach(function (s) { SCEN_BY[s.id] = s; });
 function applyScenario(sid) {
   var sc = SCEN_BY[sid] || SCENARIOS[0];
+  if (typeof CUR_SCEN !== 'undefined') CUR_SCEN = sc.id;
   CLANS = {}; CLAN_ORDER = sc.order.slice();
   CLAN_ORDER.forEach(function (cid) {
     var b = CLAN_BASE[cid], o = sc.clans[cid] || {}, c = { id: cid };

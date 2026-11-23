@@ -39,7 +39,7 @@ function portraitSrc(cid) {
 function portraitChar(cid) {
   var C = CLANS[cid];
   if (cid === KS.player && !usesDefaultFace(cid, KS.face)) return KS.face;
-  if (lordArt(C.lord)) return 'art:' + C.lord;
+  if (lordArt(C.lord)) return 'art:' + lordArtKey(C.lord);
   if (cid === KS.player) return KS.face;
   return C.face && C.face !== KS.face ? C.face : 'clan:' + cid;
 }
