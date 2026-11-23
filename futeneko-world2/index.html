@@ -5768,7 +5768,7 @@ function onKill(type,x,y,elite,mine,xm){xm=xm||1;
    if(d.boss){mi='jniku';mn=d.lv>=20?2:1;}else if(bs==='dragon')mi=Math.random()<0.5?'jniku':null;else if(SEA.includes(type))mi=Math.random()<0.35?'kaisen':null;else if(bs==='wolf'||bs==='goblin')mi=Math.random()<0.35?'niku':null;
    if(mi){addItem(mi,mn);floatText(x,y-74,ITEMS[mi].ic+' '+ITEMS[mi].n+(mn>1?'×'+mn:''),'#ffd0a0',12);}}
   {/* v2.81 キノコの まものから まつたけ */const bs=d.base||type;if((type==='mush'||type==='bigmush'||type==='tanekoron')){const n=type==='bigmush'?2+Math.floor(Math.random()*2):(Math.random()<(elite?0.3:0.12)?1:0);if(n){addItem('matsutake',n);floatText(x,y-88,'🍄 まつたけ'+(n>1?'×'+n:'')+'！','#ffe680',14);SFX.coin&&SFX.coin();}}}
-  {const ex=Math.round(d.exp*(elite?2:1)*xm*fbMul('exp'));floatText(x,y-58,'+'+ex+' EXP','#9fe0ff',13);gainExp(ex);petXp(Math.round(5+ex*0.7));}
+  {const ex=Math.round(d.exp*(elite?2:1)*xm*fbMul('exp'));floatText(x,y-58,'+'+ex+' EXP','#9fe0ff',13);gainExp(ex);{const px=Math.round(5+ex*0.7);petXp(px);if(pet2Ok())pet2Run(()=>petXp(px));}}
   try{petEggDrop(type);}catch(e){}
   try{pqKill(type);}catch(e){}
   killRank();
