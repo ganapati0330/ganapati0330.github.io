@@ -769,6 +769,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 .toast small{display:block;font-size:13px}
 @keyframes pop{0%{opacity:0;transform:translateX(-50%) scale(.5)}12%{opacity:1;transform:translateX(-50%) scale(1.1)}20%{transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-30px)}}
 .ver{font-size:11px;opacity:.6;margin-top:10px}
+.storyimg{width:100%;max-width:400px;aspect-ratio:4/3;object-fit:cover;border-radius:14px;display:block;margin:0 auto;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 /* ドラゴンさがし（ちず） */
 #mapScr{background:#e8e0cc}
 #dmap{position:absolute;inset:0;background:#e8e0cc;z-index:1}
@@ -865,7 +866,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.6';
+const VER='1.7';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -978,6 +979,8 @@ const IMG={};
 const ok=im=>im&&im.complete&&im.naturalWidth>0;
 /* フテ猫ウォークの あるく モーション（w1〜4 みぎむき / wl1〜4 ひだりむき。チャッピーは w を はんてん） */
 const WK={};
+['pick','hugegg','hug','joy','surp','sad','jump','give'].forEach(p=>{const im=new Image();im.src='wk/akari_'+p+'.webp';WK['akari_'+p]=im;});
+function drawAkari(c,x,y,h,pose){const im=WK['akari_'+pose]||WK.akari_idle;if(!ok(im))return;const w=h*im.naturalWidth/im.naturalHeight;c.drawImage(im,x-w/2,y-h,w,h);}
 ['akari'].forEach(k=>['idle','w1','w2','w3','w4','wl1','wl2','wl3','wl4'].forEach(p=>{const im=new Image();im.src='wk/'+k+'_'+p+'.webp';WK[k+'_'+p]=im;}));
 function keeperSrc(moving,faceRight,t){
   const k=G.keeper;
@@ -1107,7 +1110,7 @@ function drawDragonVec(c,x,y,size,spId,lv,t,face,o){
    adult：0たつ 1,2あるく 3ふせ 4ブレス 5はばたく 6とぶ 7すわる
    fly ：8コマ はばたき（火・氷・岩・水・光・闇・虹） */
 const DSHEET={};
-const HAS_FLY={fire:1,ice:1,earth:1,water:1,light:1,dark:1,rainbow:1};
+const HAS_FLY={fire:1,ice:1,earth:1,water:1,light:1,dark:1,rainbow:1,wind:1,thunder:1};
 function dsheet(sp,st){
   const k=sp+'_'+st;let im=DSHEET[k];
   if(!im){im=new Image();im.onload=onSpriteLoad;im.src='dr/'+k+'.webp';DSHEET[k]=im;}
@@ -1115,10 +1118,15 @@ function dsheet(sp,st){
 }
 let _sprT=0;
 function onSpriteLoad(){clearTimeout(_sprT);_sprT=setTimeout(()=>{if(homeOn&&G)renderHome();if(MAPV&&MAPV.on){MAPV.meKey='';drawMe();}if($('modal').classList.contains('on')&&$('mbox').querySelector('canvas[data-k]'))drawDexCanvases();},150);}
-function preloadSprites(sps){(sps||[]).forEach(sp=>{['baby','kid','adult'].forEach(st=>dsheet(sp,st));if(HAS_FLY[sp])dsheet(sp,'fly');});}
+function preloadSprites(sps){(sps||[]).forEach(sp=>{['baby','kid','adult','race'].forEach(st=>dsheet(sp,st));if(HAS_FLY[sp])dsheet(sp,'fly');});}
 function drawDragon(c,x,y,size,spId,lv,t,face,o){
   o=o||{};
   const st=stageOf(lv),sheet=st===0?'baby':st===1?'kid':'adult';
+  if(o.rf!==undefined){const rim=dsheet(spId,'race');if(rim){
+    const cw=rim.naturalWidth/4,ch=rim.naturalHeight/2,f=o.rf,w=size*(st===0?1.15:st===1?1.35:1.6),h=w*ch/cw;
+    c.save();c.translate(x,y);if(face<0)c.scale(-1,1);
+    if(spId==='light'){c.shadowColor='rgba(255,230,120,.9)';c.shadowBlur=size*0.15;}
+    c.drawImage(rim,(f%4)*cw,Math.floor(f/4)*ch,cw,ch,-w/2,-h*0.83,w,h);c.restore();return;}}
   const fly=!!o.fly;
   let im=null,f=0,isFly=false;
   if(fly&&st>=2&&HAS_FLY[spId]){im=dsheet(spId,'fly');if(im){isFly=true;f=Math.floor(t*10)%8;}}
@@ -1250,28 +1258,29 @@ function renderNew(){
 /* ===================== はじまりの おはなし ===================== */
 let mdStory=null;
 const EGGIMG={};
-function eggImg(sp){let im=EGGIMG[sp];if(!im){im=new Image();im.src='dr/'+sp+'_egg.webp';EGGIMG[sp]=im;}return ok(im)?im:null;}
+const EGG3={water:1,thunder:1,light:1,dark:1,rainbow:1};
+function eggImg(sp,stg){const k=sp+(stg?'_'+stg:'');let im=EGGIMG[k];if(!im){if(stg&&!EGG3[sp])return null;im=new Image();im.src='dr/'+sp+'_egg'+(stg||'')+'.webp';EGGIMG[k]=im;}return ok(im)?im:null;}
 const STORY=[
   {t:'あるよるの こと',p:'あかりちゃんが ベランダを のぞくと…<br>ひかる <b>ドラゴンの たまご</b>が ころん、と おいてありました！'},
   {t:'ははドラゴン',p:'そばには おおきな ははドラゴンが いました。<br>「この こを… たのみます…」<br>たまごを うんだ ははドラゴンは、ちからつきて しまいました。'},
   {t:'あかりちゃんの けっしん',p:'「だいじょうぶ。わたしが たいせつに そだてるからね！」<br>あかりちゃんが たまごを だきしめると…'}
 ];
 function startStory(){
-  const sp=G.eggSp||pick(['fire','water','wind','earth','thunder','ice']);G.eggSp=sp;save();
+  const sp='fire';G.eggSp=sp;save();
+  for(let i=1;i<=4;i++){const im=new Image();im.src='dr/story'+i+'.webp';}
   preloadSprites([sp]);eggImg(sp);
   const page=i=>{
     if(i>=STORY.length)return hatchStory(sp);
-    modal('<h2>'+STORY[i].t+'</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+STORY[i].p+'</p>',[{t:i<STORY.length-1?'つぎへ ▶':'たまごが…！',c:'go',f:()=>page(i+1)}]);
-    mdStory={page:i,sp,t0:T};
+    modal('<h2>'+STORY[i].t+'</h2><img src="dr/story'+(i+1)+'.webp" class="storyimg" alt=""><p>'+STORY[i].p+'</p>',[{t:i<STORY.length-1?'つぎへ ▶':'たまごが…！',c:'go',f:()=>page(i+1)}]);
   };
   page(0);
 }
 function hatchStory(sp){
   const d=makeDragon(sp,1);d.hunger=80;d.love=30;
-  modal('<h2>たまごが かえった！</h2><canvas id="mdCv" width="440" height="340"></canvas><p><b>'+SP[sp].name+'</b>（'+SP[sp].el+'ぞくせい）の あかちゃんが うまれたよ！<br>あかりちゃんが そだてる ことに なりました。</p>',
+  sfx.find();
+  modal('<h2>たまごが かえった！</h2><img src="dr/story4.webp" class="storyimg" alt=""><p><b>'+SP[sp].name+'</b>（'+SP[sp].el+'ぞくせい）の あかちゃんが うまれたよ！<br>あかりちゃんが そだてる ことに なりました。</p>',
     [{t:'なまえを つける',c:'go',f:()=>{G.dragons.push(d);seeDex(sp,true);G.sel=G.dragons.length-1;G.found++;G.story=1;save();
       nameDragon(d,()=>{renderHome();modal('<h2>🐉 '+esc(d.name)+'と いっしょ！</h2><p style="text-align:left;font-size:14px">👣 <b>おさんぽ</b>：ほんとうに あるいた ほすうで そだつよ<br>🏁 <b>レース</b>：すぐに でられるよ<br>⚔️ <b>バトル</b>：Lv10から<br>🗺️ <b>さがす</b>：まちで ほかの たまごも みつかるかも</p>',[{t:'がんばるぞ！',c:'go'}]);});}}]);
-  mdDragon={sp,lv:1,happy:true,egg:T};
 }
 function drawStory(c,W2,H2){
   const st=mdStory,sp=st.sp,tt=T-st.t0;
@@ -1847,7 +1856,7 @@ function foundDragon(d,msg,after){
   const S=SP[d.sp],full=G.dragons.length>=MAX_DRAGONS;
   const h='<h2>ドラゴンの たまごを みつけた！</h2><canvas id="mdCv" width="440" height="340"></canvas><p>たまごが かえって <b>'+S.name+'</b>（'+S.el+'ぞくせい）'+(S.r>1?' <span style="color:#e8582a">★レア★</span>':'')+'<br>'+msg+'</p>'+(full?'<p style="color:#c0392b;font-size:13px">こやが いっぱい（'+MAX_DRAGONS+'ひき）。せっていで おわかれすると あくよ。</p>':'');
   modal(h,[{t:'つれてかえる',c:'go',dis:full,f:()=>{G.dragons.push(d);seeDex(d.sp,true);G.sel=G.dragons.length-1;save();nameDragon(d,()=>{toast(d.name+'が なかまに なった！','いっしょに あるくと そだつよ');if(MAPV.on){drawMe();}if(after)after();});}},{t:'そっとしておく',c:'sub',f:after}]);
-  mdDragon={sp:d.sp,lv:d.lv,happy:true,egg:T};eggImg(d.sp);
+  mdDragon={sp:d.sp,lv:d.lv,happy:true,egg:T,akari:'auto'};eggImg(d.sp);eggImg(d.sp,1);eggImg(d.sp,2);
 }
 
 /* --- がめん --- */
@@ -2079,7 +2088,8 @@ const RACE={
     this.px=0;this.jy=0;this.vy=0;this.air=false;this.boost=0;this.slow=0;this.t=-3.2;this.done=false;this.rank=0;this.fin=[];this.stumble=0;this.nice=0;
     this.base=raceSpeed(stats(d).spd);
     this.C.obs.forEach(o=>{o.res={};});
-    this.cpus=r.cpu.map((lv,i)=>{const c=cpuDragon(lv,d.sp);c.x=0;c.lane=i+1;c.base=raceSpeed(stats(c).spd);c.boost=0;c.slow=0;c.ph=Math.random()*6;c.fin=0;c.jy=0;c.vy=0;c.next=0;c.stumble=0;return c;});
+    preloadSprites([d.sp]);
+    this.cpus=r.cpu.map((lv,i)=>{const c=cpuDragon(lv,d.sp);c.x=0;c.lane=i+1;c.base=raceSpeed(stats(c).spd);c.boost=0;c.slow=0;c.ph=Math.random()*6;c.fin=0;c.jy=0;c.vy=0;c.next=0;c.stumble=0;dsheet(c.sp,'race');return c;});
     PARTS=[];FLOATS=[];bgm('race');this._c=4;this._go=false;this._hh=false;
     $('hudTop').innerHTML='<div class="pill" id="rRank" style="font-size:18px">-</div><div class="mini"><div class="lbl">'+r.name+'</div><div class="lbl" style="font-size:11px">とくい：'+APT[this.apt].e+' '+APT[this.apt].n+'</div></div><button class="hbtn" id="rQuit">やめる</button>';
     $('hudBot').innerHTML='';
@@ -2156,6 +2166,12 @@ const RACE={
     floatText(VW*0.32,this.gy(0)-120,perfect?'ナイスジャンプ！':'クリア！',perfect?'#ffe35a':'#fff');
     if(perfect)burst(VW*0.32,this.gy(0)-60,['#ffe35a','#fff'],12,200);
   },
+  rframe(jy,vy,stumble,ph,started){
+    if(!started)return 1;
+    if(stumble>0)return 7;
+    if(jy<-4)return vy<0?5:2;
+    return [0,3,1,6][Math.floor(T*11+ph)%4];
+  },
   gy(lane){return VH-70-lane*46;},
   laneScale(lane){return 1-lane*0.08;},
   result(){
@@ -2168,7 +2184,7 @@ const RACE={
     save();
     modal('<h2>'+(rk===1?'🥇 ゆうしょう！！':rk===2?'🥈 2い！':rk===3?'🥉 3い！':'4い… ざんねん')+'</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+r.name+'<br>🪙+'+coins+'　けいけんち +'+exp+(ups?'<br><b style="color:#e8582a">Lv'+d.lv+'に なった！</b>':'')+'</p>'+(rk>1?'<p style="font-size:13px">さくの てまえで タイミングよく とぶと「ナイスジャンプ」で かそくするよ！</p>':''),
       [{t:'もういちど',f:()=>{if(d.hunger<20)hungry(d);else startScene(RACE);}},{t:'こやへ',c:'go',f:()=>goHome()}]);
-    mdDragon={sp:d.sp,lv:d.lv,happy:rk<=2,sad:rk>2};
+    mdDragon={sp:d.sp,lv:d.lv,happy:rk<=2,sad:rk>2,akari:rk<=2?'joy':'sad'};
     if(ups)lvUpMsg(d,b);
   },
   draw(){
@@ -2200,13 +2216,14 @@ const RACE={
       const cp=this.cpus[lane-1];if(!cp)return;const x=sx+(cp.x-px);if(x<-120||x>VW+120)return;
       const y=this.gy(lane),sz=58*this.laneScale(lane);
       if(cp.jy<0){c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(x,y,sz*0.4,sz*0.08,0,0,7);c.fill();}
-      drawDragon(c,x,y+cp.jy*0.62*this.laneScale(lane),sz,cp.sp,cp.lv,T*1.8+cp.ph,1,cp.jy<0?{fly:true,alt:0,shadow:false}:{walk:true,sad:cp.stumble>0});
+      drawDragon(c,x,y+cp.jy*0.62*this.laneScale(lane),sz,cp.sp,cp.lv,T*1.8+cp.ph,1,{rf:this.rframe(cp.jy,cp.vy,cp.stumble,cp.ph,this.t>0),fly:cp.jy<0,alt:0,shadow:false,walk:true,sad:cp.stumble>0});
       c.font='bold 12px sans-serif';c.textAlign='center';c.fillStyle='#fff';c.strokeStyle='#0008';c.lineWidth=3;const tg=cp.name+' '+APT[cp.apt].e;c.strokeText(tg,x,y-sz*1.25+cp.jy*0.62);c.fillText(tg,x,y-sz*1.25+cp.jy*0.62);
     });
     const y0=this.gy(0);
     if(this.jy<0){c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(sx,y0,30,6,0,0,7);c.fill();}
     if(this.boost>0.3){c.fillStyle='rgba(255,230,100,'+this.boost*0.7+')';for(let i=0;i<4;i++)c.fillRect(sx-70-i*16,y0-40+i*9+this.jy*0.62,36*this.boost,4);}
-    drawDragon(c,sx,y0+this.jy*0.62,70,d.sp,d.lv,T*(this.t>0?1.9:1),1,this.jy<0?{fly:true,alt:0,shadow:false,happy:this.boost>0.5}:{walk:this.t>0,sad:this.stumble>0,shadow:true});
+    if(this.jy>=0){c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(sx,y0,30,6,0,0,7);c.fill();}
+    drawDragon(c,sx,y0+this.jy*0.62,70,d.sp,d.lv,T*(this.t>0?1.9:1),1,{rf:this.rframe(this.jy,this.vy,this.stumble,0,this.t>0),fly:this.jy<0,alt:0,shadow:false,walk:this.t>0,sad:this.stumble>0});
     c.font='bold 14px sans-serif';c.textAlign='center';c.fillStyle='#ffe35a';c.strokeStyle='#000a';c.lineWidth=3;c.strokeText('▼ '+d.name,sx,y0-92+this.jy*0.62);c.fillText('▼ '+d.name,sx,y0-92+this.jy*0.62);
     drawFx(c,0);
     this.drawMini(c);
@@ -2359,7 +2376,7 @@ const BATTLE={
       setTimeout(()=>{
         modal('<h2>🏆 しょうり！</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+f.f+'かい クリア！<br>🪙+'+coins+'　けいけんち +'+exp+(ups?'<br><b style="color:#e8582a">Lv'+d.lv+'に なった！</b>':'')+'</p>'+(f.boss&&first?'<p><b>でんせつの ドラゴンマスターに なった！！</b></p>':''),
           [{t:'タワーへ',f:()=>{goHome();openTower();}},{t:'こやへ',c:'go',f:()=>goHome()}]);
-        mdDragon={sp:d.sp,lv:d.lv,happy:true};if(ups)lvUpMsg(d,b);
+        mdDragon={sp:d.sp,lv:d.lv,happy:true,akari:'joy'};if(ups)lvUpMsg(d,b);
       },900);
     } else {
       const b=d.lv;const ups=gainExp(d,Math.round(f.exp*0.2));save();
@@ -2367,7 +2384,7 @@ const BATTLE={
       setTimeout(()=>{
         modal('<h2>まけちゃった…</h2><canvas id="mdCv" width="440" height="340"></canvas><p>けいけんち +'+Math.round(f.exp*0.2)+'<br>おさんぽで とっくんして また ちょうせん！</p><p style="font-size:12px">ヒント：あいしょうの いい ブレスを つかおう。あぶない ときは まもる！</p>',
           [{t:'もういちど',f:()=>{if(d.hunger<20)hungry(d);else startScene(BATTLE);}},{t:'こやへ',c:'go',f:()=>goHome()}]);
-        mdDragon={sp:d.sp,lv:d.lv,sad:true};if(ups)lvUpMsg(d,b);
+        mdDragon={sp:d.sp,lv:d.lv,sad:true,akari:'sad'};if(ups)lvUpMsg(d,b);
       },900);
     }
   },
@@ -2415,7 +2432,8 @@ function drawHomeCv(){
   const c=el.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,r,h);
   const hungry=d.hunger<15;
   drawDragon(c,r*0.4,h*0.88,Math.min(r*0.36,h*(stageOf(d.lv)>=2?0.42:0.55)),d.sp,d.lv,T,1,{fly:!hungry&&stageOf(d.lv)>=2,alt:0.15,sad:hungry,happy:d.love>60&&!hungry});
-  if(ok(WK.akari_idle)){const im=WK.akari_idle;const kh=h*0.55;c.drawImage(im,r*0.78-kh*im.naturalWidth/im.naturalHeight/2,h*0.92-kh,kh*im.naturalWidth/im.naturalHeight,kh);}
+  const hp=d.hunger<15?'sad':d.love>=60?'joy':'give';
+  if(ok(WK['akari_'+hp])){const im=WK['akari_'+hp];const kh=h*0.55;c.drawImage(im,r*0.78-kh*im.naturalWidth/im.naturalHeight/2,h*0.92-kh,kh*im.naturalWidth/im.naturalHeight,kh);}
   if(hungry){c.font='bold 15px sans-serif';c.fillStyle='#c0392b';c.textAlign='center';c.fillText('おなか ぺこぺこ…',r*0.42,22);}
 }
 function drawModalDragon(){
@@ -2426,14 +2444,18 @@ function drawModalDragon(){
   c.save();c.translate(el.width/2,el.height/2);c.rotate(T*0.4);c.fillStyle='rgba(255,220,120,.35)';for(let i=0;i<8;i++){c.rotate(Math.PI/4);c.beginPath();c.moveTo(0,0);c.lineTo(-30,-260);c.lineTo(30,-260);c.fill();}c.restore();
   if(mdDragon.egg!==undefined){
     const tt=T-mdDragon.egg,egg=eggImg(mdDragon.sp);
-    if(tt<1.8){if(egg){const eh=150,wob=Math.sin(tt*(8+tt*10))*0.12*Math.min(1,tt*2);c.save();c.translate(el.width/2,el.height*0.88);c.rotate(wob);c.drawImage(egg,-eh*0.42,-eh,eh*0.84,eh);
-        if(tt>1){c.strokeStyle='#3a2a1a';c.lineWidth=3;c.beginPath();c.moveTo(-30,-80);c.lineTo(-12,-92);c.lineTo(2,-78);c.lineTo(16,-94);c.lineTo(30,-82);c.stroke();}c.restore();}
+    const ex=el.width/2+(mdDragon.akari?40:0);
+    if(mdDragon.akari)drawAkari(c,70,el.height*0.95,el.height*0.72,tt<1.8?'pick':'joy');
+    if(tt<1.8){const e1=eggImg(mdDragon.sp,1),e2=eggImg(mdDragon.sp,2);let im=egg;if(tt>1.0&&e1)im=e1;if(tt>1.55&&e2)im=e2;
+      if(im){const eh=150,ew=eh*im.naturalWidth/im.naturalHeight,wob=tt>1.55&&e2?0:Math.sin(tt*(8+tt*10))*0.12*Math.min(1,tt*2);c.save();c.translate(ex,el.height*0.88);c.rotate(wob);c.drawImage(im,-ew/2,-eh,ew,eh);
+        if(tt>1&&!e1){c.strokeStyle='#3a2a1a';c.lineWidth=3;c.beginPath();c.moveTo(-30,-80);c.lineTo(-12,-92);c.lineTo(2,-78);c.lineTo(16,-94);c.lineTo(30,-82);c.stroke();}c.restore();}
       if(!mdDragon._s1&&tt>1){mdDragon._s1=1;sfx.tap();}
       return;}
     if(!mdDragon._s2){mdDragon._s2=1;sfx.find();}
     if(tt<2.1){c.fillStyle='rgba(255,255,255,'+(1-(tt-1.8)/0.3)+')';c.fillRect(0,0,el.width,el.height);}
   }
-  drawDragon(c,el.width/2-20,el.height*0.9,200,mdDragon.sp,mdDragon.lv,T,1,{fly:!mdDragon.sad&&stageOf(mdDragon.lv)>=2,alt:0.15,happy:mdDragon.happy,sad:mdDragon.sad});
+  if(mdDragon.akari&&mdDragon.egg===undefined)drawAkari(c,70,el.height*0.95,el.height*0.72,mdDragon.akari);
+  drawDragon(c,el.width/2-20+(mdDragon.akari?50:0),el.height*0.9,mdDragon.akari?170:200,mdDragon.sp,mdDragon.lv,T,1,{fly:!mdDragon.sad&&stageOf(mdDragon.lv)>=2,alt:0.15,happy:mdDragon.happy,sad:mdDragon.sad});
 }
 function drawTitleCv(){
   const el=$('titleCv');if(!$('title').classList.contains('on'))return;
