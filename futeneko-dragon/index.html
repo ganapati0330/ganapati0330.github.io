@@ -877,7 +877,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.12';
+const VER='1.13';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -990,6 +990,25 @@ const IMG={};
 })();
 const ok=im=>im&&im.complete&&im.naturalWidth>0;
 /* ===== あかりちゃん（ひとつの え の セットに とういつ：4×2コマの シート、1コマ 222×222、たちすがた たかさ やく200、あしもと 下から5%）===== */
+/* おとうさん・おかあさん（4×2：0しょうめん 1よこ 2うしろ 3あるく／4て を ふる 5（父）どうぐばこ（母）ボウル 6（父）しゃがんで りんご（母）じょうろ 7（父）よろこぶ（母）ひざをついて なでる） */
+const PAR={dad:{n:'おとうさん',col:'#6b5236'},mom:{n:'おかあさん',col:'#2f5a52'}};
+const PARS={};['dad','mom'].forEach(k=>{const im=new Image();im.src='wk/'+k+'.webp';PARS[k]=im;});
+const PARP={stand:0,side:1,back:2,walk:3,wave:4,tool:5,bowl:5,apple:6,water:6,joy:7,pet:7};
+function drawParent(c,e){
+  const im=PARS[e.k];if(!ok(im))return;
+  const cw=im.naturalWidth/4,ch=im.naturalHeight/2,size=e.k==='dad'?96:92;
+  let f,flip=false,bob=0;
+  if(e.mv){const step=Math.floor(T*6)%2;
+    if(e.dir==='F'){f=0;bob=step;}else if(e.dir==='B'){f=2;bob=step;}
+    else{f=step?3:1;flip=e.dir==='L';}
+  }else if(e.pose){f=PARP[e.pose];flip=e.face<0&&f!==4&&f!==7;}
+  else f=0;
+  c.save();c.translate(e.x,e.y);
+  c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(0,0,size*0.17,size*0.035,0,0,7);c.fill();
+  if(flip)c.scale(-1,1);
+  c.drawImage(im,(f%4)*cw,Math.floor(f/4)*ch,cw,ch,-size/2,-size*0.955-bob*1.5,size,size);
+  c.restore();
+}
 const AKS={};['garden','touch','touch2','pose','room','fb','side'].forEach(k=>{const im=new Image();im.src='wk/ak_'+k+'.webp';AKS[k]=im;});
 const AKP={ // ポーズ → [シート, コマ]（みぎむき）
  standS:['pose',0],standF:['pose',1],standB:['pose',2],look:['pose',3],run1:['pose',4],run2:['pose',5],run3:['pose',6],leap:['pose',7],
@@ -1505,6 +1524,7 @@ function yardInit(){
   const H=homeData();
   YARD.akari={x:13.5*TS,y:6*TS,tx:null,ty:null,path:[],face:1,mv:false,idle:2,act:null,pose:null,poseT:0};
   YARD.ents=G.dragons.map((d,i)=>({d,x:(11+i*1.4)*TS,y:(6.5+(i%2))*TS,path:[],face:i%2?-1:1,mv:false,idle:rnd(0.5,3),st:'idle',hop:0,heart:0,job:null}));
+  YARD.par=[{k:'dad',x:3*TS,y:8*TS},{k:'mom',x:6*TS,y:5*TS}].map(o=>Object.assign(o,{path:[],face:1,dir:'F',mv:false,idle:rnd(2,6),act:null,pose:null,poseT:0}));
   YARD.cam=Math.max(0,YW*TS-yardViewW())*0.6;
   YARD.inited=true;
 }
@@ -1537,6 +1557,37 @@ function randSpot(room){
   for(let k=0;k<10;k++){const p={x:rnd(10.6,19.3)*TS,y:rnd(2.2,11.4)*TS};if(!POND.has(Math.floor(p.x/TS)+','+Math.floor(p.y/TS)))return p;}
   return {x:12*TS,y:7*TS};
 }
+function parentAI(q,dt){
+  q.poseT=Math.max(0,q.poseT-dt);if(q.poseT<=0)q.pose=null;
+  const ox=q.x,oy=q.y;
+  if(moveEnt(q,dt,55)&&q.act){const f=q.act;q.act=null;f();}
+  {const dx=q.x-ox,dy=q.y-oy;if(dx||dy)q.dir=Math.abs(dx)>=Math.abs(dy)*0.8?(dx>0?'R':'L'):(dy>0?'F':'B');}
+  if(q.mv||q.act||q.pose)return;
+  q.idle-=dt;if(q.idle>0)return;q.idle=rnd(4,10);
+  const face=x=>{q.face=x>q.x?1:-1;};
+  const r=Math.random();
+  if(q.k==='mom'){
+    const i2=G.home.plots.findIndex(p=>p&&!p.w&&plotState(p)==='dry');
+    if(i2>=0&&r<0.5){const P=ALLPLOTS[i2];routeTo(q,(P.c-0.4)*TS,(P.r+1)*TS+4);q.act=()=>{q.face=1;q.pose='water';q.poseT=2.2;const p=G.home.plots[i2];if(p&&!p.w&&plotState(p)==='dry'){p.w=true;p.gt=0;growTick();save();burst((P.c+0.5)*TS,P.r*TS+10,['#6cc6ff','#bfe8ff'],10,90);yardSay('おかあさんが みずを あげてくれた！');}};return;}
+    if(r<0.75&&YARD.ents.length){const e=pick(YARD.ents);routeTo(q,e.x-30,e.y+4);q.act=()=>{face(e.x);q.pose='pet';q.poseT=2.4;e.heart=2;e.hop=0.6;};return;}
+    if(r<0.9){const s=randSpot(true);routeTo(q,s.x,s.y);q.act=()=>{q.pose='bowl';q.poseT=rnd(3,6);};return;}
+  }else{
+    if(r<0.35&&YARD.ents.length){const e=pick(YARD.ents);routeTo(q,e.x-34,e.y+4);q.act=()=>{face(e.x);q.pose='apple';q.poseT=2.6;e.heart=2;e.hop=0.8;};return;}
+    if(r<0.6){const s=randSpot(Math.random()<0.5);routeTo(q,s.x,s.y);q.act=()=>{q.pose='tool';q.poseT=rnd(3,6);};return;}
+    if(r<0.75){const a=YARD.akari;routeTo(q,a.x+(a.x>10*TS?-50:50),a.y);q.act=()=>{face(a.x);q.pose=Math.random()<0.5?'wave':'joy';q.poseT=2;};return;}
+  }
+  const s=randSpot(Math.random()<0.5);routeTo(q,s.x,s.y);
+}
+function parentAt(p){if(isNight())return null;return (YARD.par||[]).find(q=>Math.abs(q.x-p.x)<22&&p.y<q.y+6&&p.y>q.y-90)||null;}
+function parentTalk(q){
+  const H=G.home,k=dayKey();if(!H.par||H.par.day!==k)H.par={day:k};
+  q.path=[];q.act=null;q.mv=false;q.face=YARD.akari.x>q.x?1:-1;q.pose='wave';q.poseT=2.2;sfx.pick();
+  if(!H.par[q.k]){H.par[q.k]=1;
+    if(q.k==='mom'){const f=pick(['apple','apple','fish','meat']);G.food[f]=(G.food[f]||0)+(f==='apple'?2:1);yardSay('おかあさん「おべんとう どうぞ！」 '+FOOD[f].e+' ×'+(f==='apple'?2:1));}
+    else{const n=pick([15,20,30]);G.coins+=n;q.pose='joy';yardSay('おとうさん「おこづかいだよ」 🪙'+n);}
+    save();renderHomeInfo();
+  }else yardSay(pick(q.k==='mom'?['おかあさん「ドラゴン、おおきく なったね」','おかあさん「てを あらってね」','おかあさん「はたけ、げんきに そだってるよ」']:['おとうさん「いっしょに あるこうか！」','おとうさん「レース、がんばれ！」','おとうさん「なにか なおす ものは あるかな？」']));
+}
 function yardSay(t){YARD.msg=t;YARD.msgT=2.4;}
 function yardUpdate(dt){
   if(!YARD.inited)yardInit();
@@ -1554,6 +1605,7 @@ function yardUpdate(dt){
     else if(Math.random()<0.3&&YARD.ents.length){const e=pick(YARD.ents);routeTo(a,e.x-24,e.y+4);a.act=()=>{a.face=e.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose=Math.random()<0.5?'pet':'joy';a.poseT=1.6;e.heart=1.6;e.hop=0.6;};}
     else{const room=Math.random()<0.4,s=randSpot(room);routeTo(a,s.x,s.y);
       a.act=()=>{a.pose=pick(room?['read','chair','toys','drink','stretch','sweep','throw']:['butterfly','basket','sitknee','look','stretch','dig']);a.poseT=rnd(3,7);};}}}
+  if(!night)(YARD.par||[]).forEach(q=>parentAI(q,dt));
   YARD.ents.forEach((e,i)=>{
     e.hop=Math.max(0,e.hop-dt);e.heart=Math.max(0,e.heart-dt);
     if(night&&e.st!=='sleep'&&e.st!=='bed'){e.st='bed';const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+0.6+i*0.3)*TS,y:(bed.y+2.3)*TS}:randSpot(true);routeTo(e,s.x,s.y);}
@@ -1611,6 +1663,7 @@ function yardDraw(){
     if(e.heart>0){c.font='14px sans-serif';c.textAlign='center';c.fillText('💗',e.x,e.y-sz*1.3-(1.2-e.heart)*14);}
     if(d===cur()){c.fillStyle='#ffd000';c.beginPath();c.moveTo(e.x-5,e.y-sz*1.25-12);c.lineTo(e.x+5,e.y-sz*1.25-12);c.lineTo(e.x,e.y-sz*1.25-5);c.fill();}
   }}));
+  if(!night)(YARD.par||[]).forEach(q=>list.push({y:q.y,f:()=>drawParent(c,q)}));
   const a=YARD.akari;
   list.push({y:a.y,f:()=>{
     drawAkFrame(c,akFrame(a.pose||'standF',a.mv?(a.dir||'R'):(a.pose?(a.dir==='L'?'L':'R'):'F'),T,a.mv&&!a.pose),a.x,a.y,62,a.pose!=='sleep');
@@ -1650,6 +1703,8 @@ function yardTap(p){
   let best=null,bd=34;YARD.ents.forEach(e=>{const dd=Math.hypot(e.x-p.x,e.y-20-p.y);if(dd<bd){bd=dd;best=e;}});
   if(best){const i=G.dragons.indexOf(best.d);if(i>=0&&G.sel!==i){G.sel=i;save();renderHome();}
     routeTo(a,best.x-best.face*26,best.y+3);a.act=()=>{a.face=best.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose=stageOf(best.d.lv)>=2?'hug':'pet';a.poseT=1.4;best.heart=1.4;best.hop=0.8;best.path=[];best.idle=2;petDragon(best.d);};sfx.tap();return;}
+  const pq=parentAt(p);
+  if(pq){routeTo(a,pq.x+(pq.x>a.x?-36:36),pq.y+2);a.act=()=>{a.face=pq.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose='joy';a.poseT=1.2;parentTalk(pq);};sfx.tap();return;}
   const pi=plotAt(p);
   if(pi>=0){const P=ALLPLOTS[pi];routeTo(a,(P.c+0.5)*TS-20,(P.r+1)*TS+6);a.act=()=>{a.face=1;plotAction(pi);};sfx.tap();return;}
   routeTo(a,p.x,p.y);
