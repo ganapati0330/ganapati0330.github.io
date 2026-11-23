@@ -877,7 +877,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.14';
+const VER='1.15';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1307,7 +1307,7 @@ const FLOWERS={tulip:{n:'チューリップ',ic:'🌷',shape:'tulip'},rose:{n:'�
 const FCOL={red:{n:'あかい',c:'#e8344a'},white:{n:'しろい',c:'#ffffff'},yellow:{n:'きいろい',c:'#ffd23f'},pink:{n:'ピンクの',c:'#ff8ac0'},orange:{n:'オレンジの',c:'#ff9a2a'},purple:{n:'むらさきの',c:'#a05ad8'},blue:{n:'あおい',c:'#4a8aff'}};
 const GROW_H=3;  // みずを あげてから 1だんかい そだつまでの じかん（フテ猫ワールドと おなじ 3じかん）
 /* あかりちゃんの へやの かぐ・ゆか・かべ（てがきの え） */
-const RMI={};['bed','chair','rug','window','desk','curtain','pot','door','floor','wall'].forEach(k=>{const im=new Image();im.src='rm/'+k+'.webp';RMI[k]=im;});
+const RMI={};['bed','chair','chair_r1','chair_r2','chair_r3','rug','window','desk','curtain','pot','door','floor','wall'].forEach(k=>{const im=new Image();im.src='rm/'+k+'.webp';RMI[k]=im;});
 Object.assign(FURN,{
  akari_bed:{n:'ドラゴンの ししゅうの ベッド',ic:'🛏️',w:2,h:3,k:'bed',img:'bed',top:1,c:['#b07a40','#fff','#e8b840'],price:150},
  akari_chair:{n:'クッションの いす',ic:'🪑',w:1,h:1,k:'chair',img:'chair',c:['#c08848','#5a8a80'],price:40},
@@ -1316,7 +1316,7 @@ Object.assign(FURN,{
  akari_pot:{n:'ピンクの はなの はちうえ',ic:'🪴',w:1,h:1,k:'pot',img:'pot',c:['#c0603a','#ff6b8a'],price:40}
 });
 function drawFurnImg(c,d,r,X,Y,fw,fh){
-  const im=RMI[d.img];if(!ok(im))return false;
+  const im=(d.k==='chair'&&r&&ok(RMI[d.img+'_r'+r]))?RMI[d.img+'_r'+r]:RMI[d.img];if(!ok(im))return false;
   const W=fw*TS,D=fh*TS,iw=im.naturalWidth,ih=im.naturalHeight;
   if(d.top){ // うえから みた え：わくに あわせて（よこむきは 90どまわす）
     c.save();c.translate(X+W/2,Y+D/2);c.rotate(r*Math.PI/2);
@@ -1326,7 +1326,7 @@ function drawFurnImg(c,d,r,X,Y,fw,fh){
   // まえから みた え：あしもとを わくの したに そろえる
   const sc=Math.min((W-4)/iw,(D+TS*1.2)/ih),bw=iw*sc,bh=ih*sc;
   c.fillStyle='rgba(0,0,0,.16)';c.beginPath();c.ellipse(X+W/2,Y+D-4,bw*0.45,5,0,0,7);c.fill();
-  c.save();if(r===3||r===1&&d.k==='chair'){c.translate(X+W/2,0);c.scale(-1,1);c.translate(-(X+W/2),0);}
+  c.save();
   c.drawImage(im,X+(W-bw)/2,Y+D-2-bh,bw,bh);c.restore();return true;
 }
 function drawFurn(c,id,r,X,Y,fw,fh,on){
