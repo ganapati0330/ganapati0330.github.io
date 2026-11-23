@@ -362,6 +362,7 @@ button{font-family:inherit;cursor:pointer;}
       <button class="hb" id="quitBtn">✕</button>
       <button class="hb" id="reinBtn" title="援軍" style="display:none">🚩援軍</button>
       <button class="hb" id="supplyBtn" title="補給" style="display:none">🐴補給</button>
+      <button class="hb" id="retreatBtn" title="全軍 撤退">🏳撤退</button>
       <button class="hb" id="endTurnBtn">ターンおわり ▶</button>
     </div>
   </div>
@@ -437,6 +438,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>🏯 城 ごとの めいれい</b>：本城・支城の 画面から ⚔出陣・🪖徴兵・🌾内政・🦊調略 が できる。本城は 国の めいれい（3つまで）、支城は それぞれ きせつに 1かい。📜の「城と めいれい」の 表から まとめて めいれい できる。</li>
       <li><b>📜 領地の 一覧</b>：上の 📜ボタンで、じぶんの 国と 城（本城・支城、てきの 国の なかの 支城も）を 一覧で 見られる。国ごとの 石高・収入・秋の 年貢・不満・めいれいの かず、城ごとの へい・兵糧（なん日 もつか）・いる 家臣。城の 行を タップすると その 城の 画面へ。</li>
       <li><b>🗾 内政の 画面</b>：田畑・町などは 本城と 支城の 所領を まとめて たてられる。<b>城を タップ</b>すると その 城の 守備兵を 見て、<b>その 城で 徴兵</b>（支城は 城 ごとに きせつ 1かい・8たいまで、本城は 国の 徴兵の めいれい）、<b>家臣を よぶ／ほかの 城へ うつす</b>、本城の 城主えらびが できる。「↩ 地図へ もどる」で 国取りの 地図へ。</li>
+      <li><b>🏳 撤退</b>：合戦中、じぶんの ばんに 上の「🏳撤退」で 全軍を ひかせられる。攻めのときは 合戦を やめて もとの 城へ もどる（しんがりで 1わり ほど へり、のこった 兵糧の 一部は てきに とられる）。守りのときは 城を すてて 退き口の 国へ にげる（1.5わり ほど へる）。退き口が ない 籠城では 撤退 できない。</li>
       <li><b>🔗 合流</b>：へった 隊は おなじ 兵種の 隊に まとめられる。国取りでは 本城・支城の 画面の「🔗 隊を まとめる」（人数は そのまま、隊の かずが へる。めいれいは つかわない）。合戦では となりに いる おなじ 兵種の みかたを えらんで「🔗 合流」（その 隊の 行動は おわり。もどせない）。</li>
       <li><b>⚔ 出陣の ながれ</b>：城を えらんで（地図の 城・下の「🏯 ◯◯城の めいれい」・📜の 表）⚔出陣 → → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
       <li><b>⚔ 支城から 出陣</b>：じぶんの 支城を タップして「⚔ ここから 出陣」。その 支城の 守備兵で、おなじ 国の てきの 本城・支城や、となりの 国の 城を せめられる（支城 ごとに きせつに 1かい、国の めいれいは つかわない）。てきの 国の なかに ある 支城からは、国ざかいを こえずに すぐ 本城へ せめかかれる。生きのこった へいは 支城へ もどる。</li>
@@ -494,7 +496,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v8.1';
+var VERSION = 'v8.2';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1546,6 +1548,21 @@ function exitAt(G, side, c, r) {
   if (!G.exits) return null; var l = G.exits[side];
   for (var i = 0; i < l.length; i++) if (l[i].c === c && l[i].r === r) return l[i];
   return null;
+}
+// 全軍 撤退：攻めては 兵を まとめて ひきあげる（しんがりで すこし へる）。守りは 退き口から となりへ にげる（城は すてる）
+function canRetreat(G, side) { if (!G || G.over) return false; if (side === 'atk') return true; return !!(G.exits && G.exits.def && G.exits.def.length); }
+function retreatAll(G, side) {
+  if (!canRetreat(G, side)) return null;
+  var lost = 0;
+  if (side === 'atk') {
+    unitsOf(G, 'atk').forEach(function (u) { if (u.type === 'taisho' || u.type === 'konida') return; var d = Math.round(u.hp * 0.1 * 100) / 100; u.hp = Math.max(0.5, u.hp - d); lost += d * UNIT_TYPES[u.type].men / 10; });
+    G.over = true; G.winner = 'def'; G.reason = 'せめてが 撤退した';
+  } else {
+    var e = G.exits.def[0];
+    unitsOf(G, 'def').forEach(function (u) { var d = u.type === 'taisho' ? 0 : Math.round(u.hp * 0.15 * 100) / 100; u.hp = Math.max(0.5, u.hp - d); lost += u.type === 'taisho' ? 0 : d * UNIT_TYPES[u.type].men / 10; u.fled = true; u.fledTo = e.to; u.fledName = e.name; u.acted = true; u.c = -99; u.r = -99; });
+    G.over = true; G.winner = 'atk'; G.reason = 'まもりが 城を すてて ' + e.name + 'へ 撤退した';
+  }
+  return { lost: Math.round(lost), to: side === 'def' ? G.exits.def[0].name : null };
 }
 function canFlee(G, u) { return !!(u && u.hp > 0 && !u.fled && exitAt(G, u.side, u.c, u.r)); }
 function doFlee(G, u) {
@@ -4791,6 +4808,7 @@ function updateHud() {
   var canRein = G.playerSide === 'def' && G.kBattle && typeof KS !== 'undefined' && KS && reinfSources(KS, G.kBattle).length > 0;
   $('reinBtn').style.display = canRein ? '' : 'none';
   if (canRein) $('reinBtn').disabled = !mine || phase === 'cpu';
+  $('retreatBtn').disabled = !mine || phase === 'cpu' || G.over;
   var canRein = G.kBattle && typeof KS !== 'undefined' && KS && !G.over;
   $('reinBtn').style.display = canRein ? '' : 'none';
   if (canRein) $('reinBtn').disabled = !mine || phase === 'cpu';
@@ -4921,6 +4939,16 @@ function mergeUnit(t) {
   floatText(t.c, t.r, '🔗+' + dmgMen(t, mv), '#bfe0ff', true);
   logMsg(unitName(u) + ' が となりの ' + unitName(t) + ' に 合流（' + dmgMen(t, mv) + menUnit(t.type) + '）' + (u.hp > 0 ? '　のこり ' + menOf(u) + menUnit(u.type) : ''));
   deselect(); updateHud(); afterPlayerAction();
+}
+// 全軍 撤退（たしかめてから）
+function askRetreat() {
+  if (!G || G.over || G.side !== G.playerSide || phase === 'cpu' || phase === 'anim' || moveAnim) return;
+  var me = G.playerSide;
+  if (!canRetreat(G, me)) { banner('にげ場が ない（籠城）ので 撤退 できない', 1500); return; }
+  var msg = me === 'atk' ? '全軍で 撤退しますか？ 合戦は まけに なり、へいは もとの 城へ もどります（しんがりで 1わり ほど へる）。のこった 兵糧の 一部は てきに とられます。'
+    : '城を すてて ' + G.exits.def[0].name + 'へ 撤退しますか？ 城は てきの ものに なり、へいは 1.5わり ほど へります。';
+  confirmAct = function () { var r = retreatAll(G, me); if (!r) return; clearUndo(); deselect(); logMsg('🏳 ' + (me === 'atk' ? '全軍 撤退！' : G.exits.def[0].name + 'へ 撤退！') + '（しんがりで ' + r.lost + '人 うしなった）', 'sys'); updateHud(); gameOver(); };
+  $('confirmMsg').textContent = msg; $('confirmYes').textContent = '🏳 撤退する'; $('confirmBox').classList.add('on');
 }
 var confirmAct = null;
 function fleeUnit(ok) {
@@ -5349,9 +5377,10 @@ window.addEventListener('load', function () {
     if (msgs.length) { $('confirmMsg').textContent = msgs.join(' ') + ' ターンを おわりますか？'; $('confirmBox').classList.add('on'); }
     else playerEndTurn();
   };
-  $('confirmYes').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); var f = confirmAct || playerEndTurn; confirmAct = null; f(); };
+  $('confirmYes').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); $('confirmYes').textContent = 'おわる'; var f = confirmAct || playerEndTurn; confirmAct = null; f(); };
   $('supplyBtn').onclick = function () { SFX.tap(); openSupply(); };
   $('reinBtn').onclick = function () { SFX.tap(); openRein(); };
+  $('retreatBtn').onclick = function () { SFX.tap(); askRetreat(); };
   $('reinNo').onclick = function () { SFX.tap(); $('reinBox').classList.remove('on'); };
   $('reinGo').onclick = function () { SFX.tap(); reinGo(); };
   $('reinMap').onclick = function (e) {
@@ -5360,7 +5389,7 @@ window.addEventListener('load', function () {
     if (bi >= 0 && bd < 70) reinChoose(bi);
   };
   $('supplyNo').onclick = function () { SFX.tap(); $('supplyBox').classList.remove('on'); };
-  $('confirmNo').onclick = function () { SFX.tap(); confirmAct = null; $('confirmBox').classList.remove('on'); };
+  $('confirmNo').onclick = function () { SFX.tap(); confirmAct = null; $('confirmYes').textContent = 'おわる'; $('confirmBox').classList.remove('on'); };
   $('logLine').onclick = function () { SFX.tap(); openLog(); };
   $('logClose').onclick = function () { SFX.tap(); $('logBox').classList.remove('on'); };
   $('fitBtn').onclick = function () { SFX.tap(); toggleCamera(); };
