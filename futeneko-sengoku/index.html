@@ -348,6 +348,7 @@ button{font-family:inherit;cursor:pointer;}
       <button class="hb" id="fitBtn" title="ぜんたい">⤢</button>
       <button class="hb" id="helpBtn2">?</button>
       <button class="hb" id="quitBtn">✕</button>
+      <button class="hb" id="reinBtn" title="援軍" style="display:none">🚩援軍</button>
       <button class="hb" id="supplyBtn" title="補給" style="display:none">🐴補給</button>
       <button class="hb" id="endTurnBtn">ターンおわり ▶</button>
     </div>
@@ -376,6 +377,14 @@ button{font-family:inherit;cursor:pointer;}
   <button class="close" id="logClose">とじる</button>
 </div></div>
 
+<div class="modal" id="reinBox"><div class="card" style="max-height:92vh;overflow:auto">
+  <h2 style="font-size:21px;color:#7a3a1a">🚩 援軍を だす</h2>
+  <p style="font-size:13px;color:#666;margin:4px 0">まわりの 国の 地図。じぶんの 城を タップして えらぶ。とおいほど つくまで 日数が かかる。</p>
+  <canvas id="reinMap" width="680" height="440" style="width:100%;max-width:340px;height:auto;border-radius:10px;background:#4f8fc6;touch-action:none"></canvas>
+  <div id="reinList" style="text-align:left"></div>
+  <div id="reinPick" style="text-align:left"></div>
+  <div class="row"><button class="act" id="reinGo" disabled>🚩 出陣させる</button><button class="act sub" id="reinNo">とじる</button></div>
+</div></div>
 <div class="modal" id="supplyBox"><div class="card">
   <h2 style="font-size:22px;color:#7a3a1a">🐴 小荷駄隊を よぶ</h2>
   <p id="supplyMsg" style="font-size:14px;color:#555;text-align:left"></p>
@@ -461,7 +470,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v6.1';
+var VERSION = 'v6.2';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1436,8 +1445,22 @@ function edgeHexAt(G, ang) {
   return last;
 }
 function exitOK(t) { return t && '.=fhb'.indexOf(t.ch) >= 0; }
+// 援軍の 入口：みちが 国に はいる ところ、または その 城の ばしょ（地図の そとなら はしっこ）
+function defAnchor(G, env, f) {
+  var kxy1 = env.keepXY || [0, 0], best = null, lastIn = null;
+  for (var k = 0; k < f.path.length; k++) {
+    var bq = env.toBattle(f.path[k]), rr = Math.round((kxy1[1] + bq[1]) / 1.5), cc = Math.round((kxy1[0] + bq[0]) / SQ3G - 0.5 * (rr & 1));
+    var inside = rr >= 1 && rr < G.map.h - 1 && cc >= 1 && cc < G.map.w - 1;
+    if (!inside) { if (f.path.length === 1) best = [Math.max(1, Math.min(G.map.w - 2, cc)), Math.max(1, Math.min(G.map.h - 2, rr))]; continue; }
+    lastIn = [cc, rr]; if (!best) best = [cc, rr];
+    if (f.inTo[k]) { best = [cc, rr]; break; }
+  }
+  if (!best) best = lastIn || [Math.floor(G.map.w / 2), 1];
+  var bt = null; for (var r2 = 0; r2 < G.map.h; r2++) for (var c2 = 0; c2 < G.map.w; c2++) { var t2 = G.map.tiles[r2][c2]; if ('.=fhbC'.indexOf(t2.ch) < 0) continue; var d2 = hexDist(c2, r2, best[0], best[1]); if (!bt || d2 < bt[1]) bt = [t2, d2]; }
+  return bt ? { c: bt[0].c, r: bt[0].r, name: f.name } : null;
+}
 function setupGeo(G, env) {
-  var r, c;
+  var r, c; G.env = env;
   for (r = 0; r < G.map.h; r++) for (c = 0; c < G.map.w; c++) { var cell = env.grid && env.grid[r] && env.grid[r][c], tl = G.map.tiles[r][c]; tl.prov = cell && !cell.sea ? cell.prov : null; tl.bld = cell && cell.bld && '.=fh'.indexOf(tl.ch) >= 0 ? cell.bld : null; }
   G.north = env.north;  // 画面での 北の 向き（ラジアン）
   G.geoInfo = { from: env.from, fromName: env.fromName, to: env.to, toName: env.toName, names: env.names || {}, river: env.riverName || null };
@@ -1447,23 +1470,9 @@ function setupGeo(G, env) {
   for (c = 0; c < G.map.w; c++) { var t = G.map.tiles[G.map.h - 1][c]; if (exitOK(t)) bot.push(t); }
   bot.sort(function (a, b) { return Math.abs(a.c - cx) - Math.abs(b.c - cx); });
   bot.slice(0, 5).forEach(function (t) { G.exits.atk.push({ c: t.c, r: t.r, to: env.from, name: env.fromName }); });
-  // 援軍（守り）の 入口：みちが 国に はいる ところ、または その 城の ばしょ（地図の そとなら はしっこ）
-  G.defFronts = [null];
-  var kxy1 = env.keepXY || [0, 0];
-  (env.defFronts || []).forEach(function (f) {
-    var best = null, lastIn = null;
-    for (var k = 0; k < f.path.length; k++) {
-      var bq = env.toBattle(f.path[k]), rr = Math.round((kxy1[1] + bq[1]) / 1.5), cc = Math.round((kxy1[0] + bq[0]) / SQ3G - 0.5 * (rr & 1));
-      var inside = rr >= 1 && rr < G.map.h - 1 && cc >= 1 && cc < G.map.w - 1;
-      if (!inside) { if (f.path.length === 1) { best = [Math.max(1, Math.min(G.map.w - 2, cc)), Math.max(1, Math.min(G.map.h - 2, rr))]; } continue; }
-      lastIn = [cc, rr]; if (!best) best = [cc, rr];
-      if (f.inTo[k]) { best = [cc, rr]; break; }
-    }
-    if (!best) best = lastIn || [Math.floor(G.map.w / 2), 1];
-    // ちかくの とおれる マスへ
-    var bt = null; for (var r2 = 0; r2 < G.map.h; r2++) for (var c2 = 0; c2 < G.map.w; c2++) { var t2 = G.map.tiles[r2][c2]; if ('.=fhbC'.indexOf(t2.ch) < 0) continue; var d2 = hexDist(c2, r2, best[0], best[1]); if (!bt || d2 < bt[1]) bt = [t2, d2]; }
-    G.defFronts.push(bt ? { c: bt[0].c, r: bt[0].r, name: f.name } : null);
-  });
+  // 援軍（守り）の 入口
+  G.env = env; G.defFronts = [null];
+  (env.defFronts || []).forEach(function (f) { G.defFronts.push(defAnchor(G, env, f)); });
   // 同時攻撃：ほかの 国からの 攻め口（道が 国に はいる ところ）
   G.fronts = [{ c: cx, r: G.map.h - 1, from: env.from, name: env.fromName }];
   var kxy0 = env.keepXY || [0, 0];
@@ -1546,6 +1555,40 @@ function checkVictory(G) {
   return null;
 }
 
+// ---- 合戦の とちゅうの 援軍 ----
+// 道すじ（世界の マス）から 合戦場の 入口を きめる。inTo：その マスが 戦場の 国か
+function reinfEntry(G, path, inTo) {
+  var env = G.env; if (!env || !env.toBattle) return { c: Math.floor(G.map.w / 2), r: G.map.h - 1 };
+  var kxy = env.keepXY || [0, 0], best = null, lastIn = null;
+  for (var k = 0; k < path.length; k++) {
+    var bq = env.toBattle(path[k]), rr = Math.round((kxy[1] + bq[1]) / 1.5), cc = Math.round((kxy[0] + bq[0]) / SQ3G - 0.5 * (rr & 1));
+    var inside = rr >= 1 && rr < G.map.h - 1 && cc >= 1 && cc < G.map.w - 1;
+    if (!inside) { if (path.length === 1) best = [Math.max(1, Math.min(G.map.w - 2, cc)), Math.max(1, Math.min(G.map.h - 2, rr))]; continue; }
+    lastIn = [cc, rr]; if (!best) best = [cc, rr];
+    if (inTo && inTo[k]) { best = [cc, rr]; break; }
+  }
+  if (!best) best = lastIn || [Math.floor(G.map.w / 2), G.map.h - 1];
+  var bt = null;
+  for (var r2 = 0; r2 < G.map.h; r2++) for (var c2 = 0; c2 < G.map.w; c2++) { var t2 = G.map.tiles[r2][c2]; if ('.=fhbC'.indexOf(t2.ch) < 0) continue; var d2 = hexDist(c2, r2, best[0], best[1]); if (!bt || d2 < bt[1]) bt = [t2, d2]; }
+  return bt ? { c: bt[0].c, r: bt[0].r } : { c: best[0], r: best[1] };
+}
+// list：[{uid,type,hp}]。delay 日 あとに entry の まわりに あらわれる
+function queueReinf(G, side, list, entry, delay, name) {
+  (G.pendingRein = G.pendingRein || []).push({ side: side, list: list, entry: entry, due: G.turn + Math.max(0, delay), name: name });
+}
+function spawnDue(G) {
+  if (!G.pendingRein || !G.pendingRein.length) return;
+  G.pendingRein = G.pendingRein.filter(function (p) {
+    if (p.side !== G.side || p.due > G.turn) return true;
+    var cand = [];
+    for (var r = 0; r < G.map.h; r++) for (var c = 0; c < G.map.w; c++) { var t = G.map.tiles[r][c]; if ('.=fhbC'.indexOf(t.ch) < 0 || unitAt(G, c, r)) continue; var d = hexDist(c, r, p.entry.c, p.entry.r); if (d <= 6) cand.push([t, d]); }
+    cand.sort(function (a, b) { return a[1] - b[1]; });
+    var n = 0;
+    p.list.forEach(function (it, i) { var t = cand[i]; if (!t) return; var u = makeUnit(it.type, p.side, null); u.hp = Math.max(0.05, Math.min(10, it.hp)); u.ref = it.uid; u.c = t[0].c; u.r = t[0].r; u.revealed = true; u.reinf = true; G.units.push(u); n++; });
+    (G.notes || (G.notes = [])).push({ c: p.entry.c, r: p.entry.r, side: p.side, text: '🚩 ' + p.name + 'から 援軍 ' + n + '隊が とうちゃく！' });
+    return false;
+  });
+}
 function endTurn(G) {
   checkVictory(G);
   if (G.over) return;
@@ -1567,6 +1610,7 @@ function endTurn(G) {
     }
     if (G.turn > (G.turnLimit || TURN_LIMIT)) { G.over = true; G.winner = 'def'; G.reason = 'しろを まもりきった！'; return; }
   }
+  spawnDue(G);
   G.units.forEach(function (u) { if (u.side === G.side) { u.acted = false; u.moved = false; } });
 }
 
@@ -1946,11 +1990,7 @@ function battleEnv(S, b) {
   if (ek > 0) { env.minH = Math.min(BATTLE_MAX_H, Math.ceil((ek + 2) / (1.5 * BKM)) + 9); if (env.minH > 22) env.minW = Math.min(27, env.minH - 4); }
   // 援軍の 入口：となりの 国は 道が この 国に はいる ところ、おなじ 国の 城は その 城の ばしょ
   var bh9 = branchHexes() || {};
-  env.defFronts = (b.defFronts || []).map(function (f) {
-    if (f.castle || f.src === b.to) { var h9 = f.src === b.to ? WORLD.castles[b.to] : bh9[f.src]; return { name: f.src === b.to ? castleNameOf(S, b.to) : brName(f.src), path: [h9], inTo: [true] }; }
-    var pth = (routePath(f.src, b.to) || [WORLD.castles[f.src], cas]).slice();
-    return { name: PROV_BY[f.src].name, path: pth, inTo: pth.map(function (h) { return w.provAt(h[0], h[1]) === b.to; }) };
-  });
+  env.defFronts = (b.defFronts || []).map(function (f) { return defEntryInfo(S, b, f.src); });
   // 同時攻撃：ほかの 国からの 道
   env.fronts = (b.fronts || []).slice(1).map(function (f) {
     var pth = routePath(f.from, b.to) || [WORLD.castles[f.from], cas], fq = w.km(WORLD.castles[f.from][0], WORLD.castles[f.from][1]);
@@ -2883,6 +2923,13 @@ function reinfSources(S, b) {
   branchesIn(S, b.to).forEach(function (c0) { if (c0.id !== b.castleId && c0.owner === cid && c0.units.length) out.push({ src: c0.id, kind: 'branch', name: brName(c0.id) + '（支城）', units: c0.units }); });
   return out;
 }
+// 援軍の 入口の 道すじ（となりの 国は 道、おなじ 国の 城は その 城の ばしょ）
+function defEntryInfo(S, b, src) {
+  var w = worldMap(), cas = WORLD.castles[b.to], bh9 = branchHexes() || {};
+  if (S.castles[src] || src === b.to) { var h9 = src === b.to ? WORLD.castles[b.to] : bh9[src]; return { name: src === b.to ? castleNameOf(S, b.to) : brName(src), path: [h9], inTo: [true] }; }
+  var pth = (routePath(src, b.to) || [WORLD.castles[src], cas]).slice();
+  return { name: PROV_BY[src].name, path: pth, inTo: pth.map(function (h) { return w.provAt(h[0], h[1]) === b.to; }) };
+}
 // list: [{src, uids}] を 合戦に くわえる（へいは もとの 場所から はなれる）
 function addReinf(S, b, list) {
   b.reinf = b.reinf || {}; b.defFronts = b.defFronts || [];
@@ -2893,6 +2940,34 @@ function addReinf(S, b, list) {
     var fi = b.defFronts.length + 1; b.defFronts.push({ src: e.src, castle: isCastle });
     mv.forEach(function (u) { var cu = cloneU(u); cu.dfront = fi; b.defUnits.push(cu); b.reinf[u.uid] = e.src; });
   });
+}
+// 合戦の とちゅうで 援軍を だせる 城（side：プレイヤーの がわ）
+function midSources(S, b, side) {
+  var cid = side === 'atk' ? b.atkClan : b.defClan, w = worldMap(), out = [], bh = branchHexes() || {};
+  var tgt = b.castleId ? bh[b.castleId] : WORLD.castles[b.to], tq = w.km(tgt[0], tgt[1]);
+  function add(src, kind, name, units, hex, path) {
+    if (!units.length) return; var q = w.km(hex[0], hex[1]), km = Math.hypot(q[0] - tq[0], q[1] - tq[1]);
+    out.push({ src: src, kind: kind, name: name, units: units, hex: hex, path: path, km: Math.round(km), delay: Math.max(1, Math.round(km / 9)) });
+  }
+  ADJ[b.to].concat([b.to]).forEach(function (q) {
+    if (S.provs[q].owner !== cid) return;
+    if (q === b.to) { if (b.castleId) add(q, 'main', castleNameOf(S, q) + '（本城）', S.provs[q].units, WORLD.castles[q], [WORLD.castles[q]]); return; }
+    var rt = routeOf(q, b.to); if (!rt || rt.type === 'none') return;
+    if (side === 'atk' && seaRoute(q, b.to)) return;   // とちゅうの 海路は むり
+    add(q, 'prov', PROV_BY[q].name + '（' + castleNameOf(S, q) + '）', S.provs[q].units, WORLD.castles[q], routePath(q, b.to) || [WORLD.castles[q]]);
+  });
+  if (side === 'def') branchesIn(S, b.to).forEach(function (c0) { if (c0.id !== b.castleId && c0.owner === cid) add(c0.id, 'branch', brName(c0.id) + '（支城）', c0.units, bh[c0.id], [bh[c0.id]]); });
+  return out;
+}
+// 援軍を だす：城から へいを はなし、合戦の あとに もどれる ように しるす
+function dispatchMid(S, b, side, srcObj, uids) {
+  var isC = !!S.castles[srcObj.src], pool = isC ? S.castles[srcObj.src].units : S.provs[srcObj.src].units;
+  var mv = pool.filter(function (u) { return uids.indexOf(u.uid) >= 0; }); if (!mv.length) return null;
+  if (isC) S.castles[srcObj.src].units = pool.filter(function (u) { return uids.indexOf(u.uid) < 0; }); else S.provs[srcObj.src].units = pool.filter(function (u) { return uids.indexOf(u.uid) < 0; });
+  if (side === 'atk') { b.unitFrom = b.unitFrom || {}; mv.forEach(function (u) { b.unitFrom[u.uid] = srcObj.src; }); if (!b.fronts) b.fronts = [{ from: b.from }]; }
+  else { b.reinf = b.reinf || {}; mv.forEach(function (u) { b.reinf[u.uid] = srcObj.src; }); }
+  var w = worldMap();
+  return { list: mv.map(cloneU), path: srcObj.path, inTo: srcObj.path.map(function (h) { return w.provAt(h[0], h[1]) === b.to; }), delay: srcObj.delay, name: srcObj.name };
 }
 function backReinf(S, b, list) {
   list.forEach(function (u) {
@@ -4422,6 +4497,12 @@ function updateHud() {
   $('sideLbl').textContent = mine ? 'あなたの ばん' : 'あいての ばん';
   $('sideLbl').className = mine ? 'me' : 'cpu';
   $('endTurnBtn').disabled = !mine || phase === 'cpu';
+  var canRein = G.playerSide === 'def' && G.kBattle && typeof KS !== 'undefined' && KS && reinfSources(KS, G.kBattle).length > 0;
+  $('reinBtn').style.display = canRein ? '' : 'none';
+  if (canRein) $('reinBtn').disabled = !mine || phase === 'cpu';
+  var canRein = G.kBattle && typeof KS !== 'undefined' && KS && !G.over;
+  $('reinBtn').style.display = canRein ? '' : 'none';
+  if (canRein) $('reinBtn').disabled = !mine || phase === 'cpu';
   var canSup = G.food !== undefined && G.playerSide === 'atk' && G.kBattle && typeof KS !== 'undefined' && KS;
   $('supplyBtn').style.display = canSup ? '' : 'none';
   if (canSup) $('supplyBtn').disabled = !mine || phase === 'cpu' || !!activeConvoy(G, 'atk');
@@ -4684,6 +4765,68 @@ function nearestTargetUnit(wx, wy) {
   return best;
 }
 function deselectKeep() { sel = null; reach = null; targets = []; phase = 'idle'; hideActions(); }
+// ---- 合戦の とちゅうで 援軍：まわりの 国の 地図から 城を えらぶ ----
+var reinSel = null, reinSrcs = [];
+function openRein() {
+  if (!G || !G.kBattle || typeof KS === 'undefined' || !KS) return;
+  var b = G.kBattle; reinSrcs = midSources(KS, b, G.playerSide); reinSel = null;
+  drawReinMap(); reinListHtml(); $('reinPick').innerHTML = ''; $('reinGo').disabled = true;
+  $('reinBox').classList.add('on');
+}
+function reinPos(o) {   // 国取り地図の 座標
+  var w = worldMap(), ll = w.ll(o[0], o[1]); return kProj(ll[0], ll[1]);
+}
+function drawReinMap() {
+  var cv = $('reinMap'), x = cv.getContext('2d'), b = G.kBattle, bh = branchHexes() || {};
+  var tgt = b.castleId ? bh[b.castleId] : WORLD.castles[b.to], pts = [reinPos(tgt)].concat(reinSrcs.map(function (s0) { return reinPos(s0.hex); }));
+  var x0 = Math.min.apply(null, pts.map(function (p) { return p[0]; })), x1 = Math.max.apply(null, pts.map(function (p) { return p[0]; }));
+  var y0 = Math.min.apply(null, pts.map(function (p) { return p[1]; })), y1 = Math.max.apply(null, pts.map(function (p) { return p[1]; }));
+  var mg = 30, wd = Math.max(80, x1 - x0) + mg * 2, ht = Math.max(56, y1 - y0) + mg * 2, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (wd / ht < cv.width / cv.height) wd = ht * cv.width / cv.height; else ht = wd * cv.height / cv.width;
+  var sc = cv.width / wd, ox = cx - wd / 2, oy = cy - ht / 2;
+  x.fillStyle = '#4f8fc6'; x.fillRect(0, 0, cv.width, cv.height);
+  var hl = typeof kHexLayer === 'function' && kMap && kMap.HX ? kHexLayer() : null;
+  if (hl) { var tr = kMap.terrRect, P = kMap.hexP; x.drawImage(hl, (ox - tr[0]) * P, (oy - tr[1]) * P, wd * P, ht * P, 0, 0, cv.width, cv.height); }
+  function scr(p) { return [(p[0] - ox) * sc, (p[1] - oy) * sc]; }
+  // 合戦の 城
+  var tp = scr(pts[0]);
+  x.font = 'bold 30px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.beginPath(); x.arc(tp[0], tp[1], 26, 0, Math.PI * 2); x.fillStyle = 'rgba(220,40,30,0.85)'; x.fill(); x.lineWidth = 4; x.strokeStyle = '#fff'; x.stroke(); x.fillStyle = '#fff'; x.fillText('⚔', tp[0], tp[1] + 2);
+  x.font = 'bold 22px sans-serif'; x.lineWidth = 6; x.strokeStyle = '#fff'; x.strokeText(b.castleName || '', tp[0], tp[1] - 40); x.fillStyle = '#a01010'; x.fillText(b.castleName || '', tp[0], tp[1] - 40);
+  // えらべる 城
+  reinSrcs.forEach(function (s0, i) {
+    var p = scr(reinPos(s0.hex)); s0.sp = p;
+    x.beginPath(); x.moveTo(p[0], p[1]); x.lineTo(tp[0], tp[1]); x.setLineDash([10, 8]); x.lineWidth = 4; x.strokeStyle = i === reinSel ? '#ffe24a' : 'rgba(255,255,255,0.8)'; x.stroke(); x.setLineDash([]);
+    var art = gx(castleArtOf(KS, s0.kind === 'branch' ? KS.castles[s0.src].prov : s0.src, s0.kind === 'branch' ? s0.src : null));
+    x.beginPath(); x.arc(p[0], p[1], 30, 0, Math.PI * 2); x.fillStyle = i === reinSel ? 'rgba(255,226,74,0.9)' : 'rgba(255,255,255,0.85)'; x.fill(); x.lineWidth = 3; x.strokeStyle = '#2f6fe0'; x.stroke();
+    if (art) { var aw = 54, ah = aw * art.naturalHeight / art.naturalWidth; x.drawImage(art, p[0] - aw / 2, p[1] + 16 - ah, aw, ah); }
+    var lb = s0.name.replace(/（.*）/, '') + ' ' + s0.delay + '日';
+    x.font = 'bold 20px sans-serif'; x.lineWidth = 6; x.strokeStyle = '#fff'; x.strokeText(lb, p[0], p[1] + 44); x.fillStyle = '#123'; x.fillText(lb, p[0], p[1] + 44);
+  });
+  if (!reinSrcs.length) { x.font = 'bold 24px sans-serif'; x.fillStyle = '#fff'; x.fillText('援軍を だせる 城が ない', cv.width / 2, cv.height - 30); }
+}
+function reinListHtml() {
+  $('reinList').innerHTML = reinSrcs.map(function (s0, i) { return '<div class="kbrow" data-ri="' + i + '" style="cursor:pointer' + (i === reinSel ? ';background:rgba(255,226,74,.3)' : '') + '"><span class="kbrn">' + (s0.kind === 'branch' ? '🏰 ' : '🏯 ') + '<b>' + s0.name + '</b><br><small>' + menStr(menTotal(s0.units)) + '・' + s0.km + 'km・つくまで ' + s0.delay + '日</small></span></div>'; }).join('');
+  [].forEach.call($('reinList').querySelectorAll('[data-ri]'), function (e) { e.onclick = function () { reinChoose(+e.dataset.ri); }; });
+}
+function reinChoose(i) {
+  SFX.tap(); reinSel = i; var s0 = reinSrcs[i];
+  $('reinPick').innerHTML = '<h4 style="margin:8px 0 2px">' + s0.name + 'から だす へい</h4>' + pickerHtml(s0.units, 0, 'mr_');
+  pickerBind(function () { $('reinGo').disabled = !pickerUids(s0.units, 'mr_').length; }, $('reinPick'));
+  $('reinGo').disabled = true; reinListHtml(); drawReinMap();
+}
+function reinGo() {
+  var s0 = reinSrcs[reinSel]; if (!s0) return;
+  var uids = pickerUids(s0.units, 'mr_'); if (!uids.length) return;
+  var d = dispatchMid(KS, G.kBattle, G.playerSide, s0, uids); if (!d) return;
+  var entry = reinfEntry(G, d.path, d.inTo);
+  queueReinf(G, G.playerSide, d.list, entry, d.delay, s0.name.replace(/（.*）/, ''));
+  if (kSave) kSave();
+  $('reinBox').classList.remove('on');
+  logMsg('🚩 ' + s0.name + 'から 援軍 ' + d.list.length + '隊（' + menStr(menTotal(d.list)) + '）が 出陣。' + d.delay + '日後に とうちゃく', 'sys');
+  banner('🚩 援軍 出陣！ ' + d.delay + '日後に とうちゃく', 1400);
+  floatText(entry.c, entry.r, '🚩', '#ffe24a', true); updateHud();
+}
 // 補給：国取りの お金で 小荷駄隊を よぶ
 function supplyCost(days) { return Math.ceil(foodCost(atkMen(G), days) * 1.3); }   // はこぶ 手間で すこし たかい
 function openSupply() {
@@ -4707,7 +4850,7 @@ function openSupply() {
 // 小荷駄の できごと（おそわれた・とどいた）
 function showNotes() {
   if (!G || !G.notes || !G.notes.length) return;
-  G.notes.forEach(function (n, i) { logMsg(n.text, 'sys'); floatText(n.c, n.r, /とどいた/.test(n.text) ? '🍙+' : '⚔', /とどいた/.test(n.text) ? '#a0ffb0' : '#ff8a7a', true); setTimeout(function () { banner(n.text, 1300); }, 1000 + i * 1400); });
+  G.notes.forEach(function (n, i) { logMsg(n.text, 'sys'); floatText(n.c, n.r, /とどいた/.test(n.text) ? '🍙+' : /援軍/.test(n.text) ? '🚩' : '⚔', /とどいた|援軍/.test(n.text) ? '#a0ffb0' : '#ff8a7a', true); setTimeout(function () { banner(n.text, 1300); }, 1000 + i * 1400); });
   G.notes = [];
 }
 // 兵糧の しらせ（のこり 5・3・1日）
@@ -4902,6 +5045,14 @@ window.addEventListener('load', function () {
   };
   $('confirmYes').onclick = function () { SFX.tap(); $('confirmBox').classList.remove('on'); var f = confirmAct || playerEndTurn; confirmAct = null; f(); };
   $('supplyBtn').onclick = function () { SFX.tap(); openSupply(); };
+  $('reinBtn').onclick = function () { SFX.tap(); openRein(); };
+  $('reinNo').onclick = function () { SFX.tap(); $('reinBox').classList.remove('on'); };
+  $('reinGo').onclick = function () { SFX.tap(); reinGo(); };
+  $('reinMap').onclick = function (e) {
+    var cv = $('reinMap'), rc = cv.getBoundingClientRect(), mx = (e.clientX - rc.left) * cv.width / rc.width, my = (e.clientY - rc.top) * cv.height / rc.height, bi = -1, bd = 1e9;
+    reinSrcs.forEach(function (s0, i) { if (!s0.sp) return; var d = Math.hypot(s0.sp[0] - mx, s0.sp[1] - my); if (d < bd) { bd = d; bi = i; } });
+    if (bi >= 0 && bd < 70) reinChoose(bi);
+  };
   $('supplyNo').onclick = function () { SFX.tap(); $('supplyBox').classList.remove('on'); };
   $('confirmNo').onclick = function () { SFX.tap(); confirmAct = null; $('confirmBox').classList.remove('on'); };
   $('logLine').onclick = function () { SFX.tap(); openLog(); };
@@ -5696,8 +5847,8 @@ function pickerHtml(units, init, pre) {
   });
   return h;
 }
-function pickerBind(onChange) {
-  Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
+function pickerBind(onChange, root) {
+  Array.prototype.forEach.call((root || $('kBody')).querySelectorAll('.pm'), function (b) {
     b.onclick = function () { SFX.tap(); var t = b.getAttribute('data-t'), el = $('pk_' + (b.getAttribute('data-p') || '') + t), v = +el.textContent + (+b.getAttribute('data-d')); v = Math.max(0, Math.min(+el.getAttribute('data-max'), v)); el.textContent = v; if (onChange) onChange(); };
   });
 }
@@ -6197,26 +6348,31 @@ function kSeasonReport(next) {
   kModal('📜 ' + (KS.repLabel || '') + 'の できごと', h, [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); next(); } }]);
 }
 // 攻められた：援軍を えらんで まもる（援軍は それぞれの 城から すすんでくる）
-function kDefenseBox(b) {
-  var A = CLANS[b.atkClan], srcs = reinfSources(KS, b);
+function kDefenseBox(b, sel) {
+  sel = sel || {};
+  var A = CLANS[b.atkClan], srcs = reinfSources(KS, b), addMen = 0;
+  srcs.forEach(function (sr) { var l = sel[sr.src] || []; addMen += menTotal(sr.units.filter(function (u) { return l.indexOf(u.uid) >= 0; })); });
   var h = '<div class="kintro">' + crestHtml(b.atkClan, 60) + '<p><b>' + A.lord + '</b>が ' + PROV_BY[b.from].name + 'から <b>' + (b.castleName || PROV_BY[b.to].name) + '</b>（' + PROV_BY[b.to].name + (b.castleId ? 'の 支城' : 'の 本城') + '）に せめてきた！<br>' +
     'てき ' + menStr(menTotal(b.atkUnits)) + '（' + unitSummary(b.atkUnits) + '）<br>城の 守り ' + menStr(menTotal(b.defUnits)) + '（' + unitSummary(b.defUnits) + '）</p></div>';
+  h += '<h4>🚩 援軍</h4>';
   if (srcs.length) {
-    h += '<h4>🚩 援軍を おくる</h4><p class="small">えらんだ へいは それぞれの 城から 合戦場へ むかう（城から とおいと つくまで 時間が かかる）。合戦の あと、生きのこりは もとの 城へ もどる。</p>';
-    srcs.forEach(function (sr, i) { h += '<div class="krein"><b>' + (sr.kind === 'prov' ? '🏯 ' : '🏰 ') + sr.name + '</b><small>（' + menStr(menTotal(sr.units)) + '）</small>' + pickerHtml(sr.units, 0, 'rf' + i + '_') + '</div>'; });
-  } else h += '<p class="small">援軍を おくれる となりの 城が ない。</p>';
-  h += '<div id="kDefOdds" class="kodds"></div>';
-  function picks() { return srcs.map(function (sr, i) { return { src: sr.src, uids: pickerUids(sr.units, 'rf' + i + '_') }; }).filter(function (e) { return e.uids.length; }); }
-  function upd() {
-    var add = 0; picks().forEach(function (e) { var sr = srcs.filter(function (x) { return x.src === e.src; })[0]; add += menTotal(sr.units.filter(function (u) { return e.uids.indexOf(u.uid) >= 0; })); });
-    var r = (strength(b.defUnits) + add / 300 * 5) / Math.max(1, strength(b.atkUnits));
-    $('kDefOdds').innerHTML = 'みかた <b>' + menStr(menTotal(b.defUnits) + add) + '</b>' + (add ? '（援軍 ' + menStr(add) + '）' : '') + '　てき ' + menStr(menTotal(b.atkUnits));
-  }
+    h += '<p class="small">ボタンで 援軍を おくる 城と へいを えらぶ。援軍は その 城の ほうから 合戦場へ むかう。合戦の とちゅうでも「🚩援軍」で よべる。</p>';
+    srcs.forEach(function (sr, i) { var l = sel[sr.src] || [], m = menTotal(sr.units.filter(function (u) { return l.indexOf(u.uid) >= 0; }));
+      h += '<div class="kbrow"><span class="kbrn">' + (sr.kind === 'prov' ? '🏯 ' : '🏰 ') + '<b>' + sr.name + '</b><br><small>' + menStr(menTotal(sr.units)) + (m ? '・<b style="color:#2a6a2a">援軍 ' + menStr(m) + '</b>' : '') + '</small></span><button class="kmini" data-rs="' + i + '">🚩 援軍を おくる</button></div>'; });
+    h += '<div class="kodds">みかた <b>' + menStr(menTotal(b.defUnits) + addMen) + '</b>' + (addMen ? '（援軍 ' + menStr(addMen) + '）' : '') + '　てき ' + menStr(menTotal(b.atkUnits)) + '</div>';
+  } else h += '<p class="small">援軍を おくれる 城が ない（となりの じぶんの 国・おなじ 国の 城に へいが いない）。</p>';
+  function picks() { return Object.keys(sel).map(function (k) { return { src: k, uids: sel[k] }; }).filter(function (e) { return e.uids.length; }); }
   function go(fn) { var pk = picks(); if (pk.length) { addReinf(KS, b, pk); logC(KS, '援軍が ' + (b.castleName || PROV_BY[b.to].name) + 'へ むかった（' + pk.map(function (e) { return KS.castles[e.src] ? brName(e.src) : e.src === b.to ? castleNameOf(KS, b.to) : PROV_BY[e.src].name; }).join('・') + 'から）', 'good'); } kSave(); kCloseModal(); fn(b); }
   kModal('てきが せめてきた！', h,
     [{ label: '⚔ じぶんで まもる', cls: 'act', fn: function () { go(kFightBattle); } },
      { label: '🎲 おまかせ', cls: 'act sub', fn: function () { go(kAutoBattle); } }]);
-  pickerBind(upd); upd();
+  [].forEach.call($('kBody').querySelectorAll('[data-rs]'), function (e) { e.onclick = function () {
+    SFX.tap(); var sr = srcs[+e.dataset.rs];
+    kModal('🚩 ' + sr.name + 'から 援軍', '<p class="small">おくる へいを えらぶ（のこりは ' + sr.name + 'を まもる）。</p>' + pickerHtml(sr.units, 0, 'rs_'), [
+      { label: 'けってい', cls: 'act', fn: function () { sel[sr.src] = pickerUids(sr.units, 'rs_'); kDefenseBox(b, sel); } },
+      { label: 'やめる', cls: 'act sub', fn: function () { kDefenseBox(b, sel); } }]);
+    pickerBind();
+  }; });
 }
 function kGameOver() {
   kUpdate();
