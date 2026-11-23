@@ -4,7 +4,7 @@ const fs = require('fs'), acorn = require('acorn'), walk = require('acorn-walk')
 const html = fs.readFileSync(__dirname + '/dist/index.html', 'utf8');
 const code = html.match(/<script>([\s\S]*)<\/script>/)[1];
 const ast = acorn.parse(code, { ecmaVersion: 2020, sourceType: 'script' });
-const declared = new Set(['window', 'document', 'Math', 'Object', 'Array', 'Image', 'Number', 'String', 'JSON', 'setTimeout', 'clearTimeout', 'requestAnimationFrame', 'navigator', 'console', 'confirm', 'AudioContext', 'undefined', 'Infinity', 'NaN', 'Date', 'Error', 'module', 'require', 'Boolean', 'parseInt', 'parseFloat', 'isNaN', 'Promise', 'localStorage', 'Int8Array', 'Path2D', 'fetch', 'performance', 'URL', 'Blob', 'Audio', 'ArrayBuffer', 'DataView', 'Int16Array', 'Float64Array', 'Float32Array', 'Uint8Array']);
+const declared = new Set(['window', 'document', 'Math', 'Object', 'Array', 'Image', 'Number', 'String', 'JSON', 'setTimeout', 'clearTimeout', 'requestAnimationFrame', 'navigator', 'screen', 'Event', 'ResizeObserver', 'console', 'confirm', 'AudioContext', 'undefined', 'Infinity', 'NaN', 'Date', 'Error', 'module', 'require', 'Boolean', 'parseInt', 'parseFloat', 'isNaN', 'Promise', 'localStorage', 'Int8Array', 'Path2D', 'fetch', 'performance', 'URL', 'Blob', 'Audio', 'ArrayBuffer', 'DataView', 'Int16Array', 'Float64Array', 'Float32Array', 'Uint8Array']);
 // グローバル宣言収集
 ast.body.forEach(n => {
   if (n.type === 'VariableDeclaration') n.declarations.forEach(d => collect(d.id));

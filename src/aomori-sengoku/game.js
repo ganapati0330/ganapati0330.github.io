@@ -1,6 +1,6 @@
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 'use strict';
-var VERSION = 'v1.0';
+var VERSION = 'v1.1';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----

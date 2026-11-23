@@ -1,5 +1,37 @@
 /* ===== フテ猫 戦国合戦 : UI ===== */
 'use strict';
+
+// ---- スマホを 縦に もったら、画面ぜんたいを 90度 まわして 横長で 表示する ----
+// （iPhone は 画面の 向きを プログラムで かえられない ので、CSS で まわす）
+// ROT のとき、ゲームの 中の 座標（論理）と 画面の 座標（物理）は：論理x = 物理y、論理y = 画面の はば − 物理x
+var ROT = false;
+function isPhone() { return (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && Math.min(screen.width, screen.height) < 600; }
+function applyRot() {
+  var b = document.body; if (!b) return;
+  var w = window.innerWidth, h = window.innerHeight;
+  ROT = isPhone() && h > w;
+  var lw = ROT ? h : w, lh = ROT ? w : h, st = b.style;
+  b.classList.toggle('rot', ROT);
+  if (ROT) { st.width = h + 'px'; st.height = w + 'px'; st.transform = 'translateX(' + w + 'px) rotate(90deg)'; }
+  else { st.width = ''; st.height = ''; st.transform = ''; }
+  var r = document.documentElement.style; r.setProperty('--vw', (lw / 100) + 'px'); r.setProperty('--vh', (lh / 100) + 'px');
+  [['mw420', lw <= 420], ['mw480', lw <= 480], ['mw520', lw <= 520], ['mh520', lh <= 520], ['side', lh <= 520 && lw >= lh * 1.3]].forEach(function (c) { b.classList.toggle(c[0], c[1]); });
+}
+// ポインタの 位置を その 要素の 中の 座標（論理）に する
+function evPt(e, el) { var rc = el.getBoundingClientRect(); return ROT ? [e.clientY - rc.top, rc.right - e.clientX] : [e.clientX - rc.left, e.clientY - rc.top]; }
+window.addEventListener('resize', applyRot);
+window.addEventListener('orientationchange', function () { setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 350); });
+// 上の バーの 高さを CSS に つたえる（右がわの パネルを その 下から はじめる）
+function hudWatch() {
+  [['khud', '--khudH'], ['dhud', '--dhudH']].forEach(function (a) {
+    var el = document.getElementById(a[0]); if (!el) return;
+    var set = function () { if (el.offsetHeight) document.documentElement.style.setProperty(a[1], el.offsetHeight + 'px'); };
+    if (window.ResizeObserver) new ResizeObserver(set).observe(el);
+    window.addEventListener('resize', set); set();
+  });
+}
+document.addEventListener('DOMContentLoaded', function () { applyRot(); hudWatch(); });
+applyRot();
 var $ = function (id) { return document.getElementById(id); };
 var SQ3 = Math.sqrt(3);
 var R = 40; // hex size (world units)
@@ -1237,7 +1269,7 @@ function gameOver() {
 // opt: cam() → {x,y,s}, set(x,y,s), minS, maxS, tap(x,y), after()
 function panZoom(cv, opt) {
   var ptrs = {}, mode = null, moved = false, base = null;
-  function rel(e) { var rc = cv.getBoundingClientRect(); return [e.clientX - rc.left, e.clientY - rc.top]; }
+  function rel(e) { return evPt(e, cv); }
   // いまの 指の かずに あわせて 基準を とりなおす（指を はなした ときに とばないように）
   function rebase() {
     var ids = Object.keys(ptrs), c = opt.cam();
@@ -1330,7 +1362,7 @@ window.addEventListener('load', function () {
   $('reinNo').onclick = function () { SFX.tap(); $('reinBox').classList.remove('on'); };
   $('reinGo').onclick = function () { SFX.tap(); reinGo(); };
   $('reinMap').onclick = function (e) {
-    var cv = $('reinMap'), rc = cv.getBoundingClientRect(), mx = (e.clientX - rc.left) * cv.width / rc.width, my = (e.clientY - rc.top) * cv.height / rc.height, bi = -1, bd = 1e9;
+    var cv = $('reinMap'), ep = evPt(e, cv), mx = ep[0] * cv.width / (cv.offsetWidth || 1), my = ep[1] * cv.height / (cv.offsetHeight || 1), bi = -1, bd = 1e9;
     reinSrcs.forEach(function (s0, i) { if (!s0.sp) return; var d = Math.hypot(s0.sp[0] - mx, s0.sp[1] - my); if (d < bd) { bd = d; bi = i; } });
     if (bi >= 0 && bd < 70) reinChoose(bi);
   };

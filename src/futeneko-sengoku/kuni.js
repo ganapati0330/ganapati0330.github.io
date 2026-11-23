@@ -469,7 +469,7 @@ function kResize() {
   kMap.W = cv.offsetWidth; kMap.H = cv.offsetHeight;
   cv.width = Math.round(kMap.W * kMap.dpr); cv.height = Math.round(kMap.H * kMap.dpr);
 }
-function kAvail() { var top = ($('khud').offsetHeight || 60) + 4, bot = ($('kbottom').offsetHeight || 120) + 4; return { top: top, h: Math.max(80, kMap.H - top - bot) }; }
+function kAvail() { var top = ($('khud').offsetHeight || 60) + 4, bot = document.body.classList.contains('side') ? 4 : ($('kbottom').offsetHeight || 120) + 4; return { top: top, h: Math.max(80, kMap.H - top - bot) }; }
 function kFit(whole) {
   var a = kAvail(), v = kMap.view, bw = v[2], bh = v[3];
   var sFit = Math.min(kMap.W / bw, a.h / bh);
@@ -648,7 +648,7 @@ function kUpdate() {
   var nBr = KS.castles ? Object.keys(KS.castles).filter(function (k) { return KS.castles[k].owner === KS.player; }).length : 0, nPv = provsOf(KS, KS.player).length;
   $('kProv').textContent = (KS.clans[KS.player].streak >= 2 ? '🔥' + KS.clans[KS.player].streak + '連勝　' : '') + '🏯 ' + (nPv + nBr) + '城（' + nPv + '/' + PROVS.length + '国）　⚔ ' + menStr(menTotal(totalArmy(KS, KS.player).concat(KS.castles ? [].concat.apply([], Object.keys(KS.castles).filter(function (k) { return KS.castles[k].owner === KS.player; }).map(function (k) { return KS.castles[k].units; })) : [])));
   $('kEndBtn').disabled = KS.phase !== 'player' || KS.over;
-  $('kLegend').style.bottom = (($('kbottom').offsetHeight || 150) + 6) + 'px';
+  $('kLegend').style.bottom = (document.body.classList.contains('side') ? 6 : ($('kbottom').offsetHeight || 150) + 6) + 'px';
   var last = KS.log.slice(-2);
   $('kLog').innerHTML = last.map(function (e) { return '<div class="lg ' + kLogCls(e.kind) + '">' + e.text + '</div>'; }).join('');
   kInfo();
@@ -844,7 +844,7 @@ function kInitInput() {
   var kcv = $('kcv');
   kcv.addEventListener('mousemove', function (e) {
     if (e.buttons || !KS) return;
-    var rc = kcv.getBoundingClientRect(), wx = (e.clientX - rc.left - kMap.x) / kMap.s, wy = (e.clientY - rc.top - kMap.y) / kMap.s;
+    var ep = evPt(e, kcv), wx = (ep[0] - kMap.x) / kMap.s, wy = (ep[1] - kMap.y) / kMap.s;
     var ck = kCastleAt(wx, wy), k = ck ? ck.key : null;
     kcv.style.cursor = ck ? 'pointer' : '';
     if (k !== kMap.hover) { kMap.hover = k; kRender(); }
@@ -1820,7 +1820,7 @@ function openDomain(pid, branchId) {
 function domOffOK(o) { return !!(o && o.clan === KS.player); }   // 内政の 奉行は どの 城の 家臣でも
 function domXY(c, r) { return [(c + 0.5 * (r & 1)) * 1.7320508, r * 1.5]; }   // 半径1の ヘックス
 function domResize() { var cv = DS.cv; DS.dpr = Math.min(2, window.devicePixelRatio || 1); DS.W = cv.offsetWidth; DS.H = cv.offsetHeight; cv.width = Math.round(DS.W * DS.dpr); cv.height = Math.round(DS.H * DS.dpr); }
-function domArea() { var top = ($('dhud').offsetHeight || 50) + 4, bot = ($('dbottom').offsetHeight || 150) + 4; return { top: top, h: Math.max(80, DS.H - top - bot) }; }
+function domArea() { var top = ($('dhud').offsetHeight || 50) + 4, bot = document.body.classList.contains('side') ? 4 : ($('dbottom').offsetHeight || 150) + 4; return { top: top, h: Math.max(80, DS.H - top - bot) }; }
 function domFit() {
   var a = domArea(), bb = DS.bb, bw = bb[2] - bb[0], bh = bb[3] - bb[1];
   DS.s = Math.min(DS.W / bw, a.h / bh) * 0.96;
@@ -2167,7 +2167,7 @@ function initDomainInput() {
   var cv = $('dcv');
   cv.addEventListener('mousemove', function (e) {
     if (e.buttons || !KS || !DS.ctx) return;
-    var rc = cv.getBoundingClientRect(), h = domCastleAt(e.clientX - rc.left, e.clientY - rc.top), k = h ? h.key : null;
+    var ep = evPt(e, cv), h = domCastleAt(ep[0], ep[1]), k = h ? h.key : null;
     var onV = DS.mode && DS.valid; cv.style.cursor = h ? 'pointer' : '';
     if (k !== DS.hover) { DS.hover = k; domRender(); }
   });
