@@ -472,7 +472,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v6.3';
+var VERSION = 'v6.4';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2966,10 +2966,23 @@ function dispatchMid(S, b, side, srcObj, uids) {
   var isC = !!S.castles[srcObj.src], pool = isC ? S.castles[srcObj.src].units : S.provs[srcObj.src].units;
   var mv = pool.filter(function (u) { return uids.indexOf(u.uid) >= 0; }); if (!mv.length) return null;
   if (isC) S.castles[srcObj.src].units = pool.filter(function (u) { return uids.indexOf(u.uid) < 0; }); else S.provs[srcObj.src].units = pool.filter(function (u) { return uids.indexOf(u.uid) < 0; });
+  b.mid = (b.mid || []).concat(mv.map(function (u) { return { side: side, src: srcObj.src, u: cloneU(u) }; }));
   if (side === 'atk') { b.unitFrom = b.unitFrom || {}; mv.forEach(function (u) { b.unitFrom[u.uid] = srcObj.src; }); if (!b.fronts) b.fronts = [{ from: b.from }]; }
   else { b.reinf = b.reinf || {}; mv.forEach(function (u) { b.reinf[u.uid] = srcObj.src; }); }
   var w = worldMap();
   return { list: mv.map(cloneU), path: srcObj.path, inTo: srcObj.path.map(function (h) { return w.provAt(h[0], h[1]) === b.to; }), delay: srcObj.delay, name: srcObj.name };
+}
+// 合戦を はじめから やりなおす とき：とちゅうで よんだ 援軍を もとの 城へ もどす
+function returnMid(S, b) {
+  var m = b.mid || []; if (!m.length) return 0;
+  m.forEach(function (o) {
+    var clan = o.side === 'atk' ? b.atkClan : b.defClan, C0 = S.castles[o.src], P0 = S.provs[o.src];
+    if (C0 && C0.owner === clan && C0.units.length < 8) C0.units.push(o.u);
+    else if (P0 && P0.owner === clan && P0.units.length < PROV_CAP) P0.units.push(o.u);
+    else if (C0 && S.provs[C0.prov].owner === clan && S.provs[C0.prov].units.length < PROV_CAP) S.provs[C0.prov].units.push(o.u);
+    if (b.unitFrom) delete b.unitFrom[o.u.uid]; if (b.reinf) delete b.reinf[o.u.uid];
+  });
+  b.mid = []; return m.length;
 }
 function backReinf(S, b, list) {
   list.forEach(function (u) {
@@ -4032,13 +4045,14 @@ function startGame() {
                 playerArmy: setup.army, cpuArmy: cpuArmy, difficulty: setup.difficulty });
   beginBattle('かっせん はじまり！ ' + (G.playerSide === 'atk' ? 'しろを せめろ' : 'しろを まもれ') + '（' + G.castle.name + '・' + G.turnLimit + 'ターン）');
 }
-function beginBattle(intro) {
+function beginBattle(intro, resumed) {
   sel = null; reach = null; targets = []; anim = []; FX = []; FALLEN = []; STAMP = null; terrCache = null; phase = 'idle'; hoverInfo = null; LOG = []; undoPos = null; moveAnim = null; clearUndo();
   show('gameScreen');
   logMsg(intro, 'sys');
   resize(); startCamera(); lastPanelH = $('bottom').offsetHeight;
   updateHud();
   if (G.side !== G.playerSide) setTimeout(cpuTurn, 600);
+  else if (resumed) banner('つづきから！ あなたの ばん', 1400);
   else if (gx('shutsujin')) { stamp('shutsujin', 1.5); setTimeout(function () { banner(G.playerSide === 'atk' ? 'しろを せめろ！' : 'しろを まもれ！', 1400); }, 1300); }
   else banner(G.playerSide === 'atk' ? 'しろを せめろ！' : 'しろを まもれ！', 1400);
   $('resultBox').classList.remove('on');
@@ -4536,8 +4550,11 @@ function dmgMen(u, d) { return Math.max(1, Math.round(d * UNIT_TYPES[u.type].men
 function floatText(c, r, text, col, big) { anim.push({ c: c, r: r, text: text, col: col, big: big, t: 0 }); }
 
 // ---- HUD ----
+var bSaveT = null;
 function updateHud() {
   var mine = G.side === G.playerSide;
+  // 国取りの 合戦は こまめに ほぞん（じぶんの ばんで うごきが おちついた とき）
+  if (G.campaign && mine && typeof kSaveBattle === 'function') { clearTimeout(bSaveT); bSaveT = setTimeout(function () { if (G && G.campaign && G.side === G.playerSide && phase !== 'anim' && phase !== 'cpu' && !moveAnim) kSaveBattle(); }, 400); }
   if (G.food !== undefined) {
     var fdy = foodDays(G);
     var ddy = defFoodDays(G), mineA = G.playerSide === 'atk';
@@ -4917,6 +4934,7 @@ function playerEndTurn() {
   if (G.over) return gameOver();
   updateHud(); SFX.turn(); banner('あいての ばん', 900); foodNote(); showNotes();
   logMsg('―― あいての ばん ――', 'sys');
+  if (typeof kSaveBattle === 'function') kSaveBattle();
   setTimeout(cpuTurn, 700);
 }
 
@@ -4935,6 +4953,7 @@ function cpuTurn() {
       endTurn(G);
       if (G.over) return gameOver();
       phase = 'idle'; updateHud(); SFX.turn(); banner('あなたの ばん', 900); foodNote(); showNotes();
+      if (typeof kSaveBattle === 'function') kSaveBattle();
       logMsg('―― ターン ' + G.turn + '　あなたの ばん ――', 'sys');
       return;
     }
@@ -4985,6 +5004,7 @@ function cpuTurn() {
 // ---- 終了 ----
 function gameOver() {
   if (!G.over) return;
+  if (G.campaign && typeof kSaveBattle === 'function') kSaveBattle();
   phase = 'cpu'; hideActions(); updateHud();
   var win = G.winner === G.playerSide;
   var ch = charById(G.chars[G.playerSide]);
@@ -5145,6 +5165,16 @@ function kSave() { if (!KS) return; try { localStorage.setItem(SAVE_KEY, seriali
 function kLoad() { try { var t = localStorage.getItem(SAVE_KEY); return t ? deserialize(t) : null; } catch (e) { return null; } }
 function kHasSave() { var s = kLoad(); return !!(s && !s.over); }
 function kClear() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+// 合戦の とちゅうを ほぞん（ページを とじても つづきから できる）
+var BSAVE_KEY = SAVE_KEY + '-battle';
+function bKey(b) { return [b.from, b.to, b.castleId || '', b.atkClan, b.defClan || '', KS ? KS.year + '-' + KS.season : ''].join('|'); }
+function kSaveBattle() {
+  if (!G || !G.campaign || !G.kBattle || !KS || KS.pendingBattle !== G.kBattle) return;
+  var kb = G.kBattle;
+  try { G.kBattle = null; var t = JSON.stringify({ key: bKey(kb), log: LOG.slice(-60), g: G }); G.kBattle = kb; localStorage.setItem(BSAVE_KEY, t); } catch (e) { G.kBattle = kb; }
+}
+function kLoadBattle(b) { try { var o = JSON.parse(localStorage.getItem(BSAVE_KEY) || 'null'); if (o && o.g && o.key === bKey(b)) return o; } catch (e) {} return null; }
+function kClearBattle() { try { localStorage.removeItem(BSAVE_KEY); } catch (e) {} }
 // プレイヤーが その 家の きまった 顔を えらんでいるか
 function isArtSrc(src) { if (!src || typeof LORD_ART === 'undefined') return false; for (var n in LORD_ART) if (LORD_ART[n] === src) return true; return false; }
 function usesDefaultFace(cid, face) { var d = CLAN_BASE[cid] && CLAN_BASE[cid].face; return face === (d || 'fute'); }
@@ -6088,9 +6118,11 @@ function kFightBattle(b) {
     intro += env.escapes.length ? '守りの 退き口：' + env.escapes.map(function (e) { return e.name + '（' + e.dir + '）'; }).join('・') : '守りに にげ場は ない（籠城）';
   }
   beginBattle(intro);
+  kSaveBattle();
 }
 function kBattleFinished() {
   var b = G.kBattle, pSide = G.playerSide;
+  kClearBattle();
   var res = { winner: G.winner, atkSurv: survivors(G, 'atk'), defSurv: survivors(G, 'def'), atkFled: escaped(G, 'atk'), defFled: escaped(G, 'def'), defFood: G.defFood };
   // 攻めての のこり 兵糧（人日 → 石）。とどいて いない 小荷駄の 荷も
   if (G.food !== undefined) { var cv = 0; G.units.forEach(function (u) { if (u.type === 'konida' && u.side === 'atk' && u.hp > 0 && !u.delivered) cv += u.cargo || 0; }); res.atkFood = (G.food + cv) * RICE_PER_MAN; res.foodOut = G.food <= 0; }
@@ -6104,6 +6136,7 @@ function fledStr(list) {
   return Object.keys(by).map(function (k) { return (PROV_BY[k] ? PROV_BY[k].name : k) + 'へ ' + menStr(by[k]); }).join('、');
 }
 function kAutoBattle(b) {
+  kClearBattle();
   var res = autoResolve(KS, b);
   kFinishBattle(b, res, true);
 }
@@ -6133,13 +6166,30 @@ function kAfterBattle() {
   else kUpdate();
 }
 function kResumeBattle(b) {
-  // 中断していた 合戦を もう一度
+  // 中断していた 合戦：ほぞんが あれば その ばめんから つづける
   var pSide = b.playerSide || (b.defClan === KS.player ? 'def' : 'atk');
   b.playerSide = pSide;
+  var o = kLoadBattle(b);
+  if (o) {
+    var me = o.g.units.filter(function (u) { return u.side === pSide && u.hp > 0 && !u.fled && u.type !== 'taisho' && u.type !== 'konida'; }).length;
+    var en = o.g.units.filter(function (u) { return u.side !== pSide && u.hp > 0 && !u.fled && u.type !== 'taisho' && u.type !== 'konida'; }).length;
+    kModal('合戦の とちゅう', '<p>' + (b.castleName || PROV_BY[b.to].name) + 'での 合戦が とちゅうでした。<br>' + (o.g.over ? '<b>' + (o.g.winner === pSide ? 'かち' : 'まけ') + '</b>で おわって います。</p>' : '<b>' + o.g.turn + '日め</b>の ばめんから つづけられます。</p>') + '<p class="small">のこっている へい：みかた ' + me + '隊／てき ' + en + '隊</p>', [
+      { label: '⚔ つづきから', cls: 'act', fn: function () { kCloseModal(); kResumeFight(b, o); } }
+    ]);
+    return;
+  }
+  // ほぞんが ない（まえの 版の データなど）：合戦中に よんだ 援軍は もとの 城へ もどして、はじめから
+  if (returnMid(KS, b)) kSave();
   kModal('合戦の とちゅう', '<p>' + PROV_BY[b.to].name + 'での 合戦が とちゅうでした。</p>', [
     { label: '⚔ 合戦する', cls: 'act', fn: function () { kCloseModal(); kFightBattle(b); } },
     { label: '🎲 おまかせ', cls: 'act sub', fn: function () { kCloseModal(); kAutoBattle(b); } }
   ]);
+}
+function kResumeFight(b, o) {
+  G = o.g; G.kBattle = b;
+  if (G.over) { LOG = o.log || []; return kBattleFinished(); }   // けっかの 画面で とじていた
+  beginBattle('―― ' + G.turn + '日めの つづきから ――', true);
+  LOG = (o.log || []).concat(LOG); renderLog(); updateHud();
 }
 
 // ---- 徴兵 ----
