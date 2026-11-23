@@ -452,7 +452,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v5.2';
+var VERSION = 'v5.3';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -5810,6 +5810,92 @@ function domHexOK(cc, r) {
   if (pv === DS.pid && DS.provOK) return pv;
   return null;
 }
+// ---- 地名（町・村・湖・島・山）。[名前, 経度, 緯度, しゅるい] ----
+var GEO_NAMES = [
+  // 安芸
+  ['可部', 132.51, 34.52, 't'], ['廿日市', 132.33, 34.35, 't'], ['厳島', 132.32, 34.29, 'i'], ['草津', 132.40, 34.37, 't'], ['海田', 132.53, 34.37, 't'],
+  ['西条', 132.74, 34.43, 't'], ['竹原', 132.91, 34.34, 't'], ['三原', 133.08, 34.40, 't'], ['向原', 132.70, 34.61, 'v'], ['千代田', 132.55, 34.68, 'v'],
+  ['弥山', 132.32, 34.27, 'm'], ['吉田', 132.70, 34.665, 't'], ['甲田', 132.78, 34.62, 'v'], ['高宮', 132.63, 34.76, 'v'], ['美土里', 132.59, 34.82, 'v'],
+  ['八千代', 132.56, 34.64, 'v'], ['白木', 132.67, 34.57, 'v'], ['志和', 132.62, 34.48, 'v'], ['河内', 132.83, 34.47, 'v'], ['豊栄', 132.87, 34.57, 'v'], ['大朝', 132.42, 34.77, 'v'],
+  // 備後
+  ['三次', 132.85, 34.80, 't'], ['庄原', 133.02, 34.86, 't'], ['東城', 133.27, 34.89, 't'], ['府中', 133.24, 34.57, 't'], ['尾道', 133.20, 34.41, 't'],
+  ['鞆の浦', 133.38, 34.38, 't'], ['神辺', 133.38, 34.54, 't'], ['甲山', 133.06, 34.59, 'v'], ['吉舎', 132.95, 34.73, 'v'], ['西城', 133.18, 34.95, 'v'],
+  // 周防・長門
+  ['山口', 131.47, 34.18, 't'], ['防府', 131.57, 34.05, 't'], ['岩国', 132.22, 34.17, 't'], ['柳井', 132.10, 33.96, 't'], ['富田', 131.81, 34.05, 't'],
+  ['萩', 131.40, 34.41, 't'], ['長府', 130.99, 33.99, 't'], ['錦', 131.97, 34.27, 'v'], ['大島', 132.25, 33.92, 'i'],
+  // 石見
+  ['益田', 131.84, 34.68, 't'], ['浜田', 132.08, 34.90, 't'], ['大森', 132.44, 35.11, 't'], ['温泉津', 132.34, 35.10, 't'], ['江津', 132.22, 35.01, 't'],
+  ['川本', 132.49, 34.99, 'v'], ['津和野', 131.77, 34.47, 't'], ['大江高山', 132.40, 35.07, 'm'], ['邑智', 132.62, 34.88, 'v'],
+  // 出雲
+  ['広瀬', 133.18, 35.33, 't'], ['末次', 133.05, 35.47, 't'], ['杵築', 132.69, 35.40, 't'], ['平田', 132.80, 35.43, 't'], ['木次', 132.90, 35.29, 'v'],
+  ['赤名', 132.71, 35.00, 'v'], ['美保関', 133.32, 35.56, 't'], ['安来', 133.25, 35.43, 't'], ['船通山', 133.17, 35.20, 'm'], ['宍道湖', 132.95, 35.45, 'l'], ['中海', 133.20, 35.47, 'l'],
+  // 伯耆
+  ['米子', 133.33, 35.43, 't'], ['倉吉', 133.82, 35.43, 't'], ['八橋', 133.62, 35.50, 'v'], ['根雨', 133.43, 35.28, 'v'], ['境', 133.23, 35.54, 't'], ['弓ヶ浜', 133.29, 35.49, 'v'],
+  // 因幡
+  ['鳥取', 134.24, 35.50, 't'], ['若桜', 134.40, 35.34, 'v'], ['智頭', 134.23, 35.27, 'v'], ['鹿野', 134.06, 35.46, 'v'], ['湖山池', 134.17, 35.50, 'l'],
+  // 美作
+  ['津山', 134.00, 35.07, 't'], ['勝山', 133.69, 35.09, 'v'], ['久世', 133.75, 35.07, 'v'], ['林野', 134.16, 34.99, 'v'],
+  // 備前
+  ['岡山', 133.92, 34.66, 't'], ['西大寺', 134.04, 34.66, 't'], ['牛窓', 134.15, 34.62, 't'], ['長船', 134.10, 34.68, 'v'], ['和気', 134.16, 34.80, 'v'], ['熊山', 134.12, 34.75, 'm'], ['児島', 133.85, 34.50, 'i'],
+  // 備中
+  ['松山', 133.62, 34.79, 't'], ['総社', 133.75, 34.67, 't'], ['倉敷', 133.77, 34.59, 't'], ['玉島', 133.66, 34.54, 't'], ['笠岡', 133.51, 34.50, 't'],
+  ['新見', 133.47, 34.98, 't'], ['成羽', 133.55, 34.78, 'v'], ['鷲羽山', 133.81, 34.44, 'm'],
+  // 隠岐
+  ['西郷', 133.32, 36.20, 't'], ['島後', 133.32, 36.27, 'i'], ['島前', 133.05, 36.08, 'i']
+];
+// 経度・緯度 → 世界マップの マス
+function llHex(lon, lat) { var w = worldMap(); return w.hexAtKm((lon - WORLD.lon0) * w.KX, (WORLD.lat0 - lat) * w.KY); }
+// その マスに いちばん ちかい 町・村（6km いない）
+function placeNear(c, r) {
+  var best = null; GEO_NAMES.forEach(function (g) { if (g[3] !== 't' && g[3] !== 'v') return; var h = llHex(g[1], g[2]), dd = hexDist(c, r, h[0], h[1]); if (dd <= 6 && (!best || dd < best[1])) best = [g[0], dd]; });
+  return best ? best[0] : null;
+}
+// 領内マップに 地名を かく（かさならない ように）
+function domLabels(c, s, rects) {
+  var W0 = DS.W, H0 = DS.H;
+  function free(x, y, w, h) { for (var i = 0; i < rects.length; i++) { var q = rects[i]; if (x < q[0] + q[2] && x + w > q[0] && y < q[1] + q[3] && y + h > q[1]) return false; } return true; }
+  function put(text, x, y, fz, col, opt) {
+    opt = opt || {}; if (x < -60 || y < -30 || x > W0 + 60 || y > H0 + 30) return false;
+    c.font = (opt.bold === false ? '' : 'bold ') + fz + 'px sans-serif'; var tw = c.measureText(text).width + 4, th = fz + 2;
+    if (!opt.force && !free(x - tw / 2, y - th / 2, tw, th)) return false;
+    rects.push([x - tw / 2, y - th / 2, tw, th]);
+    c.save(); c.translate(x, y); if (opt.rot) c.rotate(opt.rot);
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    c.lineWidth = opt.halo || 3.5; c.strokeStyle = opt.haloCol || 'rgba(255,255,255,0.9)'; c.strokeText(text, 0, 0); c.fillStyle = col; c.fillText(text, 0, 0); c.restore();
+    return true;
+  }
+  function at(lon, lat) { var h = llHex(lon, lat), q = domXY(h[0], h[1]); return [DS.x + q[0] * s, DS.y + q[1] * s]; }
+  var fz = Math.max(12, Math.min(17, s * 0.95));
+  // 海・湖
+  NEAR_LABELS.forEach(function (n) { if (!n[3]) return; var p = at(n[1], n[2]); put(n[0], p[0], p[1], fz * 1.5, 'rgba(30,70,140,0.75)', { bold: false, haloCol: 'rgba(255,255,255,0.35)', halo: 2 }); });
+  GEO_NAMES.forEach(function (g) { if (g[3] !== 'l') return; var p = at(g[1], g[2]); put(g[0], p[0], p[1], fz * 1.2, '#1d4f9a', { haloCol: 'rgba(255,255,255,0.6)' }); });
+  // 山（▲）
+  (WORLD.peaks || []).map(function (pk) { return [pk.name, pk.at[0], pk.at[1]]; }).concat(GEO_NAMES.filter(function (g) { return g[3] === 'm'; })).forEach(function (g) {
+    var p = at(g[1], g[2]); if (put('▲' + g[0], p[0], p[1] - fz * 0.4, fz, '#6a3a12')) { }
+  });
+  // 峠
+  (WORLD.passes || []).forEach(function (ps) { var p = at(ps.at[0], ps.at[1]); put('⛰' + ps.name, p[0], p[1] + fz * 0.8, fz * 0.92, '#7a4a10'); });
+  // 川（ながれに そって、ところどころ）
+  (WORLD.rivers || []).forEach(function (rv) {
+    var pts = rv.pts.map(function (q) { return at(q[0], q[1]); }), seg = [], L = 0, i;
+    for (i = 1; i < pts.length; i++) { var dl = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push([pts[i - 1], pts[i], L, dl]); L += dl; }
+    var step = Math.max(240, L / 3), done = 0;
+    for (var pos = Math.min(L / 2, step / 2); pos < L && done < 4; pos += step) {
+      for (i = 0; i < seg.length; i++) if (pos >= seg[i][2] && pos <= seg[i][2] + seg[i][3]) break;
+      if (i >= seg.length) break;
+      var a = seg[i][0], b = seg[i][1], f = (pos - seg[i][2]) / Math.max(1, seg[i][3]), x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f;
+      var ang = Math.atan2(b[1] - a[1], b[0] - a[0]); if (ang > Math.PI / 2) ang -= Math.PI; if (ang < -Math.PI / 2) ang += Math.PI;
+      if (put(rv.name, x, y, fz * 1.05, '#1559b8', { rot: ang, haloCol: 'rgba(235,245,255,0.95)' })) done++;
+    }
+  });
+  // 町・村・島
+  GEO_NAMES.forEach(function (g) {
+    if (g[3] === 'l' || g[3] === 'm') return;
+    var p = at(g[1], g[2]), big = g[3] === 't';
+    if (g[3] !== 'i' && p[0] > -20 && p[1] > -20 && p[0] < W0 + 20 && p[1] < H0 + 20) { c.beginPath(); c.arc(p[0], p[1], big ? 4 : 3, 0, Math.PI * 2); c.fillStyle = big ? '#3a2410' : '#6a5440'; c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#fff'; c.stroke(); }
+    put(g[0], p[0], p[1] - fz * 0.85, big ? fz : fz * 0.88, g[3] === 'i' ? '#1d4f9a' : big ? '#2a1a0a' : '#4a3a2a', { bold: big || g[3] === 'i' });
+  });
+}
 function domRender() {
   if (!DS.ctx) return;
   var c = DS.ctx, w = worldMap(), d = domData(), P = KS.provs[DS.pid], pid = DS.pid, cas = castleHex(pid);
@@ -5872,12 +5958,17 @@ function domRender() {
     c.font = Math.max(9, s * (big ? 1.15 : 1)) + 'px sans-serif'; c.fillStyle = '#000'; c.fillText(big ? '🏯' : '🏰', x7, y7 + 1);
     var fz = Math.max(10, Math.min(16, s * 0.8)); c.font = 'bold ' + fz + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = '#fff';
     var lab = name + (own && CLANS[own] ? '（' + CLANS[own].name + '）' : ''); c.strokeText(lab, x7, y7 - rr7 - fz * 0.7); c.fillStyle = own && CLANS[own] ? '#2a1a0a' : '#555'; c.fillText(lab, x7, y7 - rr7 - fz * 0.7);
+    var tw7 = c.measureText(lab).width; lrects.push([x7 - tw7 / 2 - 2, y7 - rr7 - fz * 1.3, tw7 + 4, fz + 4], [x7 - rr7, y7 - rr7, rr7 * 2, rr7 * 2]);
   }
+  var lrects = [];
   // 見えている 国の 城を ぜんぶ（本城・支城）
   PROVS.forEach(function (p9) {
     var ch = castleHex(p9.id); if (ch && ch[1] >= r0 - 2 && ch[1] <= r1 + 2 && ch[0] >= c0 - 2 && ch[0] <= c1 + 2) castleTag(ch, castleNameOf(KS, p9.id), KS.provs[p9.id].owner, true);
     branchesIn(KS, p9.id).forEach(function (c8) { var h8 = bhx[c8.id]; if (h8 && h8[1] >= r0 - 2 && h8[1] <= r1 + 2 && h8[0] >= c0 - 2 && h8[0] <= c1 + 2) castleTag(h8, brName(c8.id), c8.owner || KS.provs[p9.id].owner, false); });
   });
+  // 地名（山・川・峠・町・湖）
+  domLabels(c, s, lrects);
+  c.textAlign = 'center'; c.textBaseline = 'middle';
   // 鉱脈の 名前
   if (s >= 10) for (dk in dep) { var p2 = dk.split(',').map(Number), q5 = domXY(p2[0], p2[1]); c.font = 'bold ' + Math.max(10, s * 0.75) + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = '#fff'; c.strokeText(dep[dk].name, DS.x + q5[0] * s, DS.y + (q5[1] + 1.25) * s); c.fillStyle = '#5a1f80'; c.fillText(dep[dk].name, DS.x + q5[0] * s, DS.y + (q5[1] + 1.25) * s); }
   // えらんだ マス
@@ -5895,7 +5986,8 @@ function domPanel() {
   if (DS.sel) {
     var spv = w.provAt(DS.sel[0], DS.sel[1]) || pid, SP = KS.provs[spv];
     var k = hkey(DS.sel[0], DS.sel[1]), t = w.at(DS.sel[0], DS.sel[1]), b = SP.bld && SP.bld[k], dep = d[spv].dep[k], cas = castleHex(spv);
-    info = '<b>' + (TER_NAME[t] || '') + '</b>' + (spv !== pid ? '　<small>' + PROV_BY[spv].name + '</small>' : '');
+    var pn = placeNear(DS.sel[0], DS.sel[1]);
+    info = '<b>' + (TER_NAME[t] || '') + '</b>' + (spv !== pid ? '　<small>' + PROV_BY[spv].name + '</small>' : '') + (pn ? '　<small>📍' + pn + 'の あたり</small>' : '');
     if (DS.sel[0] === cas[0] && DS.sel[1] === cas[1]) info += '　🏯 ' + castleNameOf(KS, spv);
     if (b) info += '　' + (b === 'town0' ? '🏘 城下町' : BLD[b].icon + ' ' + BLD[b].name + (b === 'meibutsu' ? '（' + MEIBUTSU[spv] + '）' : b === 'mine' && dep ? '（' + MINE_NAME[dep.type] + '・+' + kan(MINE_INC[dep.type]) + '/きせつ）' : ''));
     if (dep && !b) info += '　◆ 鉱脈：' + dep.name + '（' + MINE_NAME[dep.type] + '）';
