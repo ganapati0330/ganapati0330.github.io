@@ -452,7 +452,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v5.5';
+var VERSION = 'v5.6';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -5721,12 +5721,14 @@ function kResumeBattle(b) {
 function kRecruitBox() {
   var P = KS.provs[kSel], gold = KS.clans[KS.player].gold, pts = {};
   var h = '<p class="small">お金 💰' + kan(gold) + '　この国の 隊 ' + P.units.length + '/' + PROV_CAP + (offP(officerAt(KS, kSel)) > 50 ? '　（城主の 政で わりびき）' : '') +
-    '<br>1隊の 1/10 ずつ やとえる。へっている 隊が あれば さきに うめる（補充）。</p>';
+    '<br>1隊の 1/10 ずつ やとえる。へっている 隊が あれば さきに うめる（補充）。</p>' +
+    '<div class="kodds">🪖 いま この国の へい：<b>' + menStr(menTotal(P.units)) + '</b>（' + P.units.length + '隊）' + (P.units.length ? '<br><small>' + unitSummary(P.units) + '</small>' : '') + '</div>';
   BUY_ORDER.forEach(function (t) {
     var T = UNIT_TYPES[t], step = T.men / 10;
     if (t === 'teppo' && !teppoOk(KS)) { h += '<div class="arow"><span class="uic blue" style="opacity:.4">' + T.ch + '</span><span class="uname"><b style="color:#aaa">' + T.name + '</b><small>' + TEPPO_YEAR + '年に 伝来するまで やとえない</small></span></div>'; return; }
     var room = 0; P.units.forEach(function (u) { if (u.type === t) room += 10 - u.hp; });
-    h += '<div class="arow"><span class="uic blue">' + T.ch + '</span><span class="uname"><b>' + T.name + '</b><small>' + step + menUnit(t) + 'ごとに 💰' + (recruitCost(KS, kSel, t) * KAN / 10).toLocaleString('ja-JP') + '貫' + (room ? '・補充できる ' + room * step + menUnit(t) : '') + '</small></span>' +
+    var cur = P.units.filter(function (u) { return u.type === t; });
+    h += '<div class="arow"><span class="uic blue">' + T.ch + '</span><span class="uname"><b>' + T.name + '</b>' + (cur.length ? '<small style="color:#2a6a2a"><b>いま ' + menTotal(cur).toLocaleString('ja-JP') + menUnit(t) + '（' + cur.length + '隊）</b></small>' : '<small>いま 0</small>') + '<small>' + step + menUnit(t) + 'ごとに 💰' + (recruitCost(KS, kSel, t) * KAN / 10).toLocaleString('ja-JP') + '貫' + (room ? '・補充できる ' + room * step + menUnit(t) : '') + '</small></span>' +
       '<button class="pm" data-t="' + t + '" data-d="-1">－</button><span class="num rcn" id="rc_' + t + '">0</span><button class="pm" data-t="' + t + '" data-d="1">＋</button><button class="pm big" data-t="' + t + '" data-d="10">＋隊</button></div>';
   });
   h += '<div id="kCost" class="kodds"></div>';
@@ -5734,7 +5736,7 @@ function kRecruitBox() {
     var pl = planRecruit(KS, kSel, pts), menAdd = 0;
     for (var t in pts) menAdd += pts[t] * UNIT_TYPES[t].men / 10;
     BUY_ORDER.forEach(function (t) { var el = $('kBody').querySelector('#rc_' + t); if (el) el.textContent = ((pts[t] || 0) * UNIT_TYPES[t].men / 10) + menUnit(t); });
-    $('kCost').innerHTML = 'ごうけい 💰<b>' + kan(pl.cost) + '</b>（' + Math.round(menAdd).toLocaleString('ja-JP') + '人' + (pl.fill ? '・補充 ' + pl.fill + '/10隊ぶん' : '') + (pl.newN ? '・新しい 隊 ' + pl.newN : '') + '）　のこり 💰' + kan(gold - pl.cost) +
+    $('kCost').innerHTML = 'やとった あと：<b>' + menStr(menTotal(P.units) + Math.round(menAdd)) + '</b>（' + (P.units.length + pl.newN) + '隊）<br>ごうけい 💰<b>' + kan(pl.cost) + '</b>（' + Math.round(menAdd).toLocaleString('ja-JP') + '人' + (pl.fill ? '・補充 ' + pl.fill + '/10隊ぶん' : '') + (pl.newN ? '・新しい 隊 ' + pl.newN : '') + '）　のこり 💰' + kan(gold - pl.cost) +
       (P.units.length + pl.newN > PROV_CAP ? '<br><span class="r">隊が ' + PROV_CAP + 'を こえる</span>' : '');
     $('kRecOk').disabled = (!pl.fill && !pl.newN) || pl.cost > gold || P.units.length + pl.newN > PROV_CAP;
     Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
