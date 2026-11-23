@@ -488,7 +488,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v7.8';
+var VERSION = 'v7.9';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -5935,6 +5935,12 @@ function kRender() {
     c.fillStyle = C0.owner ? CLANS[C0.owner].color : '#999'; c.fillRect(5, -16, 7, 5); c.strokeStyle = '#222'; c.beginPath(); c.moveTo(5, -16); c.lineTo(5, -4); c.stroke();
     }
     if (kMap.s > 1.6) { c.font = 'bold 8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'top'; c.lineWidth = 2.5; c.strokeStyle = 'rgba(255,255,255,0.9)'; c.strokeText(brName(id), 0, 3); c.fillStyle = '#3a2210'; c.fillText(brName(id), 0, 3); }
+    // 支城の 兵の かず
+    if (C0.owner && kMap.s > 1.1) { var bm = menTotal(C0.units), bt9 = bm >= 1000 ? (bm / 1000).toFixed(1).replace('.0', '') + '千' : String(bm);
+      c.font = 'bold 8px sans-serif'; var bw9 = Math.max(14, c.measureText(bt9).width + 6), by9 = bart ? 4 - 38 * bart.naturalHeight / bart.naturalWidth : -16;
+      c.fillStyle = 'rgba(30,20,10,0.85)'; c.beginPath(); if (c.roundRect) c.roundRect(-bw9 / 2 - 12, by9 - 4, bw9, 11, 5); else c.rect(-bw9 / 2 - 12, by9 - 4, bw9, 11); c.fill();
+      c.strokeStyle = CLANS[C0.owner].color; c.lineWidth = 1.2; c.stroke();
+      c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(bt9, -12, by9 + 1.5); }
     c.restore();
   });
   // 山・川・町の 名前（ちかよったとき）
@@ -5952,7 +5958,8 @@ function kRender() {
     else { c.fillStyle = CLANS[P.owner].color; c.font = 'bold 17px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(CLANS[P.owner].crest, 0, cy + 1); }
     c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'top';
     c.lineWidth = 4; c.strokeStyle = 'rgba(255,255,255,0.92)'; c.strokeText(p.name, 0, cy + cr + 2); c.fillStyle = '#2b1d14'; c.fillText(p.name, 0, cy + cr + 2);
-    var mn = menTotal(P.units), mtx = mn >= 1000 ? (mn / 1000).toFixed(1).replace('.0', '') + '千' : String(mn);
+    var mn = menTotal(P.units); if (KS.castles) branchesIn(KS, p.id).forEach(function (c9) { if (c9.owner && c9.owner === P.owner) mn += menTotal(c9.units); });   // 本城 ＋ おなじ 家の 支城
+    var mtx = mn >= 1000 ? (mn / 1000).toFixed(1).replace('.0', '') + '千' : String(mn);
     c.font = 'bold 10px sans-serif'; var bw2 = Math.max(18, c.measureText(mtx).width + 8);
     c.fillStyle = '#2b1d14'; c.beginPath(); if (c.roundRect) c.roundRect(cr * 0.85 - bw2 / 2 + 4, cy - cr * 0.75 - 8, bw2, 16, 8); else c.rect(cr * 0.85 - bw2 / 2 + 4, cy - cr * 0.75 - 8, bw2, 16); c.fill();
     c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(mtx, cr * 0.85 + 4, cy - cr * 0.75 + 0.5);
@@ -6014,7 +6021,9 @@ function kInfo() {
   html += '<div class="kunits">城主：' + offTxt(ofc) + (P.naio && P.naio === KS.player ? '　🦊内応あり' : '') + '</div>';
   if (mine && KS.officers) { var oh = officersHere(KS, KS.player, kSel).filter(function (o) { return o !== ofc; });
     html += '<div class="kunits">👥 この 国に いる 家臣：' + (oh.length ? oh.map(function (o) { return o.name + (o.at !== kSel ? '（' + locName(KS, o.at) + '）' : '') + (offBusy(KS, o) ? '✓' : ''); }).join('・') : (ofc ? '城主だけ' : 'いない（👥家臣から 移動させよう）')) + '</div>'; }
-  html += '<div class="kunits">へい ' + menStr(menTotal(P.units)) + '（' + P.units.length + '隊：' + unitSummary(P.units) + '）' + (mine && KS.phase === 'player' && canMergeUnits(P.units) ? ' <span class="kbr" data-main="' + kSel + '">🔗 へった 隊を まとめる</span>' : '') + '<br>動員の めやす ' + menStr(P.koku * MEN_PER_KOKU) + '</div>';
+  var myBr = KS.castles ? branchesIn(KS, kSel).filter(function (c9) { return c9.owner && c9.owner === P.owner; }) : [];
+  if (myBr.length) html += '<div class="kunits">⚔ 城ぜんぶの へい：<b>' + menStr(menTotal(P.units) + myBr.reduce(function (a, c9) { return a + menTotal(c9.units); }, 0)) + '</b>（本城 ' + menStr(menTotal(P.units)) + myBr.map(function (c9) { return '・' + brName(c9.id) + ' ' + menStr(menTotal(c9.units)); }).join('') + '）</div>';
+  html += '<div class="kunits">' + (myBr.length ? '本城の ' : '') + 'へい ' + menStr(menTotal(P.units)) + '（' + P.units.length + '隊：' + unitSummary(P.units) + '）' + (mine && KS.phase === 'player' && canMergeUnits(P.units) ? ' <span class="kbr" data-main="' + kSel + '">🔗 へった 隊を まとめる</span>' : '') + '<br>動員の めやす ' + menStr(P.koku * MEN_PER_KOKU) + '</div>';
   var nbl = kNeighborInfo(kSel).map(function (nb) {
     var ic = nb.type === 'sea' ? '⛵' : nb.type === 'pass' ? '⛰' : nb.type === 'land' ? '🛤' : '🚫';
     return '<span class="knb ' + nb.type + '">' + ic + PROV_BY[nb.q].name + (nb.type === 'pass' && nb.name && nb.name !== '峠道' ? '（' + nb.name + '）' : '') + '</span>';
