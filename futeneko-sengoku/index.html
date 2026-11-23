@@ -223,7 +223,7 @@ button{font-family:inherit;cursor:pointer;}
 .kres{text-align:center;}
 .kres img{height:130px;object-fit:contain;}
 #kBtns{margin-top:12px;}
-#kBtns .act{flex:1;}
+#kBtns{flex-wrap:wrap;gap:8px}#kBtns .act{flex:1 1 28%;min-width:96px;white-space:nowrap;padding-left:6px;padding-right:6px}
 /* 結果・ヘルプ */
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;align-items:center;justify-content:center;padding:16px;}
 .modal.on{display:flex;}
@@ -438,7 +438,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>📜 領地の 一覧</b>：上の 📜ボタンで、じぶんの 国と 城（本城・支城、てきの 国の なかの 支城も）を 一覧で 見られる。国ごとの 石高・収入・秋の 年貢・不満・めいれいの かず、城ごとの へい・兵糧（なん日 もつか）・いる 家臣。城の 行を タップすると その 城の 画面へ。</li>
       <li><b>🗾 内政の 画面</b>：田畑・町などは 本城と 支城の 所領を まとめて たてられる。<b>城を タップ</b>すると その 城の 守備兵を 見て、<b>その 城で 徴兵</b>（支城は 城 ごとに きせつ 1かい・8たいまで、本城は 国の 徴兵の めいれい）、<b>家臣を よぶ／ほかの 城へ うつす</b>、本城の 城主えらびが できる。「↩ 地図へ もどる」で 国取りの 地図へ。</li>
       <li><b>🔗 合流</b>：へった 隊は おなじ 兵種の 隊に まとめられる。国取りでは 本城・支城の 画面の「🔗 隊を まとめる」（人数は そのまま、隊の かずが へる。めいれいは つかわない）。合戦では となりに いる おなじ 兵種の みかたを えらんで「🔗 合流」（その 隊の 行動は おわり。もどせない）。</li>
-      <li><b>⚔ 出陣の ながれ</b>：国を えらんで ⚔出陣 →（支城が あれば）<b>どの 城から 出陣するか</b> → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
+      <li><b>⚔ 出陣の ながれ</b>：城を えらんで（地図の 城・下の「🏯 ◯◯城の めいれい」・📜の 表）⚔出陣 → → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
       <li><b>⚔ 支城から 出陣</b>：じぶんの 支城を タップして「⚔ ここから 出陣」。その 支城の 守備兵で、おなじ 国の てきの 本城・支城や、となりの 国の 城を せめられる（支城 ごとに きせつに 1かい、国の めいれいは つかわない）。てきの 国の なかに ある 支城からは、国ざかいを こえずに すぐ 本城へ せめかかれる。生きのこった へいは 支城へ もどる。</li>
       <li><b>📍 家臣の いる 城</b>：家臣は それぞれ 城（本城・支城）に いて、<b>その 国でしか はたらけない</b>。ほかの 国で はたらかせたい ときは 👥家臣の 🚶移動で うつす（移動した きせつは はたらけない）。城主に えらぶと その 城へ うつって くる。城を おとされると ちかくの 城へ にげる。</li>
       <li><b>🏯 城の 守りと 兵糧</b>：城（本城・支城）を タップすると 守備兵の 内わけと <b>兵糧（石）</b>が 見られる。本城から 支城へ 兵を おくったり よびもどしたり できる（行為は つかわない）。せめられると 守りの へいは 城の 蔵の 兵糧を たべる（1人 1日 5合）。<b>つきると 開城</b>。秋に 米が はいり、お金で かいたす ことも できる。改築すると 蔵が 大きく なる。</li>
@@ -494,7 +494,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v8.0';
+var VERSION = 'v8.1';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -6090,7 +6090,12 @@ function kInfo() {
   var acts = $('kActs'); acts.innerHTML = '';
   function btn(label, fn, cls, dis) { var b = document.createElement('button'); b.className = 'act ' + (cls || ''); b.textContent = label; b.disabled = !!dis; b.onclick = function () { SFX.tap(); fn(); }; acts.appendChild(b); }
   if (kMode !== 'idle') { btn('やめる', function () { kMode = 'idle'; kUpdate(); }, 'sub'); return; }
-  if (mine && !P.acted && !cmdFull(P) && KS.phase === 'player') {
+  // めいれいは 城の 画面から（下には 城を ひらく ボタンだけ）
+  if (mine && KS.phase === 'player') {
+    btn('🏯 ' + castleNameOf(KS, kSel) + 'の めいれい（' + cmdCount(P) + '/' + MAX_CMDS + '）', function () { kMainCastleBox(kSel); }, 'katk', false);
+    btn('📜 城と めいれいの 一覧', function () { kLandBox('castle'); }, 'sub', false);
+  }
+  if (false) {
     var canAtk = ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }) && P.units.length > 0;
     var canMv = ADJ[kSel].some(function (q) { return KS.provs[q].owner === KS.player; }) && P.units.length > 0;
     canMv = canMv && P.units.some(function (u) { return u.mv !== KS.turn; });
@@ -6101,7 +6106,7 @@ function kInfo() {
     btn('🚶 移動' + (didCmd(P, 'move') ? '✓' : ''), function () { kMode = 'move'; kUpdate(); }, 'sub', !canMv || didCmd(P, 'move'));
     btn('🦊 調略' + (didCmd(P, 'scheme') ? '✓' : ''), function () { kMode = 'scheme'; kUpdate(); }, 'kscheme', didCmd(P, 'scheme') || !ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }));
   }
-  if (mine && KS.phase === 'player') btn('👥 城主', function () { kAssignBox(kSel); }, 'sub');
+
   if (mine && (P.acted || didCmd(P, 'develop') || cmdFull(P) || KS.phase !== 'player')) btn('🗾 領内', function () { openDomain(kSel); }, 'sub');
   if (kUndoStack.length && KS.phase === 'player') btn('↩ もどす', kUndo, 'undo');
 }
@@ -6342,16 +6347,17 @@ function kMainCastleBox(pid) {
   if (mine) {
     var full0 = P.acted || cmdFull(P), hasEn = ADJ[pid].some(function (q) { return KS.provs[q].owner !== KS.player; });
     var go0 = function (m) { return function () { kCloseModal(); kSel = pid; kMode = m; kUpdate(); }; };
+    var rdone = didCmd(P, 'recruit') || P.acted || cmdFull(P);
     btns.push({ label: '⚔ 出陣' + (didCmd(P, 'attack') ? '✓' : ''), cls: 'act', disabled: full0 || didCmd(P, 'attack') || !P.units.length || !hasEn, fn: go0('attack') });
+    btns.push({ label: '🪖 徴兵' + (didCmd(P, 'recruit') ? '✓' : ''), cls: 'act', disabled: rdone || (P.units.length >= PROV_CAP && !P.units.some(function (u) { return u.hp < 10; })), fn: function () { kRecruitBox(pid, null, function () { kMainCastleBox(pid); }); } });
     btns.push({ label: '🌾 内政' + (didCmd(P, 'develop') ? '✓' : ''), cls: 'act', fn: function () { kCloseModal(); kSel = pid; openDomain(pid); } });
     btns.push({ label: '🦊 調略' + (didCmd(P, 'scheme') ? '✓' : ''), cls: 'act', disabled: full0 || didCmd(P, 'scheme') || !hasEn, fn: go0('scheme') });
     btns.push({ label: '🚶 移動' + (didCmd(P, 'move') ? '✓' : ''), cls: 'act sub', disabled: full0 || didCmd(P, 'move') || !P.units.length || !ADJ[pid].some(function (q) { return KS.provs[q].owner === KS.player; }), fn: go0('move') });
-    var rdone = didCmd(P, 'recruit') || P.acted || cmdFull(P);
-    btns.push({ label: '🪖 徴兵' + (didCmd(P, 'recruit') ? '✓' : ''), cls: 'act', disabled: rdone || (P.units.length >= PROV_CAP && !P.units.some(function (u) { return u.hp < 10; })), fn: function () { kRecruitBox(pid, null, function () { kMainCastleBox(pid); }); } });
+    btns.push({ label: '🎖 城主', cls: 'act sub', fn: function () { kAssignBox(pid, function () { kMainCastleBox(pid); }); } });
     btns.push({ label: '🍙 兵糧を かう', cls: 'act', fn: function () { kRiceBox(pid, null, function () { kMainCastleBox(pid); }); } });
   }
   btns.push({ label: 'とじる', cls: 'act sub', fn: kCloseModal });
-  kModal('🏯 本城', body, btns);
+  kModal('🏯 本城' + (mine ? '（めいれい ' + cmdCount(P) + '/' + MAX_CMDS + '）' : ''), body, btns);
   var back = function () { kMainCastleBox(pid); };
   [].forEach.call($('kBody').querySelectorAll('[data-snd]'), function (e) { e.onclick = function () { SFX.tap(); kGarrisonBox(e.dataset.snd, 'in', pid, back); }; });
   [].forEach.call($('kBody').querySelectorAll('[data-rcl]'), function (e) { e.onclick = function () { SFX.tap(); kGarrisonBox(e.dataset.rcl, 'out', pid, back); }; });
