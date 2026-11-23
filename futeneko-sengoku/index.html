@@ -23,7 +23,8 @@ button{font-family:inherit;cursor:pointer;}
 .big{background:linear-gradient(#ffcf5a,#e8941e);border:0;border-radius:16px;color:#3a2000;font-size:clamp(20px,5vw,26px);font-weight:bold;padding:14px 44px;box-shadow:0 6px 0 #9a5a08,0 10px 20px rgba(0,0,0,.4);}
 .big:active{transform:translateY(4px);box-shadow:0 2px 0 #9a5a08;}
 .bgmT{position:absolute;top:1.2%;right:2.5%;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.35);color:#fff;font-size:20px;}
-.ver{position:absolute;top:.4%;left:2%;right:auto;text-align:left;font-size:11px;color:rgba(255,255,255,.75);text-shadow:0 1px 2px #000;pointer-events:none;}
+.ver{position:absolute;top:.6%;left:2%;right:auto;text-align:left;font-size:12px;color:rgba(255,255,255,.85);text-shadow:0 1px 2px #000;pointer-events:none;}.ver #verLbl{display:inline-block;background:rgba(0,0,0,.55);color:#ffe24a;font-weight:bold;font-size:14px;padding:2px 8px;border-radius:8px;margin-right:4px}
+.vtag{display:inline-block;font-size:11px;color:#ffe8b0;opacity:.85;border:1px solid rgba(255,232,176,.5);border-radius:7px;padding:0 5px;margin-left:6px;font-weight:normal}
 /* セットアップ */
 #setupScreen,#clanScreen{flex-direction:column;background:#f6ead2;overflow:hidden;}
 #setupScreen .head,#clanScreen .head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#5a2a1a;color:#ffe8b0;font-weight:bold;font-size:18px;}
@@ -315,7 +316,7 @@ button{font-family:inherit;cursor:pointer;}
 <div id="mapScreen" class="screen">
   <canvas id="kcv"></canvas>
   <div id="khud">
-    <div class="hrow"><b id="kDate"></b><span id="kGold"></span><span id="kKoku"></span><span id="kProv"></span></div>
+    <div class="hrow"><b id="kDate"></b><span id="kGold"></span><span id="kKoku"></span><span id="kProv"></span><span class="vtag vlbl"></span></div>
     <div class="hrow right">
       <button class="hb" id="bgmBtn2" title="おんがく">🔊</button>
       <button class="hb" id="kFitBtn" title="ぜんたい">⤢</button>
@@ -355,7 +356,7 @@ button{font-family:inherit;cursor:pointer;}
 <div id="gameScreen" class="screen">
   <canvas id="cv"></canvas>
   <div id="hud">
-    <div class="hrow"><span id="turnLbl"></span><span id="sideLbl"></span><span id="countLbl"></span></div>
+    <div class="hrow"><span id="turnLbl"></span><span id="sideLbl"></span><span id="countLbl"></span><span class="vtag vlbl"></span></div>
     <div class="hrow right">
       <button class="hb" id="bgmBtn" title="おんがく">🔊</button>
       <button class="hb" id="fitBtn" title="ぜんたい">⤢</button>
@@ -412,7 +413,7 @@ button{font-family:inherit;cursor:pointer;}
 </div></div>
 
 <div class="modal" id="helpBox"><div class="card help">
-  <h2 style="text-align:center;font-size:24px;color:#7a3a1a">あそびかた</h2>
+  <h2 style="text-align:center;font-size:24px;color:#7a3a1a">あそびかた <span class="vlbl" style="font-size:13px;color:#a07040;font-weight:normal"></span></h2>
   <h3>国取り（くにとり）</h3>
   <ul><li>中国地方の 国取り。<b>1523年</b>（毛利元就が 当主に なった とし）か <b>1554年</b>（厳島の 戦いの 前）から はじめる。18の りょうちを ぜんぶ とれば <b>統一</b>！ じぶんの りょうちが なくなると まけ。</li>
       <li><b>家臣</b>：城主に した 家臣が その 城で 力を だす。<b>武</b>＝ひきいる 軍が つよい、<b>政</b>＝収入・内政（80いじょうで +2万石）・徴兵の わりびき、<b>智</b>＝城の 守り・調略。家臣は 年代で くわわったり なくなったり する。城を おとすと てきの 城主を 家臣に できる ことも。</li>
@@ -498,7 +499,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v8.6';
+var VERSION = 'v8.7';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -5386,6 +5387,7 @@ function initInput() {
 window.addEventListener('load', function () {
   canvas = $('cv'); ctx = canvas.getContext('2d');
   $('verLbl').textContent = VERSION;
+  Array.prototype.forEach.call(document.querySelectorAll('.vlbl'), function (e) { e.textContent = VERSION; });
   $('startBtn').onclick = function () { SFX.tap(); bgmStart(); openModeBox(); };
   ['bgmBtn', 'bgmBtn2', 'bgmBtn3'].forEach(function (id) { var b = $(id); if (b) b.onclick = function (e) { e.stopPropagation(); audio(); bgmToggle(); }; });
   bgmLabel();
