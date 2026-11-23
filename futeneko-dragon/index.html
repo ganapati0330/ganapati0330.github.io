@@ -701,6 +701,52 @@ button{font-family:inherit;cursor:pointer;border:none}
 .wrap{max-width:620px;margin:0 auto;padding:10px;width:100%}
 .card{background:#fffaf0;border-radius:20px;box-shadow:0 4px 0 #d69a4a;padding:10px;margin-bottom:10px;position:relative}
 #homeCv{display:none}
+/* ホーム：たてのスマホで 1がめんに おさめる／よこでは せつめいを みぎに */
+#home{overflow:hidden;height:100%}
+#home .topbar{flex:0 0 auto;position:relative}
+#home .yardbox{flex:1 1 auto;min-height:140px;display:flex;flex-direction:column;max-width:none}
+#home #yard{flex:1 1 0;height:auto;min-height:0}
+#home .yardbar{flex:0 0 auto;padding:4px 6px;gap:4px}
+#home .yardbar button{padding:5px 8px;font-size:12px}
+#homeWrap{flex:0 1 auto;display:flex;flex-direction:column;overflow:hidden;max-height:66%;padding:6px 8px;padding-bottom:max(6px,env(safe-area-inset-bottom));max-width:none}
+#homeWrap .card{padding:6px 10px;margin-bottom:6px;border-radius:16px;box-shadow:0 3px 0 #d69a4a}
+#homeWrap .dname{font-size:17px;margin:0;line-height:1.2}
+#homeWrap .dsub{font-size:11px;line-height:1.3}
+.hinfo{flex:0 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#homeWrap .acts{flex:0 0 auto;padding-top:2px}
+.eggi{height:44px;display:block;margin:0 auto}
+.eggnote{font-size:11px;color:#8a6f52}
+#homeWrap .eggi{height:30px}
+#homeWrap .eggnote{font-size:10px}
+#homeWrap .card>div:first-child{font-size:12px!important;margin-bottom:2px!important}
+#home .yardbar{position:relative}
+#home .yardbar .yhint{position:absolute;left:6px;right:6px;bottom:calc(100% + 4px);background:rgba(40,25,70,.72);border-radius:10px;padding:3px 8px;font-size:10px;line-height:1.35;pointer-events:none;min-width:0;flex:none}
+.bars3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#homeWrap .blbl{font-size:10px;margin-top:2px}
+#homeWrap .bar{height:9px;margin:1px 0}
+#homeWrap .stats{margin-top:4px;gap:4px;font-size:11px}
+#homeWrap .stats div{padding:2px 2px}
+#homeWrap .stats b{font-size:14px}
+#homeWrap .stats em{font-size:8px;line-height:1.1}
+#homeWrap .chips{padding:0 0 2px}
+#homeWrap .chips button{width:58px;font-size:10px;padding:2px;border-width:2px}
+#homeWrap .chips canvas{width:46px;height:35px}
+#homeWrap .acts{gap:5px}
+#homeWrap .act{padding:4px 2px;font-size:12px;border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+#homeWrap .act span{font-size:19px;line-height:1.1}
+#homeWrap .act small{font-size:9px}
+#homeWrap .empty{padding:6px}
+#homeWrap .empty img{height:80px}
+@media (max-height:700px) and (orientation:portrait){#homeWrap .act small{display:none}#homeWrap .dsub+.dsub{display:none}}
+@media (orientation:landscape) and (min-width:560px){
+  #home.on{display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,40vw,420px);grid-template-rows:auto minmax(0,1fr)}
+  #home .topbar{grid-column:1/-1}
+  #home .yardbox{grid-column:1;grid-row:2;min-height:0}
+  #homeWrap{grid-column:2;grid-row:2;max-height:none;height:100%;min-height:0;border-left:3px solid #d69a4a;padding-right:max(8px,env(safe-area-inset-right))}
+  #homeWrap .acts{grid-template-columns:repeat(4,1fr)}
+}
+@media (orientation:landscape) and (min-width:560px) and (max-height:480px){#homeWrap .act small{display:none}#homeWrap .act span{font-size:17px}}
+
 .yardbox{max-width:900px;margin:0 auto;width:100%;position:relative}
 #yard{display:block;width:100%;height:min(52vh,420px);touch-action:pan-y;background:#8cc860}
 .yardbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;background:#5a3a8f}
@@ -877,7 +923,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.15';
+const VER='1.16';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1892,7 +1938,7 @@ function updTop(){$('hCoin').textContent=G.coins;$('hPow').textContent=walkToday
 function renderHome(){
   updTop();
   const w=$('homeWrap');const d=cur();
-  let h='';
+  let h='<div class="hinfo">';
   if(!d){
     h+='<div class="card empty"><img src="wk/ak_front1.webp" alt=""><p>まだ ドラゴンが いないよ。<br>「さがす」で まちを あるいて みつけよう！</p></div>';
   } else {
@@ -1901,9 +1947,9 @@ function renderHome(){
     h+='<div class="dname">'+esc(d.name)+' <span style="font-size:15px">Lv'+d.lv+'</span></div>';
     h+='<div class="dsub">'+S.name+'（'+S.el+'ぞくせい）・'+STAGE_NAME[stageOf(d.lv)]+'・'+'★'.repeat(Math.min(5,S.r))+'</div>';
     const AP=APT[aptOf(d)];h+='<div class="dsub">レースの とくい：<b>'+AP.e+' '+AP.n+'</b>（'+AP.d+'）</div>';
-    h+='<div class="blbl"><span>けいけんち</span><span>'+(d.lv>=MAX_LV?'MAX':d.exp+' / '+need(d.lv))+'</span></div>'+barHtml(d.lv>=MAX_LV?1:d.exp,d.lv>=MAX_LV?1:need(d.lv),'#5cb8ff');
-    h+='<div class="blbl"><span>おなか</span><span>'+Math.round(d.hunger)+'</span></div>'+barHtml(d.hunger,100,d.hunger<20?'#e8321a':'#ff9a3c');
-    h+='<div class="blbl"><span>なつき</span><span>'+Math.round(d.love)+'</span></div>'+barHtml(d.love,100,'#ff7aa8');
+    h+='<div class="bars3"><div>';h+='<div class="blbl"><span>けいけんち</span><span>'+(d.lv>=MAX_LV?'MAX':d.exp+' / '+need(d.lv))+'</span></div>'+barHtml(d.lv>=MAX_LV?1:d.exp,d.lv>=MAX_LV?1:need(d.lv),'#5cb8ff')+'</div><div>';
+    h+='<div class="blbl"><span>おなか</span><span>'+Math.round(d.hunger)+'</span></div>'+barHtml(d.hunger,100,d.hunger<20?'#e8321a':'#ff9a3c')+'</div><div>';
+    h+='<div class="blbl"><span>なつき</span><span>'+Math.round(d.love)+'</span></div>'+barHtml(d.love,100,'#ff7aa8')+'</div></div>';
     h+='<div class="stats">';
     [['HP','hp'],['こうげき','atk'],['ぼうぎょ','def'],['すばやさ','spd']].forEach(a=>{h+='<div>'+a[0]+'<b>'+st[a[1]]+'</b>'+(d.tb[a[1]]?'<em>とっくん+'+d.tb[a[1]]+'</em>':'<em>&nbsp;</em>')+'</div>';});
     h+='</div></div>';
@@ -1913,10 +1959,10 @@ function renderHome(){
   }
   if(G.eggBox&&G.eggBox.length){
     const space=G.dragons.length<MAX_DRAGONS;
-    h+='<div class="card"><div style="font-weight:bold;font-size:13px;margin-bottom:4px">🥚 あずかっている たまご（'+G.eggBox.length+'/'+EGGBOX_MAX+'）</div><div class="chips">'+G.eggBox.map((e,i)=>'<button class="eggb" data-egg="'+i+'"'+(space?'':' disabled')+'><img src="dr/'+e.sp+'_egg.webp" style="height:44px;display:block;margin:0 auto" alt="">'+(space?'かえす':'いっぱい')+'</button>').join('')+'</div>'+(space?'':'<div style="font-size:11px;color:#8a6f52">こやに あきが できたら かえせるよ</div>')+'</div>';
+    h+='<div class="card"><div style="font-weight:bold;font-size:13px;margin-bottom:4px">🥚 あずかっている たまご（'+G.eggBox.length+'/'+EGGBOX_MAX+'）</div><div class="chips">'+G.eggBox.map((e,i)=>'<button class="eggb" data-egg="'+i+'"'+(space?'':' disabled')+'><img src="dr/'+e.sp+'_egg.webp" class="eggi" alt="">'+(space?'かえす':'いっぱい')+'</button>').join('')+'</div>'+(space?'':'<div class="eggnote">こやに あきが できたら かえせるよ</div>')+'</div>';
   }
   const lv=d?d.lv:0;
-  h+='<div class="acts">';
+  h+='</div><div class="acts">';
   h+='<button class="act a1" id="aTown"><span>🗺️</span>さがす<small>たまごを さがす</small></button>';
   h+='<button class="act a2'+(d?'':' lock')+'" id="aWalk"><span>👣</span>おさんぽ<small>あるいて そだてる</small></button>';
   h+='<button class="act a3'+(d?'':' lock')+'" id="aFood"><span>🍎</span>ごはん<small>おなかいっぱい</small></button>';
@@ -1925,7 +1971,7 @@ function renderHome(){
   h+='<button class="act a7" id="aShop"><span>🏪</span>おみせ<small>ごはんを かう</small></button>';
   h+='<button class="act a6" id="aDex"><span>📖</span>ずかん<small>'+Object.keys(G.dex).length+' / '+SP_ORDER.length+'</small></button>';
   h+='<button class="act a8" id="aHelp"><span>❔</span>あそびかた<small>&nbsp;</small></button>';
-  h+='</div><div style="height:20px"></div>';
+  h+='</div>';
   w.innerHTML=h;
   if(G.dragons.length){
     const ch=$('chips');
