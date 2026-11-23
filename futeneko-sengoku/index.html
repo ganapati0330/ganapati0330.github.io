@@ -186,6 +186,7 @@ button{font-family:inherit;cursor:pointer;}
 #kBody h4{margin:10px 0 4px;color:#7a3a1a;}
 #kBody .small,.small{font-size:12px;color:#777;}
 .kbrow{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid rgba(120,90,50,.15)}.kbrn{flex:1;font-size:13px;cursor:pointer}button.kmini{border:0;border-radius:8px;padding:7px 9px!important;font-weight:bold;font-size:13px!important;background:#2f6fe0;color:#fff;white-space:nowrap;width:auto!important;min-width:84px!important;height:auto!important;flex:none!important;overflow:visible!important}button.kmini.sub{background:#8a7a6a}button.kmini:disabled{opacity:.4}
+.kco{border:1px solid rgba(120,90,50,.25);border-radius:8px;padding:4px 8px;margin:4px 0;background:#fffaf0}.kco summary{cursor:pointer;font-size:13px;padding:3px 0}.kco summary b{color:#2a6a2a}
 .kmv{border:0;border-radius:7px;padding:4px 8px;font-size:12px;font-weight:bold;background:#2f6fe0;color:#fff;white-space:nowrap;margin-top:3px;cursor:pointer}
 .ktab td.kloc{font-size:11px;text-align:left;min-width:86px}
 .koffpick{margin:4px 0 8px;font-size:14px;font-weight:bold;color:#5a3a1a}.koffpick select{font-size:14px;padding:5px;border-radius:8px;border:1px solid #c9b48a;background:#fffaf0;max-width:62%}.koffpick small{color:#c27a00;margin-left:6px}
@@ -422,6 +423,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>🚧 普請と 改築</b>：領内（内政）で <b>柵・堀・砦</b>を つくれる。合戦の とき 地図に そのまま あらわれ、柵は てきの 足どめ、堀は わたりにくく、砦は 柵に かこまれた 小さな 城に なる。<b>城の 改築</b>（Lv3まで）で 石垣と 門が かたくなり 守りが つよく なる。支城も 所領の 内政から 改築 できる。</li>
       <li><b>🚩 援軍</b>：せめられたら、となりの じぶんの 国や おなじ 国の 城から 援軍を おくれる。援軍は それぞれの 城の ほうから 合戦場に あらわれる（とおいと おそく つく）。合戦の あと 生きのこりは もとの 城へ もどる。</li>
       <li><b>👥 家臣に まかせる</b>：出陣・徴兵・内政・調略は、えらぶ 画面で <b>担当の 家臣</b>を きめる（1きせつに 1人 1つ）。武・政・智が 高いと ★大成功（奇襲・2わり 多く あつまる・石高 倍 など）が でる。👥ボタンで 家臣の 一覧。徴兵は 1人 から やとえる。</li>
+      <li><b>⚔ 出陣の ながれ</b>：国を えらんで ⚔出陣 →（支城が あれば）<b>どの 城から 出陣するか</b> → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
       <li><b>⚔ 支城から 出陣</b>：じぶんの 支城を タップして「⚔ ここから 出陣」。その 支城の 守備兵で、おなじ 国の てきの 本城・支城や、となりの 国の 城を せめられる（支城 ごとに きせつに 1かい、国の めいれいは つかわない）。てきの 国の なかに ある 支城からは、国ざかいを こえずに すぐ 本城へ せめかかれる。生きのこった へいは 支城へ もどる。</li>
       <li><b>📍 家臣の いる 城</b>：家臣は それぞれ 城（本城・支城）に いて、<b>その 国でしか はたらけない</b>。ほかの 国で はたらかせたい ときは 👥家臣の 🚶移動で うつす（移動した きせつは はたらけない）。城主に えらぶと その 城へ うつって くる。城を おとされると ちかくの 城へ にげる。</li>
       <li><b>🏯 城の 守りと 兵糧</b>：城（本城・支城）を タップすると 守備兵の 内わけと <b>兵糧（石）</b>が 見られる。本城から 支城へ 兵を おくったり よびもどしたり できる（行為は つかわない）。せめられると 守りの へいは 城の 蔵の 兵糧を たべる（1人 1日 5合）。<b>つきると 開城</b>。秋に 米が はいり、お金で かいたす ことも できる。改築すると 蔵が 大きく なる。</li>
@@ -477,7 +479,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v6.9';
+var VERSION = 'v7.0';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2002,8 +2004,9 @@ function battleEnv(S, b) {
   env.defFronts = (b.defFronts || []).map(function (f) { return defEntryInfo(S, b, f.src); });
   // 同時攻撃：ほかの 国からの 道
   env.fronts = (b.fronts || []).slice(1).map(function (f) {
-    var pth = routePath(f.from, b.to) || [WORLD.castles[f.from], cas], fq = w.km(WORLD.castles[f.from][0], WORLD.castles[f.from][1]);
-    return { from: f.from, name: PROV_BY[f.from].name, path: pth, inTo: pth.map(function (h) { return w.provAt(h[0], h[1]) === b.to; }),
+    var s0 = f.castle && bh9[f.castle] ? bh9[f.castle] : WORLD.castles[f.from];
+    var rp = f.from !== b.to ? routePath(f.from, b.to) : null, pth = rp ? (f.castle ? [s0].concat(rp) : rp) : [s0, cas], fq = w.km(s0[0], s0[1]);
+    return { from: f.from, name: f.castle ? brName(f.castle) : PROV_BY[f.from].name, path: pth, inTo: pth.map(function (h) { return w.provAt(h[0], h[1]) === b.to; }),
              ang: Math.atan2(0, 0), dir: dirName(fq[0] - K[0], K[1] - fq[1]), sea: (routeOf(f.from, b.to) || {}).type === 'sea' };
   });
   PROVS.forEach(function (p) { env.names[p.id] = p.name; });
@@ -2763,15 +2766,25 @@ function branchTargets(S, id) {
   return out;
 }
 function canBranchAttack(S, id) { var C0 = S.castles[id]; return !!(C0 && C0.owner && C0.units.length && C0.atk !== S.turn); }
-function makeBranchBattle(S, id, to, uids, castleId) {
-  var C0 = S.castles[id], P = C0.prov;
-  var b = makeBattle(S, P, to, [], castleId || null);
-  var l = C0.units.filter(function (u) { return uids.indexOf(u.uid) >= 0; }); if (P !== to && seaRoute(P, to)) l = l.filter(function (u) { return u.type !== 'kiba'; });
-  b.atkUnits = l.map(cloneU); b.atkClan = C0.owner; b.srcCastle = id; b.unitFrom = {}; l.forEach(function (u) { b.unitFrom[u.uid] = id; });
-  b.atkOff = null;
-  if (!castleId) { b.defClan = S.provs[to].owner; b.naio = S.provs[to].naio === C0.owner; }
+function makeBranchBattle(S, id, to, uids, castleId, extra) {
+  var b = makeBattle(S, S.castles[id].prov, to, uids, castleId || null, extra || [], id);
   b.need = needDays(S, b); b.foodDays = Math.round(b.need * 1.3);
   return b;
+}
+// 応援に だせる 城：おなじ 城を せめられる じぶんの 国（本城）と 支城。loc＝出陣する 城（国 id か 支城 id）
+function coSources(S, loc, to, castleId) {
+  var isC = !!(S.castles && S.castles[loc]), cid = isC ? S.castles[loc].owner : S.provs[loc].owner, out = [];
+  function hits(list) { return list.some(function (t) { return t.to === to && (t.castle || null) === (castleId || null); }); }
+  provsOf(S, cid).forEach(function (q) {
+    if (!isC && q === loc) return;
+    var P = S.provs[q]; if (!P.units.length || P.acted || didCmd(P, 'attack') || (cid === S.player && cmdFull(P))) return;
+    if (hits(attackTargets(S, q, cid))) out.push({ key: q, from: q, name: castleNameOf(S, q) + '（' + PROV_BY[q].name + 'の 本城）', units: P.units, loc: q });
+  });
+  Object.keys(S.castles || {}).forEach(function (id) {
+    var C0 = S.castles[id]; if (id === loc || C0.owner !== cid || !C0.units.length || C0.atk === S.turn) return;
+    if (hits(branchTargets(S, id))) out.push({ key: id, castle: id, name: brName(id) + '（' + PROV_BY[C0.prov].name + 'の 支城）', units: C0.units, loc: id });
+  });
+  return out;
 }
 function targetName(S, t) { return t.castle ? brName(t.castle) + '（' + PROV_BY[t.to].name + 'の 支城）' : castleNameOf(S, t.to) + '（' + PROV_BY[t.to].name + 'の 本城）'; }
 // 後詰め：支城が せめられたら 同じ 家の 本城から 助けが くる（本城の 軍の 半分まで、4たいまで）
@@ -2826,14 +2839,22 @@ function routeMult(a, b) { var rt = routeOf(a, b); return !rt ? 1 : rt.type === 
 function seaRoute(a, b) { var rt = routeOf(a, b); return !!(rt && rt.type === 'sea'); }
 // castleId：支城を せめる ときの 城（null＝本城）
 // extra = [{from: 国, uids: [...]}]：ほかの 国からも 同時に せめる
-function makeBattle(S, from, to, uids, castleId, extra) {
-  var A = S.provs[from], B = S.provs[to];
+function makeBattle(S, from, to, uids, castleId, extra, src) {
+  var A = S.provs[from], B = S.provs[to], aClan = src ? S.castles[src].owner : A.owner;
   if (castleId === undefined) { var tg = attackTargets(S, from).filter(function (t) { return t.to === to; })[0]; castleId = tg ? tg.castle : null; }
-  function pick(pv, ids) { var l = S.provs[pv].units.filter(function (u) { return ids.indexOf(u.uid) >= 0; }); if (seaRoute(pv, to)) l = l.filter(function (u) { return u.type !== 'kiba'; }); return l; }   // 騎馬は 船に のせられない
-  var atk = pick(from, uids).map(cloneU), fronts = [{ from: from }], unitFrom = {};
-  atk.forEach(function (u) { unitFrom[u.uid] = from; });
+  // pv：国、cs：支城（あれば その 支城の へい）
+  function pick(pv, ids, cs) { var l = (cs ? S.castles[cs].units : S.provs[pv].units).filter(function (u) { return ids.indexOf(u.uid) >= 0; }); if (pv !== to && seaRoute(pv, to)) l = l.filter(function (u) { return u.type !== 'kiba'; }); return l; }   // 騎馬は 船に のせられない
+  var atk = pick(from, uids, src).map(cloneU), fronts = [{ from: from, castle: src || null }], unitFrom = {};
+  atk.forEach(function (u) { unitFrom[u.uid] = src || from; });
   (extra || []).forEach(function (e) {
-    if (e.from === from || S.provs[e.from].owner !== A.owner) return;
+    if (e.castle) {   // 応援：ほかの 支城から
+      var EC = S.castles[e.castle]; if (!EC || e.castle === src || EC.owner !== aClan) return;
+      var lc = pick(EC.prov, e.uids || [], e.castle); if (!lc.length) return;
+      var fc = EC.prov === from && !src ? 0 : fronts.length; if (fc) fronts.push({ from: EC.prov, castle: e.castle });
+      lc.forEach(function (u) { var cu = cloneU(u); if (fc) cu.front = fc; atk.push(cu); unitFrom[u.uid] = e.castle; });
+      return;
+    }
+    if ((e.from === from && !src) || S.provs[e.from].owner !== aClan) return;
     var l = pick(e.from, e.uids || []); if (!l.length) return;
     var fi = fronts.length; fronts.push({ from: e.from });
     l.forEach(function (u) { var cu = cloneU(u); cu.front = fi; atk.push(cu); unitFrom[u.uid] = e.from; });
@@ -2846,7 +2867,8 @@ function makeBattle(S, from, to, uids, castleId, extra) {
           relief: rel.map(function (u) { return u.uid; }), atkOff: ao ? ao.id : null, defOff: null, naio: false, fortLv: C0.lv || 0 };
   } else b = { from: from, to: to, castleId: null, castleName: castleNameOf(S, to), atkClan: A.owner, defClan: B.owner, atkUnits: atk, defUnits: B.units.map(cloneU), castle: PROV_BY[to].castle,
            atkOff: ao ? ao.id : null, defOff: dO ? dO.id : null, naio: B.naio === A.owner, fortLv: B.clv || 0 };
-  if (fronts.length > 1) { b.fronts = fronts; b.unitFrom = unitFrom; }
+  b.unitFrom = unitFrom; if (fronts.length > 1) b.fronts = fronts;
+  if (src) { b.atkClan = aClan; b.srcCastle = src; b.atkOff = null; if (!castleId) { b.defClan = B.owner; b.naio = B.naio === aClan; } }
   b.defFood = castleFood(S, to, castleId || null);   // 城の 蔵（石）
   b.need = needDays(S, b); b.foodDays = Math.round(b.need * 1.3);   // CPU は じゅうぶん もっていく（プレイヤーは 出陣の とき えらぶ）
   return b;
@@ -2918,7 +2940,11 @@ function startBattle(S, b) {
   if (b.defClan && isAlly(S, b.atkClan, b.defClan)) breakAlliance(S, b.atkClan, b.defClan, CLANS[b.atkClan].name + 'が うらぎった');
   var ids = b.atkUnits.map(function (u) { return u.uid; });
   A.units = A.units.filter(function (u) { return ids.indexOf(u.uid) < 0; });
-  (b.fronts || []).slice(1).forEach(function (f) { var F = S.provs[f.from]; F.units = F.units.filter(function (u) { return ids.indexOf(u.uid) < 0; }); markCmd(F, 'attack'); });
+  (b.fronts || []).slice(1).forEach(function (f) {
+    if (f.castle) { var FC = S.castles[f.castle]; FC.units = FC.units.filter(function (u) { return ids.indexOf(u.uid) < 0; }); FC.atk = S.turn; return; }
+    var F = S.provs[f.from]; F.units = F.units.filter(function (u) { return ids.indexOf(u.uid) < 0; }); markCmd(F, 'attack'); });
+  // 本城と おなじ 国の 支城から 本隊に くわわった 隊
+  Object.keys(b.unitFrom || {}).forEach(function (uid) { var h = b.unitFrom[uid]; if (S.castles && S.castles[h] && h !== b.srcCastle) { var HC = S.castles[h]; HC.units = HC.units.filter(function (u) { return String(u.uid) !== String(uid); }); HC.atk = S.turn; } });
   if (b.relief && b.relief.length) { var Bp = S.provs[b.to]; Bp.units = Bp.units.filter(function (u) { return b.relief.indexOf(u.uid) < 0; }); }
   if (b.srcCastle) { var SC = S.castles[b.srcCastle]; SC.units = SC.units.filter(function (u) { return ids.indexOf(u.uid) < 0; }); SC.atk = S.turn; }
   else markCmd(A, 'attack');
@@ -5927,7 +5953,8 @@ function kInfo() {
     var canAtk = ADJ[kSel].some(function (q) { return KS.provs[q].owner !== KS.player; }) && P.units.length > 0;
     var canMv = ADJ[kSel].some(function (q) { return KS.provs[q].owner === KS.player; }) && P.units.length > 0;
     canMv = canMv && P.units.some(function (u) { return u.mv !== KS.turn; });
-    btn('⚔ 出陣' + (didCmd(P, 'attack') ? '✓' : ''), function () { kMode = 'attack'; kUpdate(); }, 'katk', !canAtk || didCmd(P, 'attack'));
+    var mainAtk = canAtk && !didCmd(P, 'attack'), brAtk = sortieBranches(kSel);
+    btn('⚔ 出陣' + (didCmd(P, 'attack') && !brAtk.length ? '✓' : ''), function () { if (!brAtk.length) { kMode = 'attack'; kUpdate(); } else kSortieBox(kSel); }, 'katk', !mainAtk && !brAtk.length);
     btn('🪖 徴兵' + (didCmd(P, 'recruit') ? '✓' : ''), kRecruitBox, '', P.units.length >= PROV_CAP || didCmd(P, 'recruit'));
     btn('🌾 内政' + (didCmd(P, 'develop') ? '✓' : ''), function () { openDomain(kSel); }, 'kdev', didCmd(P, 'develop'));
     btn('🚶 移動' + (didCmd(P, 'move') ? '✓' : ''), function () { kMode = 'move'; kUpdate(); }, 'sub', !canMv || didCmd(P, 'move'));
@@ -6154,6 +6181,26 @@ function kCastleBox(id) {
   [].forEach.call($('kBody').querySelectorAll('[data-gin]'), function (e) { e.onclick = function () { SFX.tap(); kGarrisonBox(id, 'in', e.dataset.gin); }; });
   [].forEach.call($('kBody').querySelectorAll('[data-gout]'), function (e) { e.onclick = function () { SFX.tap(); kGarrisonBox(id, 'out', e.dataset.gout); }; });
 }
+// この 国から 出陣できる 支城（国の なかの 支城と、となりの てきの 国に ある みかたの 支城）
+function sortieBranches(pid) {
+  return Object.keys(KS.castles || {}).filter(function (id) {
+    var C0 = KS.castles[id]; if (C0.owner !== KS.player || !canBranchAttack(KS, id) || !branchTargets(KS, id).length) return false;
+    return C0.prov === pid || (KS.provs[C0.prov].owner !== KS.player && (ADJ[pid] || []).indexOf(C0.prov) >= 0);
+  });
+}
+// どの 城から 出陣するか
+function kSortieBox(pid) {
+  var P = KS.provs[pid], canMain = !didCmd(P, 'attack') && P.units.length && ADJ[pid].some(function (q) { return KS.provs[q].owner !== KS.player; });
+  function offs(at) { var l = officersOf(KS, KS.player).filter(function (o) { return o.at === at; }); return l.length ? '👤' + l.map(function (o) { return o.name + (offBusy(KS, o) ? '✓' : ''); }).join('・') : '👤 家臣なし'; }
+  var h = '<p class="small">出陣する 城を えらぶ → せめる 城を えらぶ → ほかの 城から 応援を だすか きめる。大将は 出陣する 城と 応援の 城に いる 家臣から。</p><div class="koffs">' +
+    '<button class="koff" data-m="1"' + (canMain ? '' : ' disabled style="opacity:.5"') + '><b>🏯 ' + castleNameOf(KS, pid) + '（本城）</b><small>' + menStr(menTotal(P.units)) + '（' + P.units.length + '隊）・' + offs(pid) + (canMain ? '' : '<br>この きせつは もう 出陣した') + '<br>国の 出陣の めいれいを つかう</small></button>';
+  sortieBranches(pid).forEach(function (id) { var C0 = KS.castles[id];
+    h += '<button class="koff" data-b="' + id + '"><b>🏰 ' + brName(id) + '（' + PROV_BY[C0.prov].name + 'の 支城）</b><small>' + menStr(menTotal(C0.units)) + '（' + C0.units.length + '隊）・' + offs(id) + '<br>めいれいは つかわない（支城 ごとに きせつ 1かい）</small></button>'; });
+  h += '</div>';
+  kModal('⚔ どの 城から 出陣？', h, [{ label: 'やめる', cls: 'act sub', fn: kCloseModal }]);
+  [].forEach.call($('kBody').querySelectorAll('[data-m]'), function (e) { e.onclick = function () { SFX.tap(); kCloseModal(); kMode = 'attack'; kUpdate(); }; });
+  [].forEach.call($('kBody').querySelectorAll('[data-b]'), function (e) { e.onclick = function () { SFX.tap(); kBranchAtkBox(e.dataset.b); }; });
+}
 // 支城から せめる 城を えらぶ
 function kBranchAtkBox(id) {
   var C0 = KS.castles[id], list = branchTargets(KS, id);
@@ -6176,32 +6223,50 @@ function kGarrisonBox(id, dir, pid, back) {
 }
 // ---- 出陣 ----
 function kAttackBox(from, to, castleId, src) {
-  var B = KS.provs[to], p = PROV_BY[to], tgt = { to: to, castle: castleId || null };
-  var A = src ? { units: KS.castles[src].units } : KS.provs[from], fromNm = src ? brName(src) + '（支城）' : PROV_BY[from].name;
+  var B = KS.provs[to], p = PROV_BY[to], tgt = { to: to, castle: castleId || null }, loc = src || from;
+  var A = src ? { units: KS.castles[src].units } : KS.provs[from], fromNm = src ? brName(src) + '（' + PROV_BY[from].name + 'の 支城）' : castleNameOf(KS, from) + '（' + PROV_BY[from].name + 'の 本城）';
   var C0 = castleId ? KS.castles[castleId] : null, own = C0 ? C0.owner : B.owner, dU = C0 ? C0.units : B.units, rel = C0 ? reliefOf(KS, castleId) : [];
-  var co = src ? [] : coFronts(KS, from, to, castleId || null);
+  var co = coSources(KS, loc, to, castleId || null);
   var need = needDays(KS, src ? makeBranchBattle(KS, src, to, A.units.map(function (u) { return u.uid; }), castleId || null) : makeBattle(KS, from, to, A.units.map(function (u) { return u.uid; }), castleId || null));
   var tplKana = CASTLES[castleIndexOf(C0 ? brTpl(castleId) : p.castle)].kana;
-  var body = '<p>' + fromNm + ' → <b>' + targetName(KS, tgt) + '</b>（' + tplKana + '）</p>' +
+  function rtTxt(pv) { if (pv === to) return 'おなじ 国'; var rq = routeOf(pv, to); return rq ? (rq.type === 'sea' ? '⛵海路' : rq.type === 'pass' ? '⛰峠道' : '🛤陸路') : ''; }
+  var body = '<p>⚔ <b>' + fromNm + '</b><br>→ <b>' + targetName(KS, tgt) + '</b>（' + tplKana + '）</p>' +
     (src && from === to ? '<p class="small kroute">🏰 ' + brName(src) + 'から おなじ 国の ' + (C0 ? '支城' : '本城') + 'へ すぐ せめかかる（国ざかいを こえない）。</p>' : '') +
     (C0 && !src ? '<p class="small kroute">🏯 ' + (from === to ? 'じぶんの 国に のこる てきの 支城。' : p.name + 'に はいる 道を まもる 支城。おとすと ' + castleNameOf(KS, to) + '（本城）を せめられる。') + '</p>' : '') +
     (from !== to ? kRouteHtml(from, to) : '') +
     (isAlly(KS, KS.player, own) ? '<p class="r"><b>⚠ ' + CLANS[own].name + 'とは 同盟中！ せめると 同盟が きれます。</b></p>' : '') +
     '<p class="small">まもり：' + CLANS[own].lord + '　へい ' + menStr(menTotal(dU)) + '（' + unitSummary(dU) + '）' + (rel.length ? '<br>＋ 本城からの 後詰め ' + menStr(menTotal(rel)) : '') + '</p>' +
     (C0 ? '' : '<p class="small">てきの 城主：' + offTxt(officerAt(KS, to)) + '</p>') +
-    offPickHtml('kAtkOff', 0, from, '⚔ 大将（武）') +
-    '<h4>つれていく へい（' + fromNm + '）</h4>' + pickerHtml(A.units, 'all') +
-    co.map(function (q) { var rq = routeOf(q, to); return '<h4>＋ ' + PROV_BY[q].name + 'からも せめる <small>（' + (rq ? (rq.type === 'sea' ? '⛵海路' : rq.type === 'pass' ? '⛰峠道' : '🛤陸路') : '') + '・べつの 攻め口から 同時に）</small></h4>' + pickerHtml(KS.provs[q].units, 0, q + '_'); }).join('') +
+    '<h4>① つれていく へい（' + (src ? brName(src) : castleNameOf(KS, from)) + '）</h4>' + pickerHtml(A.units, 'all') +
+    '<h4>② ほかの 城から 応援</h4>' + (co.length ? '<p class="small">おくる 城だけ へいを えらぶ（0なら おくらない）。応援の 城に いる 家臣も 大将に できる。' + (co.some(function (c) { return !c.castle; }) ? '本城からの 応援は その 国の 出陣の めいれいを つかう。' : '') + '</p>' +
+      co.map(function (c, i) { var offs = officersOf(KS, KS.player).filter(function (o) { return o.at === c.loc; });
+        return '<details class="kco"' + (i < 0 ? ' open' : '') + '><summary>' + (c.castle ? '🏰 ' : '🏯 ') + c.name + ' <small>' + menStr(menTotal(c.units)) + '・' + rtTxt(c.castle ? KS.castles[c.castle].prov : c.from) + (offs.length ? '・👤' + offs.map(function (o) { return o.name; }).join('・') : '') + '</small> <b id="kcoN' + i + '"></b></summary>' + pickerHtml(c.units, 0, 'co' + i + '_') + '</details>'; }).join('')
+      : '<p class="small">応援に だせる 城は ない（おなじ 城を せめられる みかたの 城が ない・もう 出陣した）。</p>') +
+    '<h4>③ 大将</h4><div class="koffpick">⚔ 大将（武）：<select id="kAtkOff"></select><small id="kAtkOffP"></small></div><p class="small" id="kAtkOffW"></p>' +
     '<h4>🍙 兵糧（なん日ぶん もっていくか）</h4><p class="small">めやす <b>' + need + '日</b>（' + (from !== to ? '国ざかいから 城まで すすんで せめる' : '城を せめる') + '）。へいが おおいほど 1日の 量が おおい。つきると ひきあげる。</p>' +
     '<div class="kamt"><input type="range" id="kFood" min="5" max="' + Math.max(need * 2, 30) + '" step="1" value="' + need + '"><b id="kFoodV"></b></div><p id="kFoodW" class="small"></p>' +
     '<div id="kOdds" class="kodds"></div>' +
-    (src ? '<p class="small">のこした へいは ' + brName(src) + 'を まもる。かった あとの へいは ' + brName(src) + 'へ もどる（本城を おとしたら そこに はいる）。</p>' :
-    '<p class="small">大将：' + offTxt(officerAt(KS, from)) + (officerAt(KS, from) ? '' : '（城主が いないので 侍大将）') + '<br>のこした へいは ' + PROV_BY[from].name + 'を まもる。</p>');
+    '<p class="small">のこした へいは それぞれの 城を まもる。生きのこった へいは もとの 城へ もどる（本城を おとしたら そこに はいる）。</p>';
+  function coUnits(c, i) { var qi = pickerUids(c.units, 'co' + i + '_'), pv = c.castle ? KS.castles[c.castle].prov : c.from; return c.units.filter(function (u) { return qi.indexOf(u.uid) >= 0 && !(pv !== to && seaRoute(pv, to) && u.type === 'kiba'); }); }
+  // 大将の こうほ：出陣する 城に いる 家臣 ＋ へいを だす 応援の 城に いる 家臣
+  function genList() {
+    var at = {}; at[loc] = '';
+    co.forEach(function (c, i) { if (coUnits(c, i).length) at[c.loc] = c.castle ? brName(c.castle) : castleNameOf(KS, c.from); });
+    return freeOfficers(KS, KS.player).filter(function (o) { return at[o.at] !== undefined; }).map(function (o) { return { o: o, via: at[o.at] }; }).sort(function (a, b) { return b.o.st[0] - a.o.st[0]; });
+  }
+  function refreshGen() {
+    var sel = $('kAtkOff'), cur = sel.value, gl = genList(), lordHere = !src ? officerAt(KS, from) : null;
+    if (!gl.some(function (g) { return g.o.id === cur; })) cur = lordHere && gl.some(function (g) { return g.o === lordHere; }) ? lordHere.id : (gl[0] ? gl[0].o.id : '');
+    sel.innerHTML = gl.map(function (g) { return '<option value="' + g.o.id + '"' + (g.o.id === cur ? ' selected' : '') + '>' + (premiumP(g.o.st[0]) > 0 ? '★' : '') + g.o.name + '（武' + g.o.st[0] + '）' + (g.via ? '・応援：' + g.via : g.o.prov === loc ? '・城主' : '') + '</option>'; }).join('') + '<option value=""' + (cur ? '' : ' selected') + '>侍大将（家臣なし）</option>';
+    var nHere = officersOf(KS, KS.player).filter(function (o) { return o.at === loc; }).length;
+    $('kAtkOffW').innerHTML = gl.length ? '' : (nHere ? 'この 城の 家臣は この きせつ もう はたらいた。' : 'この 城には 家臣が いない。') + (co.length ? '応援の 城から へいを だすと、そこの 家臣を 大将に できる。' : '👥家臣から 移動させよう。');
+  }
   function odds() {
-    var ids = pickerUids(A.units), us = A.units.filter(function (u) { return ids.indexOf(u.uid) >= 0 && !(seaRoute(from, to) && u.type === 'kiba'); });
-    var st = strength(us) * (from !== to ? routeMult(from, to) : 1), nf = 1, fromO = src ? null : officerAt(KS, from);
-    co.forEach(function (q) { var Q = KS.provs[q], qi = pickerUids(Q.units, q + '_'), qs = Q.units.filter(function (u) { return qi.indexOf(u.uid) >= 0 && !(seaRoute(q, to) && u.type === 'kiba'); }); if (qs.length) nf++; us = us.concat(qs); st += strength(qs) * routeMult(q, to); });
-    var ao0 = offPicked('kAtkOff') || fromO; if ($('kAtkOffP')) $('kAtkOffP').textContent = ' ' + (offPremTxt(offPicked('kAtkOff'), 0) ? offPremTxt(offPicked('kAtkOff'), 0).replace('大成功', '奇襲') : '');
+    var ids = pickerUids(A.units), us = A.units.filter(function (u) { return ids.indexOf(u.uid) >= 0 && !(from !== to && seaRoute(from, to) && u.type === 'kiba'); });
+    var st = strength(us) * (from !== to ? routeMult(from, to) : 1), nf = 1;
+    co.forEach(function (c, i) { var qs = coUnits(c, i), pv = c.castle ? KS.castles[c.castle].prov : c.from; if ($('kcoN' + i)) $('kcoN' + i).textContent = qs.length ? '→ ' + menStr(menTotal(qs)) : ''; if (qs.length && !(c.castle && pv === from && !src)) nf++; us = us.concat(qs); st += strength(qs) * (pv !== to ? routeMult(pv, to) : 1); });
+    refreshGen();
+    var ao0 = offPicked('kAtkOff'); $('kAtkOffP').textContent = ' ' + (offPremTxt(ao0, 0) ? offPremTxt(ao0, 0).replace('大成功', '奇襲') : '');
     var r = st * warMult(ao0) * (nf > 1 ? 1 + 0.08 * (nf - 1) : 1) / tgtStrength(KS, tgt), t = r >= 1.3 ? ['かなり ゆうり', 'g'] : r >= 1.0 ? ['ゆうり', 'g'] : r >= 0.8 ? ['ごかく', 'y'] : r >= 0.6 ? ['ふり', 'r'] : ['とても ふり', 'r'];
     var left = A.units.length - A.units.filter(function (u) { return ids.indexOf(u.uid) >= 0; }).length;
     $('kOdds').innerHTML = 'かちめ：<b class="' + t[1] + '">' + t[0] + '</b>（' + us.length + '隊・' + menStr(menTotal(us)) + (nf > 1 ? '・' + nf + 'か所から' : '') + '）' +
@@ -6217,8 +6282,8 @@ function kAttackBox(from, to, castleId, src) {
     { label: 'やめる', cls: 'act sub', fn: kCloseModal }
   ]);
   function foodPick() { return +$('kFood').value; }
-  function coPick() { return co.map(function (q) { return { from: q, uids: pickerUids(KS.provs[q].units, q + '_') }; }).filter(function (e) { return e.uids.length; }); }
-  pickerBind(odds); $('kFood').oninput = odds; if ($('kAtkOff')) $('kAtkOff').onchange = odds; odds();
+  function coPick() { return co.map(function (c, i) { var u = pickerUids(c.units, 'co' + i + '_'); return c.castle ? { castle: c.castle, uids: u } : { from: c.from, uids: u }; }).filter(function (e) { return e.uids.length; }); }
+  pickerBind(odds); $('kFood').oninput = odds; $('kAtkOff').onchange = odds; odds();
 }
 var CMD_NAME = { attack: '出陣', recruit: '徴兵', develop: '内政', move: '移動', scheme: '調略' };
 function kRouteHtml(from, to) {
@@ -6231,7 +6296,7 @@ function kRouteHtml(from, to) {
 function kLaunch(from, to, how, castleId, extra, food, gen, src) {
   var ids = pickerUids(src ? KS.castles[src].units : KS.provs[from].units); if (!ids.length) return;
   kCloseModal(); kMode = 'idle';
-  var b = src ? makeBranchBattle(KS, src, to, ids, castleId || null) : makeBattle(KS, from, to, ids, castleId || null, extra || []);
+  var b = src ? makeBranchBattle(KS, src, to, ids, castleId || null, extra || []) : makeBattle(KS, from, to, ids, castleId || null, extra || []);
   if (food) { b.foodDays = food; b.foodCost = foodCost(menTotal(b.atkUnits), food); }
   if (gen) {   // えらんだ 大将。武が 高いと 奇襲（てきの 守りが はじめから よわる）
     b.atkOff = gen.id; useOfficer(KS, gen.id);
@@ -6239,7 +6304,7 @@ function kLaunch(from, to, how, castleId, extra, food, gen, src) {
   }
   b.playerSide = 'atk'; kUndoClear();
   startBattle(KS, b); kSave();
-  logC(KS, (b.atkOff ? KS.officers[b.atkOff].name : CLANS[KS.player].lord) + 'が ' + b.castleName + 'へ 出陣！（兵糧 ' + b.foodDays + '日ぶん・' + menStr(menTotal(b.atkUnits)) + (b.fronts ? '・' + b.fronts.map(function (f) { return PROV_BY[f.from].name; }).join('と ') + 'から 同時に' : '') + (src ? '・' + brName(src) + 'から' : '') + '）', 'good');
+  logC(KS, (b.atkOff ? KS.officers[b.atkOff].name : CLANS[KS.player].lord) + 'が ' + b.castleName + 'へ 出陣！（兵糧 ' + b.foodDays + '日ぶん・' + menStr(menTotal(b.atkUnits)) + (b.fronts ? '・' + b.fronts.map(function (f) { return f.castle ? brName(f.castle) : PROV_BY[f.from].name; }).join('と ') + 'から 同時に' : src ? '・' + brName(src) + 'から' : '') + '）', 'good');
   if (how === 'auto' || !b.defUnits.length) kAutoBattle(b);
   else kFightBattle(b);
 }
