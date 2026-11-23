@@ -139,6 +139,7 @@ button{font-family:inherit;cursor:pointer;}
 #kcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
 #khud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top));background:rgba(40,25,15,.9);color:#fff;font-size:14px;z-index:5;}
 #khud .hrow span{font-size:13px;color:#ffe8b0;}
+@media (max-width:520px){#khud .hrow.right{gap:4px;flex-wrap:wrap}#khud .hb{padding:6px 7px;font-size:13px}#khud #kEndBtn{padding:6px 8px}}
 #kEndBtn{background:linear-gradient(#ffcf5a,#e8941e);color:#3a2000;}
 #kEndBtn:disabled{opacity:.4;}
 #kbottom{position:absolute;left:0;right:0;bottom:0;z-index:5;background:rgba(40,25,15,.92);color:#fff;padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
@@ -187,6 +188,7 @@ button{font-family:inherit;cursor:pointer;}
 #kBody h4{margin:10px 0 4px;color:#7a3a1a;}
 #kBody .small,.small{font-size:12px;color:#777;}
 .kbrow{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid rgba(120,90,50,.15)}.kbrn{flex:1;font-size:13px;cursor:pointer}button.kmini{border:0;border-radius:8px;padding:7px 9px!important;font-weight:bold;font-size:13px!important;background:#2f6fe0;color:#fff;white-space:nowrap;width:auto!important;min-width:84px!important;height:auto!important;flex:none!important;overflow:visible!important}button.kmini.sub{background:#8a7a6a}button.kmini:disabled{opacity:.4}
+.kland tr.kprow td{background:#f3ead6;text-align:left;cursor:pointer;color:#5a2a10}.kland tr.kcrow{cursor:pointer}.kland tr.kcrow:hover td{background:#fff3d0}.kland td{font-size:12px}
 .kco{border:1px solid rgba(120,90,50,.25);border-radius:8px;padding:4px 8px;margin:4px 0;background:#fffaf0}.kco summary{cursor:pointer;font-size:13px;padding:3px 0}.kco summary b{color:#2a6a2a}
 .kmv{border:0;border-radius:7px;padding:4px 8px;font-size:12px;font-weight:bold;background:#2f6fe0;color:#fff;white-space:nowrap;margin-top:3px;cursor:pointer}
 .ktab td.kloc{font-size:11px;text-align:left;min-width:86px}
@@ -310,7 +312,7 @@ button{font-family:inherit;cursor:pointer;}
     <div class="hrow right">
       <button class="hb" id="bgmBtn2" title="おんがく">🔊</button>
       <button class="hb" id="kFitBtn" title="ぜんたい">⤢</button>
-      <button class="hb" id="kOffBtn" title="家臣">👥</button>
+      <button class="hb" id="kLandBtn" title="領地の 一覧">📜</button><button class="hb" id="kOffBtn" title="家臣">👥</button>
       <button class="hb" id="kHistBtn" title="れきし">📖</button>
       <button class="hb" id="kHelpBtn">?</button>
       <button class="hb" id="kQuitBtn">✕</button>
@@ -424,6 +426,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>🚧 普請と 改築</b>：領内（内政）で <b>柵・堀・砦</b>を つくれる。合戦の とき 地図に そのまま あらわれ、柵は てきの 足どめ、堀は わたりにくく、砦は 柵に かこまれた 小さな 城に なる。<b>城の 改築</b>（Lv3まで）で 石垣と 門が かたくなり 守りが つよく なる。支城も 所領の 内政から 改築 できる。</li>
       <li><b>🚩 援軍</b>：せめられたら、となりの じぶんの 国や おなじ 国の 城から 援軍を おくれる。援軍は それぞれの 城の ほうから 合戦場に あらわれる（とおいと おそく つく）。合戦の あと 生きのこりは もとの 城へ もどる。</li>
       <li><b>👥 家臣に まかせる</b>：出陣・徴兵・内政・調略は、えらぶ 画面で <b>担当の 家臣</b>を きめる（1きせつに 1人 1つ）。武・政・智が 高いと ★大成功（奇襲・2わり 多く あつまる・石高 倍 など）が でる。👥ボタンで 家臣の 一覧。徴兵は 1人 から やとえる。</li>
+      <li><b>📜 領地の 一覧</b>：上の 📜ボタンで、じぶんの 国と 城（本城・支城、てきの 国の なかの 支城も）を 一覧で 見られる。国ごとの 石高・収入・秋の 年貢・不満・めいれいの かず、城ごとの へい・兵糧（なん日 もつか）・いる 家臣。城の 行を タップすると その 城の 画面へ。</li>
       <li><b>🗾 内政の 画面</b>：田畑・町などは 本城と 支城の 所領を まとめて たてられる。<b>城を タップ</b>すると その 城の 守備兵を 見て、<b>その 城で 徴兵</b>（支城は 城 ごとに きせつ 1かい・8たいまで、本城は 国の 徴兵の めいれい）、<b>家臣を よぶ／ほかの 城へ うつす</b>、本城の 城主えらびが できる。「↩ 地図へ もどる」で 国取りの 地図へ。</li>
       <li><b>🔗 合流</b>：へった 隊は おなじ 兵種の 隊に まとめられる。国取りでは 本城・支城の 画面の「🔗 隊を まとめる」（人数は そのまま、隊の かずが へる。めいれいは つかわない）。合戦では となりに いる おなじ 兵種の みかたを えらんで「🔗 合流」（その 隊の 行動は おわり。もどせない）。</li>
       <li><b>⚔ 出陣の ながれ</b>：国を えらんで ⚔出陣 →（支城が あれば）<b>どの 城から 出陣するか</b> → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
@@ -482,7 +485,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v7.3';
+var VERSION = 'v7.4';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -6634,6 +6637,36 @@ function kOfficersBox() {
   kModal('家臣（' + mine.length + '人）', h, [{ label: 'とじる', cls: 'act sub', fn: kCloseModal }]);
   Array.prototype.forEach.call($('kBody').querySelectorAll('.koffmv'), function (b) { b.onclick = function () { SFX.tap(); kOffMoveBox(b.getAttribute('data-o')); }; });
 }
+// ---- 領地の 一覧 ----
+function kLandBox() {
+  var me = KS.player, provs = {}, h = '';
+  PROVS.forEach(function (p) {
+    var mine = KS.provs[p.id].owner === me, brs = branchesIn(KS, p.id).filter(function (c) { return c.owner === me; });
+    if (mine || brs.length) provs[p.id] = { mine: mine, brs: brs };
+  });
+  var ids = Object.keys(provs), totMen = 0, totU = 0, nC = 0;
+  function offsAt(at) { return officersOf(KS, me).filter(function (o) { return o.at === at; }); }
+  function offCell(at, lord) { var l = offsAt(at); return l.length ? l.map(function (o) { return (o === lord ? '🎖' : '') + o.name + (offBusy(KS, o) ? '✓' : ''); }).join('<br>') : '<span style="color:#aaa">—</span>'; }
+  function foodCell(pid, cid, units) { var f = castleFood(KS, pid, cid), d = castleFoodDays(KS, pid, cid, units); return f.toLocaleString('ja-JP') + '石<br><small class="' + (d < 15 ? 'r' : '') + '">' + (d > 365 ? '1年いじょう' : d + '日') + '</small>'; }
+  h += '<table class="ktab kland"><tr><th>城</th><th>へい</th><th>🍙兵糧</th><th>家臣</th></tr>';
+  ids.forEach(function (pid) {
+    var P = KS.provs[pid], g = provs[pid], sh = kokuShareOf(KS, pid, me), inc = provSplit(KS, pid, false)[me] || 0, nen = nenguOf(KS, pid, me);
+    h += '<tr class="kprow" data-p="' + pid + '"><td colspan="4"><b>' + PROV_BY[pid].name + '</b>（' + PROV_BY[pid].kuni + '）' + (g.mine ? '' : ' <small>てきの 国の なかの 所領</small>') +
+      '<br><small>🌾' + Math.round(P.koku * sh * 10) / 10 + '万石' + (sh < 0.999 ? '（' + Math.round(sh * 100) + '%）' : '') + '・💰+' + kan(inc) + '/きせつ・秋の 年貢 約' + kan(nen) +
+      (g.mine ? '・年貢 ' + Math.round(taxOf(P) * 10) + '公' + (10 - Math.round(taxOf(P) * 10)) + '民・不満 ' + Math.round(P.fuman || 0) + '・めいれい ' + cmdCount(P) + '/' + MAX_CMDS : '') + '</small></td></tr>';
+    if (g.mine) { nC++; totMen += menTotal(P.units); totU += P.units.length;
+      h += '<tr class="kcrow" data-main="' + pid + '"><td>🏯 ' + castleNameOf(KS, pid) + '<br><small>本城・改築Lv' + (P.clv || 0) + '</small></td><td>' + menStr(menTotal(P.units)) + '<br><small>' + P.units.length + '/' + PROV_CAP + '隊</small></td><td>' + foodCell(pid, null, P.units) + '</td><td><small>' + offCell(pid, officerAt(KS, pid)) + '</small></td></tr>'; }
+    g.brs.forEach(function (c) { nC++; totMen += menTotal(c.units); totU += c.units.length;
+      h += '<tr class="kcrow" data-br="' + c.id + '"><td>🏰 ' + brName(c.id) + '<br><small>支城・所領' + Math.round(branchShare(c.id) * 100) + '%' + (c.lv ? '・改築Lv' + c.lv : '') + (c.atk === KS.turn ? '・⚔済' : '') + (c.rec === KS.turn ? '・🪖済' : '') + '</small></td><td>' + menStr(menTotal(c.units)) + '<br><small>' + c.units.length + '/8隊</small></td><td>' + foodCell(pid, c.id, c.units) + '</td><td><small>' + offCell(c.id, null) + '</small></td></tr>'; });
+  });
+  h += '</table>';
+  var nP = provsOf(KS, me).length, ronin = officersOf(KS, me).filter(function (o) { return !o.at; }).length;
+  var top = '<div class="kodds">🗾 <b>' + nP + '国</b>・🏯 <b>' + nC + '城</b>（本城 ' + nP + '・支城 ' + (nC - nP) + '）<br>🌾 石高 <b>' + Math.round(effKoku(KS, me) * 10) / 10 + '万石</b>　💰 収入 約' + kan(income(KS, me)) + '/きせつ（秋は 年貢が はいる）<br>⚔ へい <b>' + menStr(totMen) + '</b>（' + totU + '隊）　👥 家臣 ' + officersOf(KS, me).length + '人' + (ronin ? '（城なし ' + ronin + '）' : '') + '</div>' +
+    '<p class="small">城の 行を タップすると その 城の 画面。🎖＝城主、✓＝この きせつ はたらいた。</p>';
+  kModal('📜 領地の 一覧', top + h, [{ label: 'とじる', cls: 'act sub', fn: kCloseModal }]);
+  [].forEach.call($('kBody').querySelectorAll('.kcrow'), function (e) { e.onclick = function () { SFX.tap(); var pid = e.dataset.main || KS.castles[e.dataset.br].prov; kSel = KS.provs[pid].owner === me ? pid : kSel; kUpdate(); if (e.dataset.main) kMainCastleBox(e.dataset.main); else kCastleBox(e.dataset.br); }; });
+  [].forEach.call($('kBody').querySelectorAll('.kprow'), function (e) { e.onclick = function () { SFX.tap(); kSel = e.dataset.p; kCloseModal(); kUpdate(); }; });
+}
 // 家臣を べつの 城へ
 function kOffMoveBox(oid, back) {
   back = back || kOfficersBox;
@@ -6837,6 +6870,7 @@ function kInit() {
   $('kEndBtn').onclick = function () { SFX.tap(); kEndSeason(); };
   $('kFitBtn').onclick = function () { SFX.tap(); kWhole = !kWhole; kFit(kWhole); kRender(); };
   $('kOffBtn').onclick = function () { SFX.tap(); kOfficersBox(); };
+  $('kLandBtn').onclick = function () { SFX.tap(); kLandBox(); };
   $('kHistBtn').onclick = function () { SFX.tap(); openHistory(); };
   $('kLog').onclick = function () { SFX.tap(); openKLog(); };
   $('kHelpBtn').onclick = function () { SFX.tap(); $('helpBox').classList.add('on'); };
