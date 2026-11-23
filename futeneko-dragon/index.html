@@ -819,7 +819,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 <!-- タイトル -->
 <section id="title" class="screen on">
   <h1>フテ猫ドラゴンそだて</h1>
-  <div class="sub">ほんとうの まちを あるいて ドラゴンを みつけて そだてよう！</div>
+  <div class="sub">あかりちゃんと ちいさな ドラゴンの ものがたり</div>
   <canvas id="titleCv"></canvas>
   <div id="titleMain"></div>
   <div class="ver">ver <span id="verT"></span> © 泉正道 / フテ猫実行委員会</div>
@@ -865,7 +865,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.4';
+const VER='1.5';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -913,19 +913,19 @@ const FOOD={
  candy:{n:'ほしのあめ',e:'🌟',h:5,love:2,price:150,d:'けいけんち たくさん！'}
 };
 const FOOD_ORDER=['apple','fish','meat','potato','candy'];
-const KEEPERS={fute:'フテ猫',kuro:'クロネコさん',chap:'チャッピーちゃん'};
+const KEEPERS={akari:'あかりちゃん'};
 
 /* ===================== セーブ ===================== */
 const SKEY='futeneko-dragon-save';
 let G=null;
 function blankGame(keeper){
-  return {v:1,keeper:keeper||'fute',coins:30,power:POW_MAX,powerT:Date.now(),food:{apple:2,fish:0,meat:0,potato:0,candy:0},dragons:[],sel:0,dex:{},race:{},tower:0,steps:0,found:0,uid:1,muted:false,tut:{},walk:null,motionOn:false,ptDay:'',ptGot:{},expAcc:0,hunAcc:0};
+  return {v:1,keeper:'akari',coins:30,power:POW_MAX,powerT:Date.now(),food:{apple:2,fish:0,meat:0,potato:0,candy:0},dragons:[],sel:0,dex:{},race:{},tower:0,steps:0,found:0,uid:1,muted:false,tut:{},walk:null,motionOn:false,ptDay:'',ptGot:{},expAcc:0,hunAcc:0};
 }
 function fixGame(s){
   const b=blankGame(s.keeper);
   for(const k in b){if(s[k]===undefined)s[k]=b[k];}
   for(const k in b.food){if(typeof s.food[k]!=='number')s.food[k]=0;}
-  if(!KEEPERS[s.keeper])s.keeper='fute';
+  s.keeper='akari';
   s.dragons=(s.dragons||[]).filter(d=>d&&SP[d.sp]);
   s.dragons.forEach(d=>{
     d.tb=d.tb||{hp:0,atk:0,def:0,spd:0};
@@ -958,9 +958,8 @@ function gainExp(d,n){
 }
 function lvUpMsg(d,before){
   let extra='';
-  if(before<20&&d.lv>=20)extra='レースに でられるように なった！';
-  else if(before<30&&d.lv>=30)extra='バトルに でられるように なった！';
-  else if(before<40&&d.lv>=40)extra='ひっさつわざ「ドラゴンメテオ」を おぼえた！';
+  if(before<10&&d.lv>=10)extra='バトルに でられるように なった！';
+  else if(before<25&&d.lv>=25)extra='ひっさつわざ「ドラゴンメテオ」を おぼえた！';
   else if(stageOf(before)<stageOf(d.lv))extra=STAGE_NAME[stageOf(d.lv)]+'に せいちょうした！';
   toast('レベルアップ！ Lv'+d.lv,extra);
   sfx.lvup();
@@ -978,7 +977,7 @@ const IMG={};
 const ok=im=>im&&im.complete&&im.naturalWidth>0;
 /* フテ猫ウォークの あるく モーション（w1〜4 みぎむき / wl1〜4 ひだりむき。チャッピーは w を はんてん） */
 const WK={};
-['fute','kuro','chap'].forEach(k=>['idle','w1','w2','w3','w4','wl1','wl2','wl3','wl4','joy','surp','sleep'].forEach(p=>{if(k==='chap'&&p.startsWith('wl'))return;const im=new Image();im.src='wk/'+k+'_'+p+'.webp';WK[k+'_'+p]=im;}));
+['akari'].forEach(k=>['idle','w1','w2','w3','w4','wl1','wl2','wl3','wl4'].forEach(p=>{const im=new Image();im.src='wk/'+k+'_'+p+'.webp';WK[k+'_'+p]=im;}));
 function keeperSrc(moving,faceRight,t){
   const k=G.keeper;
   if(!moving)return {src:'wk/'+k+'_idle.webp',flip:false};
@@ -994,7 +993,7 @@ function drawKeeper(c,x,y,h,pose,faceRight,t,moving){
     else im=WK[k+'_idle'];
     if(ok(im))wk=true;else im=null;
   }
-  if(!im){im=IMG[G.keeper+'_'+pose]||IMG[G.keeper+'_front'];flip=faceRight&&pose==='walk';}
+  if(!im){im=IMG[G.keeper+'_'+pose]||IMG[G.keeper+'_front']||WK[G.keeper+'_idle'];flip=faceRight&&pose==='walk'&&!!IMG[G.keeper+'_'+pose];}
   if(!ok(im))return;
   const w=h*im.naturalWidth/im.naturalHeight;
   c.save();c.translate(x,y);
@@ -1227,30 +1226,82 @@ function modal(html,btns){
       e.onclick=()=>{sfx.tap();if(!b.keep)closeModal();if(b.f)b.f();};w.appendChild(e);});}
   $('modal').classList.add('on');
 }
-function closeModal(){$('modal').classList.remove('on');mdDragon=null;}
+function closeModal(){$('modal').classList.remove('on');mdDragon=null;mdStory=null;}
 function toast(t,s){const e=document.createElement('div');e.className='toast';e.innerHTML=esc(t)+(s?'<small>'+esc(s)+'</small>':'');document.body.appendChild(e);setTimeout(()=>e.remove(),2500);}
 function barHtml(v,max,col,label){const p=clamp(max?v/max:0,0,1)*100;return '<div class="bar"><i style="width:'+p+'%;background:'+col+'"></i><b>'+(label||'')+'</b></div>';}
 
 /* ===================== タイトル ===================== */
-let titleKeeper='fute';
 function renderTitle(){
   $('verT').textContent=VER;
   const s=load();
   const m=$('titleMain');
   if(s){
     m.innerHTML='<button class="bigbtn" id="tContinue">つづきから</button><button class="bigbtn gray" id="tNew">はじめから</button>';
-    $('tContinue').onclick=()=>{audioInit();G=s;setMute(G.muted);preloadSprites(G.dragons.map(d=>d.sp));goHome();};
+    $('tContinue').onclick=()=>{audioInit();G=s;setMute(G.muted);preloadSprites(G.dragons.map(d=>d.sp));goHome();if(!G.dragons.length&&!G.story)startStory();};
     $('tNew').onclick=()=>{modal('<h2>はじめから？</h2><p>いまの ドラゴンたちは いなくなっちゃうよ。<br>ほんとうに いい？</p>',[{t:'やめる',c:'sub'},{t:'はじめから',f:()=>{renderNew();}}]);};
   } else renderNew();
 }
 function renderNew(){
   const m=$('titleMain');
-  m.innerHTML='<div style="font-weight:bold;margin-top:6px">ドラゴンを そだてる なかまを えらんでね</div><div class="keepers" id="kSel"></div><button class="bigbtn" id="tStart">はじめる</button>';
-  const ks=$('kSel');
-  Object.keys(KEEPERS).forEach(k=>{const b=document.createElement('button');b.innerHTML='<img src="img/face-'+k+'.webp" alt="">'+KEEPERS[k];if(k===titleKeeper)b.className='sel';
-    b.onclick=()=>{titleKeeper=k;ks.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');sfx.tap();};ks.appendChild(b);});
-  $('tStart').onclick=()=>{audioInit();G=blankGame(titleKeeper);save();goHome();
-    modal('<h2>ようこそ ドラゴンこやへ！</h2><p>まちには まいごの ドラゴンが かくれているよ。<br><b>「さがす」で ほんとうの まちを あるいて みつけよう！</b></p><p style="font-size:13px">おさんぽで そだてて<br>Lv20で <b>レース</b>、Lv30で <b>バトル</b>に でられるよ！</p>',[{t:'わかった！',c:'go'}]);};
+  m.innerHTML='<div class="keepers"><img src="wk/akari_idle.webp" style="height:120px" alt=""></div><button class="bigbtn" id="tStart">はじめる</button>';
+  $('tStart').onclick=()=>{audioInit();G=blankGame('akari');save();goHome();startStory();};
+}
+/* ===================== はじまりの おはなし ===================== */
+let mdStory=null;
+const EGGIMG={};
+function eggImg(sp){let im=EGGIMG[sp];if(!im){im=new Image();im.src='dr/'+sp+'_egg.webp';EGGIMG[sp]=im;}return ok(im)?im:null;}
+const STORY=[
+  {t:'あるよるの こと',p:'あかりちゃんが ベランダを のぞくと…<br>ひかる <b>ドラゴンの たまご</b>が ころん、と おいてありました！'},
+  {t:'ははドラゴン',p:'そばには おおきな ははドラゴンが いました。<br>「この こを… たのみます…」<br>たまごを うんだ ははドラゴンは、ちからつきて しまいました。'},
+  {t:'あかりちゃんの けっしん',p:'「だいじょうぶ。わたしが たいせつに そだてるからね！」<br>あかりちゃんが たまごを だきしめると…'}
+];
+function startStory(){
+  const sp=G.eggSp||pick(['fire','water','wind','earth','thunder','ice']);G.eggSp=sp;save();
+  preloadSprites([sp]);eggImg(sp);
+  const page=i=>{
+    if(i>=STORY.length)return hatchStory(sp);
+    modal('<h2>'+STORY[i].t+'</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+STORY[i].p+'</p>',[{t:i<STORY.length-1?'つぎへ ▶':'たまごが…！',c:'go',f:()=>page(i+1)}]);
+    mdStory={page:i,sp,t0:T};
+  };
+  page(0);
+}
+function hatchStory(sp){
+  const d=makeDragon(sp,1);d.hunger=80;d.love=30;
+  modal('<h2>たまごが かえった！</h2><canvas id="mdCv" width="440" height="340"></canvas><p><b>'+SP[sp].name+'</b>（'+SP[sp].el+'ぞくせい）の あかちゃんが うまれたよ！<br>あかりちゃんが そだてる ことに なりました。</p>',
+    [{t:'なまえを つける',c:'go',f:()=>{G.dragons.push(d);seeDex(sp,true);G.sel=G.dragons.length-1;G.found++;G.story=1;save();
+      nameDragon(d,()=>{renderHome();modal('<h2>🐉 '+esc(d.name)+'と いっしょ！</h2><p style="text-align:left;font-size:14px">👣 <b>おさんぽ</b>：ほんとうに あるいた ほすうで そだつよ<br>🏁 <b>レース</b>：すぐに でられるよ<br>⚔️ <b>バトル</b>：Lv10から<br>🗺️ <b>さがす</b>：まちで ほかの たまごも みつかるかも</p>',[{t:'がんばるぞ！',c:'go'}]);});}}]);
+  mdDragon={sp,lv:1,happy:true,egg:T};
+}
+function drawStory(c,W2,H2){
+  const st=mdStory,sp=st.sp,tt=T-st.t0;
+  const g=c.createLinearGradient(0,0,0,H2);g.addColorStop(0,'#141238');g.addColorStop(1,'#3a3478');c.fillStyle=g;c.fillRect(0,0,W2,H2);
+  c.fillStyle='#fff';for(let i=0;i<30;i++){c.globalAlpha=0.3+0.7*Math.abs(Math.sin(T*1.3+i));c.fillRect(hash(i)*W2,hash(i+50)*H2*0.55,2,2);}c.globalAlpha=1;
+  c.fillStyle='#fff6c8';c.beginPath();c.arc(W2*0.82,58,26,0,7);c.fill();
+  // ベランダ
+  c.fillStyle='#8a7a6a';c.fillRect(0,H2-46,W2,46);
+  c.fillStyle='#c8c0d8';c.fillRect(0,H2-120,W2,8);
+  for(let x=10;x<W2;x+=28)c.fillRect(x,H2-114,5,70);
+  const egg=eggImg(sp);
+  const glow=(x,y,r)=>{const gg=c.createRadialGradient(x,y,4,x,y,r);gg.addColorStop(0,'rgba(255,240,170,.85)');gg.addColorStop(1,'rgba(255,240,170,0)');c.fillStyle=gg;c.beginPath();c.arc(x,y,r,0,7);c.fill();};
+  const akari=WK.akari_idle;
+  if(st.page===0){
+    glow(W2*0.62,H2-80,70+Math.sin(T*3)*8);
+    if(egg){const eh=78;c.drawImage(egg,W2*0.62-eh*0.42,H2-46-eh+Math.sin(T*4)*1.5,eh*0.84,eh);}
+    if(ok(akari)){const h=190,w=h*akari.naturalWidth/akari.naturalHeight;c.drawImage(akari,W2*0.06,H2-30-h+Math.sin(tt*2)*3,w,h);}
+    c.font='bold 30px sans-serif';c.fillStyle='#fff27a';c.fillText('！',W2*0.33,H2-190);
+  } else if(st.page===1){
+    c.globalAlpha=Math.max(0.35,1-tt*0.08);
+    drawDragon(c,W2*0.42,H2-40,150,sp,40,0,1,{sad:true,shadow:false});
+    c.globalAlpha=1;
+    for(let i=0;i<10;i++){const a=(tt*0.3+i/10)%1;c.fillStyle='rgba(255,240,180,'+(1-a)*0.8+')';c.beginPath();c.arc(W2*0.25+hash(i)*W2*0.35,H2-60-a*220,3,0,7);c.fill();}
+    glow(W2*0.82,H2-70,50);
+    if(egg){const eh=62;c.drawImage(egg,W2*0.82-eh*0.42,H2-46-eh,eh*0.84,eh);}
+  } else {
+    glow(W2*0.6,H2-110,90+Math.sin(T*4)*10);
+    if(ok(akari)){const h=200,w=h*akari.naturalWidth/akari.naturalHeight;c.drawImage(akari,W2*0.28,H2-30-h,w,h);}
+    if(egg){const eh=70,wob=Math.sin(T*14)*0.12;c.save();c.translate(W2*0.62,H2-80);c.rotate(wob);c.drawImage(egg,-eh*0.42,-eh,eh*0.84,eh);c.restore();}
+    c.font='24px sans-serif';c.textAlign='center';for(let i=0;i<3;i++){const a=(tt*0.5+i/3)%1;c.globalAlpha=1-a;c.fillText('💗',W2*0.5+i*30-30,H2-200-a*60);}c.globalAlpha=1;c.textAlign='left';
+  }
 }
 
 /* ===================== ホーム ===================== */
@@ -1266,7 +1317,7 @@ function renderHome(){
   const w=$('homeWrap');const d=cur();
   let h='';
   if(!d){
-    h+='<div class="card empty"><img src="img/'+G.keeper+'_front.webp" alt=""><p>まだ ドラゴンが いないよ。<br>「さがす」で まちを あるいて みつけよう！</p></div>';
+    h+='<div class="card empty"><img src="wk/akari_idle.webp" alt=""><p>まだ ドラゴンが いないよ。<br>「さがす」で まちを あるいて みつけよう！</p></div>';
   } else {
     const st=stats(d),S=SP[d.sp];
     h+='<div class="card"><canvas id="homeCv"></canvas>';
@@ -1287,8 +1338,8 @@ function renderHome(){
   h+='<button class="act a1" id="aTown"><span>🗺️</span>さがす<small>たまごを さがす</small></button>';
   h+='<button class="act a2'+(d?'':' lock')+'" id="aWalk"><span>👣</span>おさんぽ<small>あるいて そだてる</small></button>';
   h+='<button class="act a3'+(d?'':' lock')+'" id="aFood"><span>🍎</span>ごはん<small>おなかいっぱい</small></button>';
-  h+='<button class="act a4'+(lv>=20?'':' lock')+'" id="aRace"><span>'+(lv>=20?'🏁':'🔒')+'</span>レース<small>Lv20から</small></button>';
-  h+='<button class="act a5'+(lv>=30?'':' lock')+'" id="aBattle"><span>'+(lv>=30?'⚔️':'🔒')+'</span>バトル<small>Lv30から</small></button>';
+  h+='<button class="act a4'+(d?'':' lock')+'" id="aRace"><span>🏁</span>レース<small>Lv1から</small></button>';
+  h+='<button class="act a5'+(lv>=10?'':' lock')+'" id="aBattle"><span>'+(lv>=10?'⚔️':'🔒')+'</span>バトル<small>Lv10から</small></button>';
   h+='<button class="act a7" id="aShop"><span>🏪</span>おみせ<small>ごはんを かう</small></button>';
   h+='<button class="act a6" id="aDex"><span>📖</span>ずかん<small>'+Object.keys(G.dex).length+' / '+SP_ORDER.length+'</small></button>';
   h+='<button class="act a8" id="aHelp"><span>❔</span>あそびかた<small>&nbsp;</small></button>';
@@ -1305,14 +1356,14 @@ function renderHome(){
   $('aTown').onclick=()=>{sfx.tap();openMap();};
   $('aWalk').onclick=()=>{sfx.tap();if(!d)return noDragon();if(d.hunger<5)return hungry(d);startScene(WALK);};
   $('aFood').onclick=()=>{sfx.tap();if(!d)return noDragon();openFood(()=>renderHome());};
-  $('aRace').onclick=()=>{sfx.tap();if(!d)return noDragon();if(d.lv<20)return locked('レース',20,d);openRaceMenu();};
-  $('aBattle').onclick=()=>{sfx.tap();if(!d)return noDragon();if(d.lv<30)return locked('バトル',30,d);openTower();};
+  $('aRace').onclick=()=>{sfx.tap();if(!d)return noDragon();openRaceMenu();};
+  $('aBattle').onclick=()=>{sfx.tap();if(!d)return noDragon();if(d.lv<10)return locked('バトル',10,d);openTower();};
   $('aDex').onclick=()=>{sfx.tap();openDex();};
   $('aShop').onclick=()=>{sfx.tap();openShop(()=>renderHome());};
   $('aHelp').onclick=()=>{sfx.tap();openHelp();};
 }
 function openHelp(){
-  modal('<h2>❔ あそびかた</h2><div style="text-align:left;font-size:14px;line-height:1.6"><p>🗺️ <b>さがす</b>：ちずの うえで フテ猫を フリック・タッチ・やじるしキーで うごかして 🥚の ばしょへ。ちかくまで いくと ドラゴンが みつかるかも！ ばしょの しゅるいで みつかる ドラゴンが かわるよ（こうえん→かぜ、えき→かみなり、おみせ→ほのお、みずべ→みず、がっこう→こおり、じんじゃ→ひかり／よるは やみ）。</p><p>👣 <b>おさんぽ</b>：スマホを もって ほんとうに あるいた ほすうだけ すすむよ。3ぽで けいけんち 1。とちゅうの ものを タッチして とっくんも できる！</p><p>🏁 <b>レース</b>：Lv20から。⚔️ <b>バトル</b>：Lv30から。</p><p style="color:#c0392b;font-size:12px">そとを あるく ときは まわりを よく みてね。くるまや でんしゃの いどうは かぞえないよ。</p></div>',[{t:'わかった',c:'go'}]);
+  modal('<h2>❔ あそびかた</h2><div style="text-align:left;font-size:14px;line-height:1.6"><p>🗺️ <b>さがす</b>：ちずの うえで あかりちゃんを フリック・タッチ・やじるしで うごかして 🥚の ばしょへ。ちかくまで いくと ドラゴンが みつかるかも！ ばしょの しゅるいで みつかる ドラゴンが かわるよ（こうえん→かぜ、えき→かみなり、おみせ→ほのお、みずべ→みず、がっこう→こおり、じんじゃ→ひかり／よるは やみ）。</p><p>👣 <b>おさんぽ</b>：スマホを もって ほんとうに あるいた ほすうだけ すすむよ。3ぽで けいけんち 1。とちゅうの ものを タッチして とっくんも できる！</p><p>🏁 <b>レース</b>：Lv1から。⚔️ <b>バトル</b>：Lv10から（Lv25で ひっさつわざ）。</p><p style="color:#c0392b;font-size:12px">そとを あるく ときは まわりを よく みてね。くるまや でんしゃの いどうは かぞえないよ。</p></div>',[{t:'わかった',c:'go'}]);
 }
 function noDragon(){modal('<h2>ドラゴンが いないよ</h2><p>まずは まちを あるいて ドラゴンを さがそう！</p>',[{t:'さがしに いく',c:'go',f:()=>openMap()},{t:'あとで',c:'sub'}]);}
 function hungry(d){modal('<h2>おなか ぺこぺこ…</h2><p>'+esc(d.name)+'は おなかが すいて うごけない。<br>ごはんを あげよう！</p>',[{t:'ごはんを あげる',c:'go',f:()=>openFood(()=>{if(homeOn)renderHome();})},{t:'とじる',c:'sub'}]);}
@@ -1780,7 +1831,7 @@ function showPick(){
     else if(G.found>0&&rr2<0.05)sp=night?'dark':'light';
     else sp=wpick(night&&c.night?c.night:c.pref);
     if(G.found===0&&SP[sp].r>1)sp='fire';
-    const d=makeDragon(sp,ri(1,3));G.found++;seeDex(sp,false);save();sfx.find();
+    const d=makeDragon(sp,1);G.found++;seeDex(sp,false);save();
     foundDragon(d,'<b>'+c.i+' '+esc(pt.name)+'</b>の '+c.msg,next);
   } else if(pt.kind==='food'){
     const k=wpick({apple:50,fish:25,meat:15,potato:6,candy:2});const n=k==='apple'?ri(1,3):1;G.food[k]+=n;save();sfx.pick();
@@ -1792,9 +1843,9 @@ function showPick(){
 }
 function foundDragon(d,msg,after){
   const S=SP[d.sp],full=G.dragons.length>=MAX_DRAGONS;
-  const h='<h2>ドラゴンを みつけた！</h2><canvas id="mdCv" width="440" height="340"></canvas><p><b>'+S.name+'</b>（'+S.el+'ぞくせい）'+(S.r>1?' <span style="color:#e8582a">★レア★</span>':'')+'<br>'+msg+'</p>'+(full?'<p style="color:#c0392b;font-size:13px">こやが いっぱい（'+MAX_DRAGONS+'ひき）。せっていで おわかれすると あくよ。</p>':'');
+  const h='<h2>ドラゴンの たまごを みつけた！</h2><canvas id="mdCv" width="440" height="340"></canvas><p>たまごが かえって <b>'+S.name+'</b>（'+S.el+'ぞくせい）'+(S.r>1?' <span style="color:#e8582a">★レア★</span>':'')+'<br>'+msg+'</p>'+(full?'<p style="color:#c0392b;font-size:13px">こやが いっぱい（'+MAX_DRAGONS+'ひき）。せっていで おわかれすると あくよ。</p>':'');
   modal(h,[{t:'つれてかえる',c:'go',dis:full,f:()=>{G.dragons.push(d);seeDex(d.sp,true);G.sel=G.dragons.length-1;save();nameDragon(d,()=>{toast(d.name+'が なかまに なった！','いっしょに あるくと そだつよ');if(MAPV.on){drawMe();}if(after)after();});}},{t:'そっとしておく',c:'sub',f:after}]);
-  mdDragon={sp:d.sp,lv:d.lv,happy:true};
+  mdDragon={sp:d.sp,lv:d.lv,happy:true,egg:T};eggImg(d.sp);
 }
 
 /* --- がめん --- */
@@ -1806,7 +1857,7 @@ function openMap(){
   if(!GEO.me){if(G.mapPos){setMe(G.mapPos,true);}else startGeo(true);}
   renderMapCard();
   if(!G.tut.map2){G.tut.map2=1;save();
-    modal('<h2>🗺️ ドラゴンの たまごさがし</h2><p>ちずの うえで フテ猫を うごかして<br>🥚 の ばしょへ いこう！</p><p style="font-size:13px;text-align:left">🎮 <b>やじるしボタン</b>（がめんの みぎ下）：おしている あいだ あるく<br>👆 <b>フリック</b>：その むきへ あるく<br>👆 <b>タッチ</b>：その ばしょまで あるく（🥚を タッチでも OK）<br>⌨️ <b>やじるしキー</b>：おしている あいだ あるく<br><br>🥚 の ちかく（40m）まで いくと ドラゴンが いるかも！<br>🍎 ごはん・🪙 コインも おちているよ。ポイントは まいにち かわるよ。</p><p style="font-size:13px">ドラゴンを そだてるのは <b>👣 おさんぽ</b>（ほんとうに あるいた ほすう）だよ。</p>',[{t:'さがしに いく！',c:'go'}]);}
+    modal('<h2>🗺️ ドラゴンの たまごさがし</h2><p>ちずの うえで あかりちゃんを うごかして<br>🥚 の ばしょへ いこう！</p><p style="font-size:13px;text-align:left">🎮 <b>やじるしボタン</b>（がめんの みぎ下）：おしている あいだ あるく<br>👆 <b>フリック</b>：その むきへ あるく<br>👆 <b>タッチ</b>：その ばしょまで あるく（🥚を タッチでも OK）<br>⌨️ <b>やじるしキー</b>：おしている あいだ あるく<br><br>🥚 の ちかく（40m）まで いくと ドラゴンが いるかも！<br>🍎 ごはん・🪙 コインも おちているよ。ポイントは まいにち かわるよ。</p><p style="font-size:13px">ドラゴンを そだてるのは <b>👣 おさんぽ</b>（ほんとうに あるいた ほすう）だよ。</p>',[{t:'さがしに いく！',c:'go'}]);}
 }
 function leaveMap(){
   MAPV.on=false;MOVE.keys={};MOVE.target=null;MOVE.moving=false;save();
@@ -1823,7 +1874,7 @@ function renderMapCard(){
     else h+='<div class="mrow">この あたりの ポイントは ぜんぶ しらべたよ！ とおくへ いくか、またあした</div>';
     if(GEO.src==='grid'&&!GEO.loading)h+='<div class="mrow" style="font-size:11px">（ちずの データが よめないので「ひみつの ばしょ」を だしているよ）</div>';
   }
-  h+='<div class="mrow"><small>👆 やじるしボタン・フリック・タッチで フテ猫が あるくよ'+(MOVE.moving?'（タッチで とまる）':'')+'</small></div>';
+  h+='<div class="mrow"><small>👆 やじるしボタン・フリック・タッチで あかりちゃんが あるくよ'+(MOVE.moving?'（タッチで とまる）':'')+'</small></div>';
   if(d)h+='<div class="mrow"><b>🐉 '+esc(d.name)+' Lv'+d.lv+'</b>　<small>そだてるのは 👣おさんぽで</small></div>';
   else h+='<div class="mrow"><small>まだ ドラゴンが いないよ。🥚 の ばしょへ いってみよう！</small></div>';
   h+='<div class="mbtn2"><button id="mFood">🍎 ごはん</button><button id="mCenter">📍 ほんとうの いまの ばしょ</button></div>';
@@ -1976,8 +2027,9 @@ const WALK={
 
 /* ===================== レース ===================== */
 const RACES=[
- {id:'rookie',name:'ルーキーカップ',lv:20,cpu:[16,18,20],len:7000,prize:80,exp:60,skill:0.4},
- {id:'silver',name:'シルバーカップ',lv:25,cpu:[25,27,29],len:8000,prize:150,exp:100,skill:0.55},
+ {id:'baby',name:'ちびっこカップ',lv:1,cpu:[1,2,3],len:5000,prize:30,exp:25,skill:0.3},
+ {id:'rookie',name:'ルーキーカップ',lv:10,cpu:[9,11,13],len:6500,prize:60,exp:45,skill:0.4},
+ {id:'silver',name:'シルバーカップ',lv:20,cpu:[19,22,25],len:8000,prize:150,exp:100,skill:0.55},
  {id:'gold',name:'ゴールドカップ',lv:35,cpu:[35,38,41],len:9000,prize:300,exp:170,skill:0.68},
  {id:'king',name:'ドラゴンキングカップ',lv:50,cpu:[50,55,60],len:10000,prize:600,exp:280,skill:0.8}
 ];
@@ -2104,7 +2156,7 @@ function towerFloor(f){
   const tr=Object.keys(TRAINERS).filter(k=>k!==G.keeper);
   const pool=['fire','water','wind','earth','thunder','ice'];
   let sp=pool[(f*5+2)%6];if(f===7)sp='light';if(f===8)sp='dark';if(f===9)sp=pool[(f*3)%6];if(f===10)sp='rainbow';
-  const lv=f<=3?21+f*4:23+f*3+Math.floor(f/2);
+  const lv=f===1?9:6+f*4+Math.max(0,f-5);
   const tk=f===10?'kuro':tr[f%tr.length];
   return {f,lv,sp,trainer:tk,boss:f===10,name:SP[sp].names[(f+1)%4],prize:50+f*30,exp:40+f*18};
 }
@@ -2117,7 +2169,7 @@ function openTower(){
   modal(h,[{t:'もどる',c:'sub'}]);
   $('mbox').querySelectorAll('button[data-f]').forEach(b=>{b.onclick=()=>{if(d.hunger<20){closeModal();return hungry(d);}closeModal();BATTLE.foe=towerFloor(+b.dataset.f);startScene(BATTLE);};});
 }
-function towerTb(f){const k=f.boss?0.7:f.f===1?0:f.f===2?0.15:0.4;const v=f.lv*k;return {hp:v,atk:v,def:v,spd:v};}
+function towerTb(f){const k=f.boss?0.6:f.f===1?0:f.f===2?0.1:0.35;const v=f.lv*k;return {hp:v,atk:v,def:v,spd:v};}
 function dmgCalc(a,dfn,power,mult,crit){
   return Math.max(1,Math.round(power*a.st.atk/Math.max(1,dfn.st.def)*1.1*mult*(crit?1.5:1)*rnd(0.88,1.0)));
 }
@@ -2135,7 +2187,7 @@ const BATTLE={
       '<button id="m0" style="background:#8a7a6a">たいあたり<small>いりょく 40</small></button>'+
       '<button id="m1" style="background:'+S.c2+'">'+S.breath+'<small>'+S.el+'・いりょく 60</small></button>'+
       '<button id="m2" style="background:#3a7ac0">まもる<small>ダメージを へらす＋かいふく</small></button>'+
-      '<button id="m3" style="background:#c0392b">ドラゴンメテオ<small id="m3s">'+(d.lv>=40?'ゲージ MAXで つかえる':'Lv40で おぼえる')+'</small></button></div></div>';
+      '<button id="m3" style="background:#c0392b">ドラゴンメテオ<small id="m3s">'+(d.lv>=25?'ゲージ MAXで つかえる':'Lv25で おぼえる')+'</small></button></div></div>';
     ['tackle','breath','guard','meteor'].forEach((m,i)=>{$('m'+i).onclick=()=>this.choose(m);});
     this.msg(TRAINERS[f.trainer]+'が しょうぶを しかけてきた！');
     this.updHud();
@@ -2146,12 +2198,12 @@ const BATTLE={
     $('bMe').style.width=Math.max(0,m.shown/m.max*100)+'%';$('bMeT').textContent=Math.max(0,Math.round(m.shown))+' / '+m.max;
     $('bEn').style.width=Math.max(0,e.shown/e.max*100)+'%';$('bEnT').textContent=Math.max(0,Math.round(e.shown))+' / '+e.max;
     $('bG').style.width=m.gauge+'%';
-    const canMet=this.d.lv>=40&&m.gauge>=100;
+    const canMet=this.d.lv>=25&&m.gauge>=100;
     for(let i=0;i<4;i++){const b=$('m'+i);if(b)b.disabled=this.busy||this.over||(i===3&&!canMet);}
   },
   aiPick(){
     const e=this.en;
-    if(e.gauge>=100&&e.d.lv>=40)return 'meteor';
+    if(e.gauge>=100&&e.d.lv>=25)return 'meteor';
     const r=Math.random();
     if(e.hp<e.max*0.35&&r<0.25)return 'guard';
     const m=elMult(e.el,this.me.el);
@@ -2161,7 +2213,7 @@ const BATTLE={
   },
   async choose(mv){
     if(this.busy||this.over)return;
-    if(mv==='meteor'&&!(this.d.lv>=40&&this.me.gauge>=100))return;
+    if(mv==='meteor'&&!(this.d.lv>=25&&this.me.gauge>=100))return;
     sfx.tap();this.busy=true;this.updHud();
     const em=this.aiPick();
     const order=[];
@@ -2281,14 +2333,25 @@ function drawHomeCv(){
   const c=el.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,r,h);
   const hungry=d.hunger<15;
   drawDragon(c,r*0.4,h*0.88,Math.min(r*0.36,h*(stageOf(d.lv)>=2?0.42:0.55)),d.sp,d.lv,T,1,{fly:!hungry&&stageOf(d.lv)>=2,alt:0.15,sad:hungry,happy:d.love>60&&!hungry});
-  if(ok(IMG[G.keeper+'_front'])){const im=IMG[G.keeper+'_front'];const kh=h*0.55;c.drawImage(im,r*0.78-kh*im.naturalWidth/im.naturalHeight/2,h*0.92-kh,kh*im.naturalWidth/im.naturalHeight,kh);}
+  if(ok(WK.akari_idle)){const im=WK.akari_idle;const kh=h*0.55;c.drawImage(im,r*0.78-kh*im.naturalWidth/im.naturalHeight/2,h*0.92-kh,kh*im.naturalWidth/im.naturalHeight,kh);}
   if(hungry){c.font='bold 15px sans-serif';c.fillStyle='#c0392b';c.textAlign='center';c.fillText('おなか ぺこぺこ…',r*0.42,22);}
 }
 function drawModalDragon(){
-  const el=$('mdCv');if(!el||!mdDragon)return;
+  const el=$('mdCv');if(!el)return;
+  if(mdStory){const c=el.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,el.width,el.height);drawStory(c,el.width,el.height);return;}
+  if(!mdDragon)return;
   const c=el.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,el.width,el.height);
   c.save();c.translate(el.width/2,el.height/2);c.rotate(T*0.4);c.fillStyle='rgba(255,220,120,.35)';for(let i=0;i<8;i++){c.rotate(Math.PI/4);c.beginPath();c.moveTo(0,0);c.lineTo(-30,-260);c.lineTo(30,-260);c.fill();}c.restore();
-  drawDragon(c,el.width/2-20,el.height*0.9,200,mdDragon.sp,mdDragon.lv,T,1,{fly:!mdDragon.sad,alt:0.15,happy:mdDragon.happy,sad:mdDragon.sad});
+  if(mdDragon.egg!==undefined){
+    const tt=T-mdDragon.egg,egg=eggImg(mdDragon.sp);
+    if(tt<1.8){if(egg){const eh=150,wob=Math.sin(tt*(8+tt*10))*0.12*Math.min(1,tt*2);c.save();c.translate(el.width/2,el.height*0.88);c.rotate(wob);c.drawImage(egg,-eh*0.42,-eh,eh*0.84,eh);
+        if(tt>1){c.strokeStyle='#3a2a1a';c.lineWidth=3;c.beginPath();c.moveTo(-30,-80);c.lineTo(-12,-92);c.lineTo(2,-78);c.lineTo(16,-94);c.lineTo(30,-82);c.stroke();}c.restore();}
+      if(!mdDragon._s1&&tt>1){mdDragon._s1=1;sfx.tap();}
+      return;}
+    if(!mdDragon._s2){mdDragon._s2=1;sfx.find();}
+    if(tt<2.1){c.fillStyle='rgba(255,255,255,'+(1-(tt-1.8)/0.3)+')';c.fillRect(0,0,el.width,el.height);}
+  }
+  drawDragon(c,el.width/2-20,el.height*0.9,200,mdDragon.sp,mdDragon.lv,T,1,{fly:!mdDragon.sad&&stageOf(mdDragon.lv)>=2,alt:0.15,happy:mdDragon.happy,sad:mdDragon.sad});
 }
 function drawTitleCv(){
   const el=$('titleCv');if(!$('title').classList.contains('on'))return;
@@ -2304,7 +2367,7 @@ function loop(ts){
     if(scene&&$('stage').classList.contains('on')){scene.update(dt);cx.setTransform(DPR*U,0,0,DPR*U,0,0);cx.clearRect(0,0,VW,VH);scene.draw();}
     if(MAPV.on)mapTick(dt);
     if(homeOn){drawHomeCv();_pt+=dt;if(_pt>1){_pt=0;updTop();}}
-    if(mdDragon&&$('modal').classList.contains('on'))drawModalDragon();
+    if((mdDragon||mdStory)&&$('modal').classList.contains('on'))drawModalDragon();
     drawTitleCv();
   }catch(e){console.error(e);}
   requestAnimationFrame(loop);
