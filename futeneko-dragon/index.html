@@ -800,7 +800,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 .mfoot{font-size:11px;color:#8a6f52;text-align:center;margin-top:4px}
 .here{position:absolute;left:49px;bottom:-6px;width:22px;height:22px;border-radius:50%;background:#2f7fe8;border:4px solid #fff;box-shadow:0 0 0 10px #2f7fe833,0 1px 4px #0006}
 .meic{position:relative;width:120px;height:96px}
-.meic .mk{position:absolute;left:60px;bottom:6px;height:62px}
+.meic .mk{position:absolute;left:44px;bottom:2px;width:76px;height:76px;background-repeat:no-repeat}
 .meic .md{position:absolute;left:-6px;bottom:10px;width:78px}
 .ppin{position:relative;width:54px;height:62px}
 .ppin .pb{position:absolute;left:5px;top:0;width:44px;height:44px;border-radius:50%;background:#fffaf0;border:3px solid #e8743b;box-shadow:0 2px 4px #0005;display:flex;align-items:center;justify-content:center;font-size:24px}
@@ -877,7 +877,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.11';
+const VER='1.12';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -989,36 +989,35 @@ const IMG={};
   list.forEach(n=>{const im=new Image();im.src='img/'+n+'.webp';IMG[n]=im;});
 })();
 const ok=im=>im&&im.complete&&im.naturalWidth>0;
-/* フテ猫ウォークの あるく モーション（w1〜4 みぎむき / wl1〜4 ひだりむき。チャッピーは w を はんてん） */
-const WK={};
-['pick','hugegg','hug','joy','surp','sad','jump','give'].forEach(p=>{const im=new Image();im.src='wk/akari_'+p+'.webp';WK['akari_'+p]=im;});
-function drawAkari(c,x,y,h,pose){const im=WK['akari_'+pose]||WK.akari_idle;if(!ok(im))return;const w=h*im.naturalWidth/im.naturalHeight;c.drawImage(im,x-w/2,y-h,w,h);}
-['akari'].forEach(k=>['idle','w1','w2','w3','w4','wl1','wl2','wl3','wl4'].forEach(p=>{const im=new Image();im.src='wk/'+k+'_'+p+'.webp';WK[k+'_'+p]=im;}));
-function keeperSrc(moving,faceRight,t){
-  const k=G.keeper;
-  if(!moving)return {src:'wk/'+k+'_idle.webp',flip:false};
-  const n=1+Math.floor(t*8)%4;
-  if(k==='chap')return {src:'wk/chap_w'+n+'.webp',flip:!faceRight};
-  return {src:'wk/'+k+(faceRight?'_w':'_wl')+n+'.webp',flip:false};
+/* ===== あかりちゃん（ひとつの え の セットに とういつ：4×2コマの シート、1コマ 222×222、たちすがた たかさ やく200、あしもと 下から5%）===== */
+const AKS={};['garden','touch','touch2','pose','room','fb','side'].forEach(k=>{const im=new Image();im.src='wk/ak_'+k+'.webp';AKS[k]=im;});
+const AKP={ // ポーズ → [シート, コマ]（みぎむき）
+ standS:['pose',0],standF:['pose',1],standB:['pose',2],look:['pose',3],run1:['pose',4],run2:['pose',5],run3:['pose',6],leap:['pose',7],
+ water:['garden',0],dig:['garden',1],seed:['garden',2],pull:['garden',3],basket:['garden',4],carrot:['garden',5],butterfly:['garden',6],sitknee:['garden',7],
+ pick:['touch',0],hugegg:['touch',1],hug:['touch',2],give:['touch',3],joy:['touch',4],surp:['touch',5],sad:['touch',6],pet:['touch',7],jump:['touch2',5],
+ throw:['room',0],read:['room',1],chair:['room',2],sleep:['room',3],stretch:['room',4],drink:['room',5],toys:['room',6],sweep:['room',7]
+};
+const AK_WALK={R:['side',0],L:['side',4],F:['fb',0],B:['fb',4]};
+const AK_FOOT=0.955,AK_STAND=0.9;   // あしもと（セルの うえから）、たちすがたの たかさ（セルに たいする わりあい）
+function akFrame(pose,dir,t,moving){ // dir: R L F B
+  if(moving){const w=AK_WALK[dir]||AK_WALK.R;return {sh:w[0],f:w[1]+Math.floor(t*8)%4,flip:false};}
+  const p=AKP[pose]||AKP.standS;return {sh:p[0],f:p[1],flip:dir==='L'};
 }
-function drawKeeper(c,x,y,h,pose,faceRight,t,moving){
-  let im=null,flip=false,wk=false;
-  if(pose==='walk'||pose==='front'||pose==='idle'){
-    const n=1+Math.floor(t*8)%4,k=G.keeper;
-    if(moving){if(k==='chap'){im=WK['chap_w'+n];flip=!faceRight;}else im=WK[k+(faceRight?'_w':'_wl')+n];}
-    else im=WK[k+'_idle'];
-    if(ok(im))wk=true;else im=null;
-  }
-  if(!im){im=IMG[G.keeper+'_'+pose]||IMG[G.keeper+'_front']||WK[G.keeper+'_idle'];flip=faceRight&&pose==='walk'&&!!IMG[G.keeper+'_'+pose];}
-  if(!ok(im))return;
-  const w=h*im.naturalWidth/im.naturalHeight;
+function drawAkFrame(c,fr,x,y,h,shadow){
+  const im=AKS[fr.sh];if(!ok(im))return;
+  const cw=im.naturalWidth/4,ch=im.naturalHeight/2,size=h/AK_STAND;
   c.save();c.translate(x,y);
-  c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(0,0,w*0.38,h*0.05,0,0,7);c.fill();
-  if(moving&&!wk){c.translate(0,-Math.abs(Math.sin(t*9))*h*0.04);c.rotate(Math.sin(t*9)*0.05);}
-  if(moving&&wk)c.translate(0,-Math.abs(Math.sin(t*16))*h*0.015);
-  if(flip)c.scale(-1,1);
-  c.drawImage(im,-w/2,-h,w,h);
+  if(shadow!==false){c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(0,0,size*0.16,size*0.035,0,0,7);c.fill();}
+  if(fr.flip)c.scale(-1,1);
+  c.drawImage(im,(fr.f%4)*cw,Math.floor(fr.f/4)*ch,cw,ch,-size/2,-size*AK_FOOT,size,size);
   c.restore();
+}
+function drawAkari(c,x,y,h,pose,dir){drawAkFrame(c,akFrame(pose,dir||'R',T,false),x,y,h,false);}
+/* ちずの マーカー用（CSSの はいけいで コマを きりかえる） */
+function akCss(fr){const col=fr.f%4,row=Math.floor(fr.f/4);return 'background-image:url(wk/ak_'+fr.sh+'.webp);background-size:400% 200%;background-position:'+(col*100/3)+'% '+(row*100)+'%;'+(fr.flip?'transform:scaleX(-1);':'');}
+function drawKeeper(c,x,y,h,pose,faceRight,t,moving){
+  const p=pose==='walk'||pose==='front'||pose==='idle'?'standS':pose==='pickup'?'pick':pose;
+  drawAkFrame(c,akFrame(p,faceRight?'R':'L',t,moving),x,y,h);
 }
 
 /* ===================== ドラゴンをえがく ===================== */
@@ -1546,10 +1545,15 @@ function yardUpdate(dt){
   const night=isNight();
   const a=YARD.akari;
   a.poseT=Math.max(0,a.poseT-dt);if(a.poseT<=0)a.pose=null;
+  const ox=a.x,oy=a.y;
   if(moveEnt(a,dt,70)&&a.act){const f=a.act;a.act=null;f();}
-  if(!a.mv&&!a.act&&!a.pose){a.idle-=dt;if(a.idle<=0){a.idle=rnd(4,9);
-    if(Math.random()<0.35&&YARD.ents.length){const e=pick(YARD.ents);routeTo(a,e.x-24,e.y+4);a.act=()=>{a.face=e.x>a.x?1:-1;a.pose='joy';a.poseT=1.2;e.heart=1.2;e.hop=0.6;};}
-    else{const s=randSpot(night||Math.random()<0.4);routeTo(a,s.x,s.y);}}}
+  {const dx=a.x-ox,dy=a.y-oy;if(dx||dy)a.dir=Math.abs(dx)>=Math.abs(dy)*0.8?(dx>0?'R':'L'):(dy>0?'F':'B');}
+  if(night&&a.pose&&a.pose!=='sleep'&&!a.mv&&sideOf(a.x)===sideOf(0)&&a.poseT>0.5)a.poseT=0.5;
+  if(!a.mv&&!a.act&&!a.pose){a.idle-=dt;if(a.idle<=0){a.idle=rnd(2,5);
+    if(night){const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+1.6)*TS,y:(bed.y+2.4)*TS}:randSpot(true);routeTo(a,s.x,s.y);a.act=()=>{a.dir='R';a.pose='sleep';a.poseT=rnd(20,40);};}
+    else if(Math.random()<0.3&&YARD.ents.length){const e=pick(YARD.ents);routeTo(a,e.x-24,e.y+4);a.act=()=>{a.face=e.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose=Math.random()<0.5?'pet':'joy';a.poseT=1.6;e.heart=1.6;e.hop=0.6;};}
+    else{const room=Math.random()<0.4,s=randSpot(room);routeTo(a,s.x,s.y);
+      a.act=()=>{a.pose=pick(room?['read','chair','toys','drink','stretch','sweep','throw']:['butterfly','basket','sitknee','look','stretch','dig']);a.poseT=rnd(3,7);};}}}
   YARD.ents.forEach((e,i)=>{
     e.hop=Math.max(0,e.hop-dt);e.heart=Math.max(0,e.heart-dt);
     if(night&&e.st!=='sleep'&&e.st!=='bed'){e.st='bed';const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+0.6+i*0.3)*TS,y:(bed.y+2.3)*TS}:randSpot(true);routeTo(e,s.x,s.y);}
@@ -1609,8 +1613,8 @@ function yardDraw(){
   }}));
   const a=YARD.akari;
   list.push({y:a.y,f:()=>{
-    if(a.pose){drawAkari(c,a.x,a.y,70,a.pose);return;}
-    drawKeeper(c,a.x,a.y,62,'walk',a.face>0,T,a.mv);
+    drawAkFrame(c,akFrame(a.pose||'standF',a.mv?(a.dir||'R'):(a.pose?(a.dir==='L'?'L':'R'):'F'),T,a.mv&&!a.pose),a.x,a.y,62,a.pose!=='sleep');
+    if(a.pose==='sleep'){c.font='bold 13px sans-serif';c.fillStyle='#fff';c.textAlign='center';c.fillText('z',a.x+18+Math.sin(T*2)*3,a.y-40-(T*12)%16);}
   }});
   list.sort((p,q)=>p.y-q.y).forEach(o=>o.f());
   drawFx(c,0);
@@ -1645,7 +1649,7 @@ function yardTap(p){
   // ドラゴン
   let best=null,bd=34;YARD.ents.forEach(e=>{const dd=Math.hypot(e.x-p.x,e.y-20-p.y);if(dd<bd){bd=dd;best=e;}});
   if(best){const i=G.dragons.indexOf(best.d);if(i>=0&&G.sel!==i){G.sel=i;save();renderHome();}
-    routeTo(a,best.x-best.face*26,best.y+3);a.act=()=>{a.face=best.x>a.x?1:-1;a.pose='hug';a.poseT=1.4;best.heart=1.4;best.hop=0.8;best.path=[];best.idle=2;petDragon(best.d);};sfx.tap();return;}
+    routeTo(a,best.x-best.face*26,best.y+3);a.act=()=>{a.face=best.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose=stageOf(best.d.lv)>=2?'hug':'pet';a.poseT=1.4;best.heart=1.4;best.hop=0.8;best.path=[];best.idle=2;petDragon(best.d);};sfx.tap();return;}
   const pi=plotAt(p);
   if(pi>=0){const P=ALLPLOTS[pi];routeTo(a,(P.c+0.5)*TS-20,(P.r+1)*TS+6);a.act=()=>{a.face=1;plotAction(pi);};sfx.tap();return;}
   routeTo(a,p.x,p.y);
@@ -1659,11 +1663,11 @@ function plotAction(i){
   const H=G.home,p=H.plots[i],P=ALLPLOTS[i],flower=i>=PLOTS.length;
   const st=plotState(p),x=(P.c+0.5)*TS,y=P.r*TS;
   if(st==='empty')return openSeedPick(i,flower);
-  if(st==='dry'){p.w=true;p.gt=0;growTick();save();sfx.tap();burst(x,y+10,['#6cc6ff','#bfe8ff'],10,90);YARD.akari.pose='give';YARD.akari.poseT=0.8;yardSay('みずを あげた！ '+GROW_H+'じかんで そだつよ');return;}
+  if(st==='dry'){p.w=true;p.gt=0;growTick();save();sfx.tap();burst(x,y+10,['#6cc6ff','#bfe8ff'],10,90);YARD.akari.pose='water';YARD.akari.poseT=1.2;yardSay('みずを あげた！ '+GROW_H+'じかんで そだつよ');return;}
   if(st==='grow'){yardSay('そだっているよ… あと やく '+Math.ceil(hrsLeft(p))+'じかん');return;}
   if(st==='ripe'){const cr=CROPS[p.id];const n=cr.yld+(Math.random()<0.3?1:0);G.food[p.id]=(G.food[p.id]||0)+n;
     if(cr.regrow){p.st=cr.days-cr.regrow;p.w=false;p.gt=0;}else H.plots[i]=null;
-    save();sfx.find();burst(x,y,['#ffe35a','#fff'],14,140);floatText(x,y-10,cr.ic+' ×'+n,'#fff');YARD.akari.pose='joy';YARD.akari.poseT=1.2;yardSay(cr.n+'を '+n+'こ とった！ ごはんに なるよ');renderHomeInfo();return;}
+    save();sfx.find();burst(x,y,['#ffe35a','#fff'],14,140);floatText(x,y-10,cr.ic+' ×'+n,'#fff');YARD.akari.pose='carrot';YARD.akari.poseT=1.4;yardSay(cr.n+'を '+n+'こ とった！ ごはんに なるよ');renderHomeInfo();return;}
   if(st==='bloom'){modal('<h2>'+FCOL[p.col].n+FLOWERS[p.id].n+'</h2><p>きれいに さいたね！<br>つんで へやに かざる？（はなびん に なるよ）</p>',[{t:'このまま',c:'sub'},{t:'つんで かざる',c:'go',f:()=>{H.plots[i]=null;const vk=p.col==='red'?'vase_red':p.col==='yellow'?'vase_yellow':p.col==='pink'?'vase_pink':'flower_pot';H.inv[vk]=(H.inv[vk]||0)+1;save();toast('🌷 はなびんを もらった！','もようがえで かざれるよ');}}]);}
 }
 function openSeedPick(i,flower){
@@ -1675,7 +1679,7 @@ function openSeedPick(i,flower){
   modal(h,[{t:'おみせへ',f:()=>openShop(()=>{if(homeOn)renderHome();},'seed')},{t:'やめる',c:'sub'}]);
   $('mbox').querySelectorAll('button[data-k]').forEach(b=>{b.onclick=()=>{const k=b.dataset.k,S=SEED_ITEMS[k];H.seeds[k]--;
     H.plots[i]=S.crop?{k:'veg',id:S.crop,st:0,w:false,gt:0}:{k:'flower',id:S.flower,col:pick(Object.keys(FCOL)),st:0,w:false,gt:0};
-    save();closeModal();sfx.pick();yardSay((S.crop?CROPS[S.crop].n:FLOWERS[S.flower].n)+'を うえた！ みずを あげてね');};});
+    save();closeModal();sfx.pick();YARD.akari.pose='seed';YARD.akari.poseT=1.2;yardSay((S.crop?CROPS[S.crop].n:FLOWERS[S.flower].n)+'を うえた！ みずを あげてね');};});
 }
 /* --- もようがえ（フテ猫ワールドの へやと おなじ：マスに おく・まわす・しまう）--- */
 function setEdit(on){YARD.edit=on;YARD.pick=null;YARD.place=null;if(on)YARD.cam=0;renderYardBar();}
@@ -1766,11 +1770,10 @@ function drawStory(c,W2,H2){
   for(let x=10;x<W2;x+=28)c.fillRect(x,H2-114,5,70);
   const egg=eggImg(sp);
   const glow=(x,y,r)=>{const gg=c.createRadialGradient(x,y,4,x,y,r);gg.addColorStop(0,'rgba(255,240,170,.85)');gg.addColorStop(1,'rgba(255,240,170,0)');c.fillStyle=gg;c.beginPath();c.arc(x,y,r,0,7);c.fill();};
-  const akari=WK.akari_idle;
   if(st.page===0){
     glow(W2*0.62,H2-80,70+Math.sin(T*3)*8);
     if(egg){const eh=78;c.drawImage(egg,W2*0.62-eh*0.42,H2-46-eh+Math.sin(T*4)*1.5,eh*0.84,eh);}
-    if(ok(akari)){const h=190,w=h*akari.naturalWidth/akari.naturalHeight;c.drawImage(akari,W2*0.06,H2-30-h+Math.sin(tt*2)*3,w,h);}
+    drawAkari(c,W2*0.2,H2-30+Math.sin(tt*2)*3,190,'look');
     c.font='bold 30px sans-serif';c.fillStyle='#fff27a';c.fillText('！',W2*0.33,H2-190);
   } else if(st.page===1){
     c.globalAlpha=Math.max(0.35,1-tt*0.08);
@@ -1781,7 +1784,7 @@ function drawStory(c,W2,H2){
     if(egg){const eh=62;c.drawImage(egg,W2*0.82-eh*0.42,H2-46-eh,eh*0.84,eh);}
   } else {
     glow(W2*0.6,H2-110,90+Math.sin(T*4)*10);
-    if(ok(akari)){const h=200,w=h*akari.naturalWidth/akari.naturalHeight;c.drawImage(akari,W2*0.28,H2-30-h,w,h);}
+    drawAkari(c,W2*0.4,H2-30,200,'hugegg');
     if(egg){const eh=70,wob=Math.sin(T*14)*0.12;c.save();c.translate(W2*0.62,H2-80);c.rotate(wob);c.drawImage(egg,-eh*0.42,-eh,eh*0.84,eh);c.restore();}
     c.font='24px sans-serif';c.textAlign='center';for(let i=0;i<3;i++){const a=(tt*0.5+i/3)%1;c.globalAlpha=1-a;c.fillText('💗',W2*0.5+i*30-30,H2-200-a*60);}c.globalAlpha=1;c.textAlign='left';
   }
@@ -1800,7 +1803,7 @@ function renderHome(){
   const w=$('homeWrap');const d=cur();
   let h='';
   if(!d){
-    h+='<div class="card empty"><img src="wk/akari_idle.webp" alt=""><p>まだ ドラゴンが いないよ。<br>「さがす」で まちを あるいて みつけよう！</p></div>';
+    h+='<div class="card empty"><img src="wk/ak_front1.webp" alt=""><p>まだ ドラゴンが いないよ。<br>「さがす」で まちを あるいて みつけよう！</p></div>';
   } else {
     const st=stats(d),S=SP[d.sp];
     h+='<div class="card">';
@@ -2172,6 +2175,7 @@ function mapTick(dt){
   vx/=len;vy/=len;
   const m=Math.min(MOVE.speed*dt,lim);
   if(Math.abs(vx)>0.25)MOVE.face=vx>0?1:-1;
+  MOVE.dir=Math.abs(vx)>=Math.abs(vy)*0.8?(vx>0?'R':'L'):(vy>0?'B':'F');
   setMoving(true);
   MOVE.walked=(MOVE.walked||0)+m;
   setMe(offsetLL(GEO.me,vx*m,vy*m));
@@ -2182,8 +2186,8 @@ function setMoving(m){
   MOVE.t+=1/60;
   const el=MAPV.meM&&MAPV.meM.getElement&&MAPV.meM.getElement();if(!el)return;
   const box=el.querySelector('.meic');if(box)box.classList.toggle('fl',MOVE.face<0);
-  const ks=keeperSrc(m,MOVE.face>0,MOVE.t),mk=el.querySelector('.mk');
-  if(mk&&MOVE.lastSrc!==ks.src+ks.flip){mk.src=ks.src;mk.style.transform=ks.flip?'scaleX(-1)':'';MOVE.lastSrc=ks.src+ks.flip;}
+  const css=akCss(akFrame('standF',MOVE.dir||'R',MOVE.t,m)),mk=el.querySelector('.mk');
+  if(mk&&MOVE.lastSrc!==css){mk.style.cssText=css;MOVE.lastSrc=css;}
 }
 /* フリック・タッチ */
 const FLK={id:null,x:0,y:0,t:0,n:0};
@@ -2274,8 +2278,8 @@ function drawMe(){
   else MAPV.accC.setLatLng(ll);
   if(!MAPV.meM||MAPV.meKey!==key){
     if(MAPV.meM)MAPV.map.removeLayer(MAPV.meM);
-    const ks=keeperSrc(MOVE.moving,MOVE.face>0,MOVE.t);MOVE.lastSrc=ks.src+ks.flip;
-    const html='<div class="meic'+(MOVE.face<0?' fl':'')+'">'+(d?'<img class="md" src="'+dragonIconURL(d)+'">':'')+'<img class="mk" src="'+ks.src+'" style="'+(ks.flip?'transform:scaleX(-1)':'')+'"></div>';
+    const css=akCss(akFrame('standF',MOVE.dir||'R',MOVE.t,MOVE.moving));MOVE.lastSrc=css;
+    const html='<div class="meic'+(MOVE.face<0?' fl':'')+'">'+(d?'<img class="md" src="'+dragonIconURL(d)+'">':'')+'<div class="mk" style="'+css+'"></div>';
     MAPV.meM=L.marker(ll,{icon:L.divIcon({className:'',html,iconSize:[120,96],iconAnchor:[60,90]}),interactive:false,zIndexOffset:900}).addTo(MAPV.map);
     MAPV.meKey=key;
   } else MAPV.meM.setLatLng(ll);
@@ -2531,7 +2535,7 @@ const WALK={
     const flyNow=st>=2||!!this.chase;drawDragon(c,dx,dy+this.jy*0.8,72+st*4,d.sp,d.lv,T,face,{fly:!hungry&&flyNow,walk:!hungry&&!flyNow&&this.moving,alt:flyNow?0.55:0,sad:hungry,happy:!!this.chase||this.bump>0});
     if(hungry)bubble(c,dx+20,dy-80,'ぐぅ〜',16);
     // フテ猫
-    drawKeeper(c,this.kx-cam,gy+12+this.jy,130,hungry&&!this.moving?'sad':'walk',true,T,this.moving);
+    {const air=this.jy<-3;drawKeeper(c,this.kx-cam,gy+12+this.jy,130,air?'leap':hungry&&!this.moving?'sad':'walk',true,T,this.moving&&!air);}
     drawFx(c,cam);
   },
   drawObj(c,o,x,gy){
@@ -2982,7 +2986,7 @@ function drawHomeCv(){
   const hungry=d.hunger<15;
   drawDragon(c,r*0.4,h*0.88,Math.min(r*0.36,h*(stageOf(d.lv)>=2?0.42:0.55)),d.sp,d.lv,T,1,{fly:!hungry&&stageOf(d.lv)>=2,alt:0.15,sad:hungry,happy:d.love>60&&!hungry});
   const hp=d.hunger<15?'sad':d.love>=60?'joy':'give';
-  if(ok(WK['akari_'+hp])){const im=WK['akari_'+hp];const kh=h*0.55;c.drawImage(im,r*0.78-kh*im.naturalWidth/im.naturalHeight/2,h*0.92-kh,kh*im.naturalWidth/im.naturalHeight,kh);}
+  drawAkari(c,r*0.78,h*0.92,h*0.55,hp,'L');
   if(hungry){c.font='bold 15px sans-serif';c.fillStyle='#c0392b';c.textAlign='center';c.fillText('おなか ぺこぺこ…',r*0.42,22);}
 }
 function drawModalDragon(){
