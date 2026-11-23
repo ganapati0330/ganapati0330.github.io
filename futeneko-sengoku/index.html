@@ -188,6 +188,7 @@ button{font-family:inherit;cursor:pointer;}
 .kbrow{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid rgba(120,90,50,.15)}.kbrn{flex:1;font-size:13px;cursor:pointer}.kmini{border:0;border-radius:8px;padding:7px 9px!important;font-weight:bold;font-size:13px!important;background:#2f6fe0;color:#fff;white-space:nowrap;width:auto!important;min-width:84px!important;height:auto!important;flex:none!important;overflow:visible!important}.kmini.sub{background:#8a7a6a}.kmini:disabled{opacity:.4}
 .koffpick{margin:4px 0 8px;font-size:14px;font-weight:bold;color:#5a3a1a}.koffpick select{font-size:14px;padding:5px;border-radius:8px;border:1px solid #c9b48a;background:#fffaf0;max-width:62%}.koffpick small{color:#c27a00;margin-left:6px}
 .kbuy{flex-wrap:wrap}.kbuy .uname{flex:1 1 60%;display:block}.kbuy .uname small{display:inline}.kbuy .uname small[id]{display:block}.kbuy .kctl{display:flex;gap:6px;width:100%;justify-content:flex-end;align-items:center;margin-top:4px}.kbuy .kctl .pm{width:40px;height:40px;min-width:40px;font-size:20px}.kbuy .kctl .pm.big{width:auto;min-width:52px;padding:0 8px;font-size:14px}.kbuy .rcin{width:64px;font-size:16px;text-align:center;padding:6px 2px;border:1px solid #c9b48a;border-radius:8px}
+.krep{list-style:none;margin:4px 0;padding:0;font-size:14px;text-align:left}.krep li{padding:5px 2px;border-bottom:1px solid rgba(120,90,50,.15)}.krep li.mine{background:rgba(255,226,74,.22);font-weight:bold}.krept tr.mine td{background:rgba(255,226,74,.22)}.krept .g{color:#2a8a2a}.krept .r{color:#d33}.kdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
 .kgar{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0}.kgar th{font-size:11px;color:#8a7a5a;font-weight:normal;text-align:left;padding:2px 4px}.kgar td{padding:3px 4px;border-top:1px solid rgba(120,90,50,.15)}.kgar .uic{width:24px;height:24px;font-size:13px}.kgar tr.tot td{border-top:2px solid rgba(120,90,50,.35)}
 .kfbar{display:inline-block;position:relative;width:70px;height:9px;background:rgba(255,255,255,.18);border-radius:5px;vertical-align:middle;overflow:hidden}.kfbar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}.kfbar em{position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:.8}
 .ktx{min-width:34px;height:28px;margin:0 6px;border:0;border-radius:8px;background:#e08a2e;color:#fff;font-weight:bold;font-size:17px;line-height:1;vertical-align:middle}.ktx:disabled{background:#6a5a4a;color:#aaa}
@@ -458,7 +459,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v5.9';
+var VERSION = 'v6.0';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2160,7 +2161,7 @@ function newCampaign(opts) {
   return S;
 }
 function newUnit(S, type) { return { uid: S.uid++, type: type, hp: 10 }; }
-function logC(S, text, kind) { S.log.push({ y: S.year, s: S.season, text: text, kind: kind || 'sys' }); if (S.log.length > 400) S.log.shift(); }
+function logC(S, text, kind) { S.logSeq = (S.logSeq || 0) + 1; S.log.push({ y: S.year, s: S.season, text: text, kind: kind || 'sys', n: S.logSeq }); if (S.log.length > 400) S.log.shift(); }
 
 // ---- 便利関数 ----
 function provsOf(S, cid) { return PROVS.filter(function (p) { return S.provs[p.id].owner === cid; }).map(function (p) { return p.id; }); }
@@ -6046,7 +6047,7 @@ function kSchemeBox(from, to) {
 function kEndSeason() {
   if (!KS || KS.phase !== 'player') return;
   var left = provsOf(KS, KS.player).filter(function (pid) { return !KS.provs[pid].acted && cmdCount(KS.provs[pid]) === 0; }).length;
-  function go() { kCloseModal(); kMode = 'idle'; kUndoClear(); cpuBegin(KS); kSave(); kRunCpu(); }
+  function go() { kCloseModal(); kMode = 'idle'; kUndoClear(); KS.repFrom = (KS.logSeq || 0) + 1; KS.repSnap = kClanSnap(); KS.repLabel = eraName(KS.year) + '年 ' + SEASONS_K[KS.season]; cpuBegin(KS); kSave(); kRunCpu(); }
   if (left > 0) kModal('きせつを おわる？', '<p>まだ めいれい していない 国が ' + left + 'か国 あります。</p>', [{ label: 'おわる', cls: 'act', fn: go }, { label: 'もどる', cls: 'act sub', fn: kCloseModal }]);
   else go();
 }
@@ -6077,14 +6078,55 @@ function kRunCpu() {
     if (KS.over) return kGameOver();
     // じぶんの 国で 一揆が おきたら しらせる
     var ik = KS.log.slice(Math.max(0, nLog - 2)).filter(function (l) { return l.kind === 'bad' && /一揆/.test(l.text); });
-    setTimeout(function () {
+    setTimeout(function () { kSeasonReport(function () {
       if (!ik.length) return kShowEvents();
       var taken = ik.some(function (l) { return /大一揆/.test(l.text); });
       if (taken) SFX.lose();
       kModal(taken ? '大一揆！' : '一揆が おきた', '<div class="kintro"><span class="kcrest" style="background:' + CLANS[IKKI].color + ';border-color:' + CLANS[IKKI].color + '">一</span><p>' + ik.map(function (l) { return l.text; }).join('<br>') + '</p></div>' +
         '<p class="small">年貢を かるくすると 不満は へる。' + (taken ? '一揆衆の 国は せめて とりかえせる。' : '') + '</p>', [{ label: 'わかった', cls: 'act', fn: function () { kCloseModal(); kShowEvents(); } }]);
-    }, 1500);
+    }); }, 1500);
   }, 350);
+}
+// ---- きせつの できごと（ほかの 国の おもな うごき）----
+function kClanSnap() {
+  var o = {}; CLAN_ORDER.concat([IKKI]).forEach(function (cid) {
+    if (!KS.clans[cid] || (!KS.clans[cid].alive && cid !== IKKI)) return;
+    var pv = provsOf(KS, cid), men = 0, koku = 0, nc = pv.length;
+    pv.forEach(function (pid) { men += menTotal(KS.provs[pid].units); koku += KS.provs[pid].koku; });
+    if (KS.castles) for (var k in KS.castles) if (KS.castles[k].owner === cid) { nc++; men += menTotal(KS.castles[k].units); }
+    o[cid] = { pv: pv.length, castles: nc, men: men, koku: Math.round(koku * 10) / 10, alive: KS.clans[cid].alive };
+  });
+  return o;
+}
+var REP_RULES = [
+  [/ほろびた|統一/, '💀', 9], [/攻め落とした|を おとした|開城/, '🏯', 8], [/大一揆|一揆が おきた/, '🌾', 7], [/したがった|に くわわった！?$|家ごと/, '🙇', 7],
+  [/同盟を むすんだ|同盟が きれた/, '🤝', 6], [/せめてきた/, '⚔', 6], [/まもりきった|ひきあげた/, '🛡', 5], [/内応|調略/, '🦊', 4],
+  [/当主が|なくなった|はなれ|家臣に くわわった|とらえ/, '👤', 4], [/降参した|まだ 抵抗/, '🏳', 3]
+];
+function kSeasonReport(next) {
+  var from = KS.repFrom || 0, items = [];
+  KS.log.forEach(function (l) {
+    if (!l.n || l.n < from) return;
+    if (/^――|^【|年貢が はいった|降参して .*くわわった|不満を つのらせて/.test(l.text)) return;
+    for (var i = 0; i < REP_RULES.length; i++) if (REP_RULES[i][0].test(l.text)) { items.push({ ic: REP_RULES[i][1], pr: REP_RULES[i][2], text: l.text, mine: l.kind !== 'sys' }); return; }
+  });
+  // 各家の うごき（領地・城・兵・石高の ふえ へり）
+  var a = KS.repSnap || {}, b = kClanSnap(), rows = [];
+  Object.keys(Object.assign({}, a, b)).forEach(function (cid) {
+    var x = a[cid] || { pv: 0, castles: 0, men: 0, koku: 0 }, y = b[cid] || { pv: 0, castles: 0, men: 0, koku: 0 };
+    if (!y.pv && !x.pv && cid === IKKI) return;
+    var dc = y.castles - x.castles, dm = y.men - x.men, dk = Math.round((y.koku - x.koku) * 10) / 10;
+    if (!dc && Math.abs(dm) < 100 && !dk) return;
+    rows.push({ cid: cid, dc: dc, dm: dm, dk: dk, y: y });
+  });
+  rows.sort(function (p, q) { return Math.abs(q.dc) * 1000 + Math.abs(q.dm) / 10 - (Math.abs(p.dc) * 1000 + Math.abs(p.dm) / 10); });
+  if (!items.length && !rows.length) return next();
+  items.sort(function (p, q) { return q.pr - p.pr; });
+  function sg(v, u) { return v > 0 ? '<span class="g">+' + v.toLocaleString('ja-JP') + u + '</span>' : v < 0 ? '<span class="r">' + v.toLocaleString('ja-JP') + u + '</span>' : '<span style="opacity:.4">±0</span>'; }
+  var h = (items.length ? '<ul class="krep">' + items.slice(0, 14).map(function (it) { return '<li' + (it.mine ? ' class="mine"' : '') + '>' + it.ic + ' ' + it.text + '</li>'; }).join('') + '</ul>' + (items.length > 14 ? '<p class="small">ほか ' + (items.length - 14) + 'けん（📜記録で 見られる）</p>' : '') : '<p class="small">大きな いくさは なかった。</p>') +
+    (rows.length ? '<h4>各家の うごき</h4><table class="ktab krept"><tr><th>家</th><th>城</th><th>兵</th><th>石高</th></tr>' + rows.slice(0, 10).map(function (r) {
+      return '<tr' + (r.cid === KS.player ? ' class="mine"' : '') + '><td>' + (CLANS[r.cid] ? '<span class="kdot" style="background:' + CLANS[r.cid].color + '"></span>' + CLANS[r.cid].name : r.cid) + (r.y.alive === false ? '（ほろびた）' : '') + '</td><td>' + r.y.castles + ' ' + sg(r.dc, '') + '</td><td>' + sg(r.dm, '人') + '</td><td>' + sg(r.dk, '万石') + '</td></tr>'; }).join('') + '</table>' : '');
+  kModal('📜 ' + (KS.repLabel || '') + 'の できごと', h, [{ label: 'つぎへ', cls: 'act', fn: function () { kCloseModal(); next(); } }]);
 }
 function kGameOver() {
   kUpdate();
