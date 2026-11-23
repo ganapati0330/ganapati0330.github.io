@@ -189,6 +189,7 @@ button{font-family:inherit;cursor:pointer;}
 #kBody .small,.small{font-size:12px;color:#777;}
 .kbrow{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid rgba(120,90,50,.15)}.kbrn{flex:1;font-size:13px;cursor:pointer}button.kmini{border:0;border-radius:8px;padding:7px 9px!important;font-weight:bold;font-size:13px!important;background:#2f6fe0;color:#fff;white-space:nowrap;width:auto!important;min-width:84px!important;height:auto!important;flex:none!important;overflow:visible!important}button.kmini.sub{background:#8a7a6a}button.kmini:disabled{opacity:.4}
 .card.wide{max-width:780px}
+.kowner{display:flex;align-items:center;gap:8px;color:#fff;border-radius:12px;padding:6px 10px;margin:-4px 0 8px;text-align:left;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);text-shadow:0 1px 2px rgba(0,0,0,.5)}.kowner>span:not(.kcrest){flex:1;line-height:1.2}.kowner .kcrest{flex:none;background:#fff}.kowner b{font-size:16px;display:block}.kowner small{font-size:12px;opacity:.95}.kowner em{font-style:normal}
 .krel{display:inline-block;color:#fff;font-weight:bold;font-size:11px;padding:1px 7px;border-radius:9px;white-space:nowrap}
 .ktabs{display:flex;gap:6px;margin-bottom:8px}.ktab1{flex:1;border:2px solid #c9b48a;background:#f6ecd6;border-radius:10px;padding:7px 4px;font-weight:bold;font-size:13px;color:#5a2a10;cursor:pointer}.ktab1.on{background:#ffd34a;border-color:#c07a00}
 .kacts{white-space:nowrap}.kact{border:0;border-radius:7px;background:#2f6fe0;color:#fff;font-size:13px;padding:3px 4px;margin:1px;min-width:28px;cursor:pointer}.kact small{display:block;font-size:9px;line-height:1}.kact:disabled{background:#ccc;opacity:.6}.kact.done{display:inline-block;background:#e8f3e0;color:#2a6a2a;border-radius:7px;font-size:11px;padding:3px 3px;margin:1px}
@@ -497,7 +498,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v8.5';
+var VERSION = 'v8.6';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -5501,6 +5502,13 @@ function faceOf(cid) {
   return f;
 }
 function clanSpr(cid) { return portraitSrc(cid); }
+// 城の もちぬしを 大きく（家の 色の おび・家紋・関係）
+function ownerBand(cid) {
+  if (!cid || !CLANS[cid]) return '<div class="kowner" style="background:#888">🏳 もちぬし なし（あき城）</div>';
+  var me = cid === KS.player, rl = relationOf(KS, KS.player, cid), R0 = REL_INFO[rl];
+  return '<div class="kowner" style="background:' + CLANS[cid].color + '">' + crestHtml(cid, 30) + '<span><b>' + CLANS[cid].name + 'の 城</b><small>' + CLANS[cid].lord + '</small></span>' +
+    (me ? '<em class="krel" style="background:#fff;color:#2a6a2a">⭐ じぶん</em>' : '<em class="krel" style="background:' + R0.col + ';border:1.5px solid #fff">' + R0.icon + ' ' + R0.name + '</em>') + '</div>';
+}
 function crestHtml(cid, size) {
   var C = CLANS[cid], sp = KS ? clanSpr(cid) : (lordArt(C.lord) || (C.face ? SPR[charById(C.face).spr] : null));
   size = size || 40;
@@ -5987,13 +5995,18 @@ function kRender() {
   kMap.cRects = [];
   PROVS.forEach(function (p) {
     var pin = kProj(p.pin[0], p.pin[1]), u = kU(1) ;
-    var art = gx(castleArtOf(KS, p.id, null));
+    var art = gx(castleArtOf(KS, p.id, null)), P0o = KS.provs[p.id].owner;
     kMap.cRects.push({ key: p.id, main: true, x0: pin[0] - 26 * u, x1: pin[0] + 26 * u, y0: pin[1] - (art ? 58 * art.naturalHeight / art.naturalWidth - 10 : 22) * u, y1: pin[1] + 9 * u });
     if (art) {   // 城の 絵（山城・平城・海城・館…）
       c.save(); c.translate(pin[0], pin[1]); c.scale(u, u);
       var aw = 58, ah = aw * art.naturalHeight / art.naturalWidth;
-      c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.ellipse(0, 6, aw * 0.42, 5, 0, 0, Math.PI * 2); c.fill();
+      var oc0 = P0o && CLANS[P0o] ? CLANS[P0o].color : '#888';
+      c.fillStyle = oc0; c.globalAlpha = 0.6; c.beginPath(); c.ellipse(0, 6, aw * 0.46, 6, 0, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1;
+      c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 1.2; c.stroke();
       c.drawImage(art, -aw / 2, 8 - ah, aw, ah);
+      // もちぬしの 旗
+      c.strokeStyle = '#222'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(aw * 0.36, 8 - ah + 2); c.lineTo(aw * 0.36, 8 - ah + 20); c.stroke();
+      c.fillStyle = oc0; c.fillRect(aw * 0.36, 8 - ah + 2, 11, 8); c.strokeStyle = '#fff'; c.lineWidth = 0.8; c.strokeRect(aw * 0.36, 8 - ah + 2, 11, 8);
       c.restore(); return;
     }
     c.save(); c.translate(pin[0], pin[1]); c.scale(u, u);
@@ -6068,7 +6081,7 @@ function kRender() {
   if (hv) { var pd = 3 * lw, rx = hv.x0 - pd, ry = hv.y0 - pd, rw = hv.x1 - hv.x0 + pd * 2, rh = hv.y1 - hv.y0 + pd * 2;
     c.save(); c.lineJoin = 'round'; c.shadowColor = 'rgba(0,0,0,0.6)'; c.shadowBlur = 6 * lw; c.strokeStyle = '#fff'; c.lineWidth = 2.6 * lw; c.strokeRect(rx, ry, rw, rh); c.shadowBlur = 0;
     c.fillStyle = 'rgba(255,255,255,0.14)'; c.fillRect(rx, ry, rw, rh);
-    var nm = hv.main ? castleNameOf(KS, hv.key) : brName(hv.key), fz = 12 * lw; c.font = 'bold ' + fz + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'bottom';
+    var ow9 = hv.main ? KS.provs[hv.key].owner : KS.castles[hv.key].owner, nm = (hv.main ? castleNameOf(KS, hv.key) : brName(hv.key)) + (ow9 && CLANS[ow9] ? '（' + CLANS[ow9].name + '）' : ''), fz = 12 * lw; c.font = 'bold ' + fz + 'px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'bottom';
     var tw = c.measureText(nm).width; c.fillStyle = 'rgba(255,255,255,0.95)'; c.fillRect((hv.x0 + hv.x1) / 2 - tw / 2 - 4 * lw, ry - fz - 6 * lw, tw + 8 * lw, fz + 5 * lw); c.fillStyle = '#3a2210'; c.fillText(nm, (hv.x0 + hv.x1) / 2, ry - 3 * lw); c.restore(); }
   c.restore();
   // 方位
@@ -6443,7 +6456,7 @@ function kRiceBox(pid, cid, back) {
 function kMainCastleBox(pid) {
   var P = KS.provs[pid], mine = P.owner === KS.player && KS.phase === 'player', ci = castleIndexOf(PROV_BY[pid].castle);
   var brs = KS.castles ? Object.keys(KS.castles).filter(function (k) { var c0 = KS.castles[k]; return c0.owner === P.owner && castleLinks(KS, k).indexOf(pid) >= 0; }) : [];
-  var body = '<div class="kintro">' + crestHtml(P.owner, 48) + '<p><b>' + castleNameOf(KS, pid) + '</b>（' + PROV_BY[pid].name + 'の 本城・' + CASTLES[ci].kana + '）<br>もちぬし：' + CLANS[P.owner].name + '　🏯 改築 Lv' + (P.clv || 0) + '／' + CASTLE_LV_MAX + '</p></div>' +
+  var body = ownerBand(P.owner) + '<div class="kintro"><p><b>' + castleNameOf(KS, pid) + '</b>（' + PROV_BY[pid].name + 'の 本城・' + CASTLES[ci].kana + '）<br>🏯 改築 Lv' + (P.clv || 0) + '／' + CASTLE_LV_MAX + '</p></div>' +
     repairRowHtml(pid, null, mine) + '<h4>守備兵</h4>' + garrisonHtml(P.units) + mergeRowHtml(P.units, mine) + riceHtml(pid, null) +
     (brs.length ? '<h4>支城の 守り（兵の 配置）</h4>' + brs.map(function (k) { var c0 = KS.castles[k];
       return '<div class="kbrow"><span class="kbrn" data-cb="' + k + '">🏰 <b>' + brName(k) + '</b><br><small>' + menStr(menTotal(c0.units)) + '（' + c0.units.length + '隊）・🍙' + castleFood(KS, c0.prov, k) + '石</small></span>' +
@@ -6472,7 +6485,7 @@ function kMainCastleBox(pid) {
 }
 function kCastleBox(id) {
   var C0 = KS.castles[id], P = KS.provs[C0.prov], mine = C0.owner === KS.player, links = mine && KS.phase === 'player' ? castleLinks(KS, id) : [];
-  var body = '<div class="kintro">' + (C0.owner ? crestHtml(C0.owner, 48) : '') + '<p><b>' + brName(id) + '</b>（' + PROV_BY[C0.prov].name + 'の 支城・' + CASTLES[castleIndexOf(brTpl(id))].kana + '）<br>もちぬし：' + (C0.owner ? CLANS[C0.owner].name : 'なし') + '</p></div>' +
+  var body = ownerBand(C0.owner) + '<div class="kintro"><p><b>' + brName(id) + '</b>（' + PROV_BY[C0.prov].name + 'の 支城・' + CASTLES[castleIndexOf(brTpl(id))].kana + '）' + (C0.owner && C0.owner !== P.owner ? '<br><small>この 国の 本城は ' + (P.owner ? CLANS[P.owner].name : 'だれも いない') + '</small>' : '') + '</p></div>' +
     '<p class="small">🏯 改築 Lv' + (C0.lv || 0) + '／' + CASTLE_LV_MAX + (C0.lv ? '（守り ×' + lvMult(C0.lv).toFixed(2) + '）' : '') + '</p>' +
     repairRowHtml(C0.prov, id, mine && KS.phase === 'player') + '<h4>守備兵</h4>' + garrisonHtml(C0.units) + mergeRowHtml(C0.units, mine && KS.phase === 'player') + riceHtml(C0.prov, id) +
     '<p class="small">' + (P.owner === C0.owner ? '本城と 同じ 家。せめられると 本城から 後詰めが くる。' : C0.owner === KS.player ? 'てきの 国の 中の みかたの 城。ここが あれば ' + castleNameOf(KS, C0.prov) + '（本城）を せめられる。' : 'この 城を おとさないと、この 道から 本城へは せめられない。') + '</p>' +
