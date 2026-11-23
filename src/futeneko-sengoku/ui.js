@@ -15,7 +15,7 @@ function applyRot() {
   if (ROT) { st.width = h + 'px'; st.height = w + 'px'; st.transform = 'translateX(' + w + 'px) rotate(90deg)'; }
   else { st.width = ''; st.height = ''; st.transform = ''; }
   var r = document.documentElement.style; r.setProperty('--vw', (lw / 100) + 'px'); r.setProperty('--vh', (lh / 100) + 'px');
-  [['mw420', lw <= 420], ['mw480', lw <= 480], ['mw520', lw <= 520], ['mh520', lh <= 520], ['side', lh <= 520 && lw >= lh * 1.3]].forEach(function (c) { b.classList.toggle(c[0], c[1]); });
+  [['mw420', lw <= 420], ['mw480', lw <= 480], ['mw520', lw <= 520], ['mh520', lh <= 520], ['side', lw >= lh * 1.1]].forEach(function (c) { b.classList.toggle(c[0], c[1]); });
 }
 // ポインタの 位置を その 要素の 中の 座標（論理）に する
 function evPt(e, el) { var rc = el.getBoundingClientRect(); return ROT ? [e.clientY - rc.top, rc.right - e.clientX] : [e.clientX - rc.left, e.clientY - rc.top]; }
@@ -23,7 +23,7 @@ window.addEventListener('resize', applyRot);
 window.addEventListener('orientationchange', function () { setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 350); });
 // 上の バーの 高さを CSS に つたえる（右がわの パネルを その 下から はじめる）
 function hudWatch() {
-  [['khud', '--khudH'], ['dhud', '--dhudH']].forEach(function (a) {
+  [['khud', '--khudH'], ['dhud', '--dhudH'], ['hud', '--hudH']].forEach(function (a) {
     var el = document.getElementById(a[0]); if (!el) return;
     var set = function () { if (el.offsetHeight) document.documentElement.style.setProperty(a[1], el.offsetHeight + 'px'); };
     if (window.ResizeObserver) new ResizeObserver(set).observe(el);
@@ -264,7 +264,7 @@ function beginBattle(intro, resumed) {
   sel = null; reach = null; targets = []; anim = []; FX = []; FALLEN = []; STAMP = null; terrCache = null; phase = 'idle'; hoverInfo = null; LOG = []; undoPos = null; moveAnim = null; clearUndo();
   show('gameScreen');
   logMsg(intro, 'sys');
-  resize(); startCamera(); lastPanelH = $('bottom').offsetHeight;
+  resize(); startCamera(); lastPanelH = bottomH();
   updateHud();
   if (G.side !== G.playerSide) setTimeout(cpuTurn, 600);
   else if (resumed) banner('つづきから！ あなたの ばん', 1400);
@@ -289,7 +289,7 @@ function screenToWorld(sx, sy) { return [(sx - cam.x) / cam.s, (sy - cam.y) / ca
 function mapBounds() { var w = R * SQ3 * (G.map.w + 0.5) + R * 1.0, h = R * 1.5 * (G.map.h - 1) + 2 * R + R; return [w, h]; }
 function fitCamera() {
   var b = mapBounds();
-  var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = ($('bottom').offsetHeight || 120) + 10;
+  var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = bottomH() + 10;
   var availH = H - hudTop - hudBot;
   cam.s = Math.min(W / b[0], availH / b[1]) * 0.98;
   cam.s = Math.max(0.15, cam.s);
@@ -297,11 +297,13 @@ function fitCamera() {
 }
 var camMode = 'fit';
 var lastPanelH = 0;
-function panelH() { return ($('bottom').offsetHeight || 120) + 10; }
+function sideMode() { return document.body.classList.contains('side'); }
+function bottomH() { return sideMode() ? 0 : ($('bottom').offsetHeight || 120); }
+function panelH() { return bottomH() + 10; }
 // 下パネルの高さが変わったら、地図が隠れないように ずらす
 function keepAbovePanel() {
   if (!G) return;
-  var h = $('bottom').offsetHeight || 0;
+  var h = bottomH();
   if (lastPanelH && h !== lastPanelH) { cam.y -= (h - lastPanelH); clampCam(); }
   lastPanelH = h;
 }
@@ -317,7 +319,7 @@ function startCamera() {
   if (cam.s >= 0.5) { camMode = 'fit'; return; }
   // 大きい マップは じぶんの 大将の まわりを 大きめに
   var g0 = general(G, G.playerSide), p = hexCenter(g0.c, g0.r);
-  var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = ($('bottom').offsetHeight || 120) + 10;
+  var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = bottomH() + 10;
   cam.s = Math.min(0.62, Math.max(0.5, W / 900));
   cam.x = W / 2 - p[0] * cam.s; cam.y = hudTop + (H - hudTop - hudBot) / 2 - p[1] * cam.s;
   clampCam(); camMode = 'near';
@@ -325,7 +327,7 @@ function startCamera() {
 function toggleCamera() {
   if (camMode === 'near') { fitCamera(); camMode = 'fit'; return; }
   var c0 = sel || general(G, G.playerSide), p = hexCenter(c0.c, c0.r);
-  var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = ($('bottom').offsetHeight || 120) + 10;
+  var hudTop = ($('hud').offsetHeight || 56) + 6, hudBot = bottomH() + 10;
   var target = Math.min(1, Math.max(0.55, cam.s * 1.8));
   cam.s = target; cam.x = W / 2 - p[0] * cam.s; cam.y = hudTop + (H - hudTop - hudBot) / 2 - p[1] * cam.s; clampCam(); camMode = 'near';
 }
