@@ -486,7 +486,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v7.6';
+var VERSION = 'v7.7';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -6293,7 +6293,11 @@ function kMainCastleBox(pid) {
       return '<div class="kbrow"><span class="kbrn" data-cb="' + k + '">🏰 <b>' + brName(k) + '</b><br><small>' + menStr(menTotal(c0.units)) + '（' + c0.units.length + '隊）・🍙' + castleFood(KS, c0.prov, k) + '石</small></span>' +
         (mine ? '<button class="kmini" data-snd="' + k + '"' + (!P.units.length || c0.units.length >= 8 ? ' disabled' : '') + '>➡ おくる</button><button class="kmini sub" data-rcl="' + k + '"' + (!c0.units.length ? ' disabled' : '') + '>⬅ もどす</button>' : '') + '</div>'; }).join('') : '');
   var btns = [];
-  if (mine) btns.push({ label: '🍙 兵糧を かう', cls: 'act', fn: function () { kRiceBox(pid, null, function () { kMainCastleBox(pid); }); } });
+  if (mine) {
+    var rdone = didCmd(P, 'recruit') || P.acted || cmdFull(P);
+    btns.push({ label: '🪖 徴兵' + (didCmd(P, 'recruit') ? '✓' : ''), cls: 'act', disabled: rdone || (P.units.length >= PROV_CAP && !P.units.some(function (u) { return u.hp < 10; })), fn: function () { kRecruitBox(pid, null, function () { kMainCastleBox(pid); }); } });
+    btns.push({ label: '🍙 兵糧を かう', cls: 'act', fn: function () { kRiceBox(pid, null, function () { kMainCastleBox(pid); }); } });
+  }
   btns.push({ label: 'とじる', cls: 'act sub', fn: kCloseModal });
   kModal('🏯 本城', body, btns);
   var back = function () { kMainCastleBox(pid); };
@@ -6316,6 +6320,7 @@ function kCastleBox(id) {
   if (mine && KS.phase === 'player') {
     var bt = branchTargets(KS, id), ok = canBranchAttack(KS, id) && bt.length;
     btns.push({ label: '⚔ ここから 出陣' + (C0.atk === KS.turn ? '✓' : ''), cls: 'act', disabled: !ok, fn: function () { if (ok) kBranchAtkBox(id); } });
+    btns.push({ label: '🪖 徴兵' + (C0.rec === KS.turn ? '✓' : ''), cls: 'act', disabled: C0.rec === KS.turn || (C0.units.length >= 8 && !C0.units.some(function (u) { return u.hp < 10; })), fn: function () { kRecruitBox(C0.prov, id, function () { kCastleBox(id); }); } });
     btns.push({ label: '🍙 兵糧を かう', cls: 'act', fn: function () { kRiceBox(C0.prov, id, function () { kCastleBox(id); }); } });
   }
   if (mine) btns.push({ label: '🗾 所領を ひらく（内政・改築）' + (C0.dev === KS.turn ? '✓' : ''), cls: 'act kdev', fn: function () { kCloseModal(); openDomain(C0.prov, id); } });
