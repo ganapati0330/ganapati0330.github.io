@@ -944,7 +944,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.19';
+const VER='1.20';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1304,14 +1304,20 @@ const SONGS={
 let bgmName=null,bgmTimer=null,bgmStep=0,bgmNext=0;
 const mf=n=>440*Math.pow(2,(n-69)/12);
 /* メインの きょく（ファイル）：タイトルと ドラゴンこや */
-const FILE_BGM={home:'snd/main.mp3',title:'snd/main.mp3'};
+const FILE_BGM={home:'snd/main.mp3',title:'snd/main.mp3',race:'snd/race.mp3',battle:'snd/battle.mp3'};
+const BGM_POS={};
 let bgmEl=null,bgmSrc=null,bgmGain=null;
 function fileBgm(src){
   if(!src){if(bgmEl){bgmEl.pause();}return;}
   if(!AC)return;
   if(!bgmEl){bgmEl=new Audio();bgmEl.loop=true;bgmEl.preload='auto';bgmEl.setAttribute('playsinline','');
     try{bgmSrc=AC.createMediaElementSource(bgmEl);bgmGain=AC.createGain();bgmGain.gain.value=0.55;bgmSrc.connect(bgmGain);bgmGain.connect(master);}catch(e){bgmEl.volume=0.5;}}
-  if(!bgmEl.src.endsWith(src)){bgmEl.src=src;}
+  if(!bgmEl.src.endsWith(src)){
+    if(bgmEl.src){const k=bgmEl.src.split('/').pop();BGM_POS[k]=bgmEl.currentTime;}
+    bgmEl.src=src;
+    const k=src.split('/').pop();
+    if(k==='main.mp3'&&BGM_POS[k]){const t=BGM_POS[k];bgmEl.addEventListener('loadedmetadata',()=>{try{bgmEl.currentTime=t;}catch(e){}},{once:true});}
+  }
   const p=bgmEl.play();if(p&&p.catch)p.catch(()=>{});
 }
 function bgm(name){
