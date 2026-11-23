@@ -423,6 +423,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>🚧 普請と 改築</b>：領内（内政）で <b>柵・堀・砦</b>を つくれる。合戦の とき 地図に そのまま あらわれ、柵は てきの 足どめ、堀は わたりにくく、砦は 柵に かこまれた 小さな 城に なる。<b>城の 改築</b>（Lv3まで）で 石垣と 門が かたくなり 守りが つよく なる。支城も 所領の 内政から 改築 できる。</li>
       <li><b>🚩 援軍</b>：せめられたら、となりの じぶんの 国や おなじ 国の 城から 援軍を おくれる。援軍は それぞれの 城の ほうから 合戦場に あらわれる（とおいと おそく つく）。合戦の あと 生きのこりは もとの 城へ もどる。</li>
       <li><b>👥 家臣に まかせる</b>：出陣・徴兵・内政・調略は、えらぶ 画面で <b>担当の 家臣</b>を きめる（1きせつに 1人 1つ）。武・政・智が 高いと ★大成功（奇襲・2わり 多く あつまる・石高 倍 など）が でる。👥ボタンで 家臣の 一覧。徴兵は 1人 から やとえる。</li>
+      <li><b>🔗 合流</b>：へった 隊は おなじ 兵種の 隊に まとめられる。国取りでは 本城・支城の 画面の「🔗 隊を まとめる」（人数は そのまま、隊の かずが へる。めいれいは つかわない）。合戦では となりに いる おなじ 兵種の みかたを えらんで「🔗 合流」（その 隊の 行動は おわり。もどせない）。</li>
       <li><b>⚔ 出陣の ながれ</b>：国を えらんで ⚔出陣 →（支城が あれば）<b>どの 城から 出陣するか</b> → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
       <li><b>⚔ 支城から 出陣</b>：じぶんの 支城を タップして「⚔ ここから 出陣」。その 支城の 守備兵で、おなじ 国の てきの 本城・支城や、となりの 国の 城を せめられる（支城 ごとに きせつに 1かい、国の めいれいは つかわない）。てきの 国の なかに ある 支城からは、国ざかいを こえずに すぐ 本城へ せめかかれる。生きのこった へいは 支城へ もどる。</li>
       <li><b>📍 家臣の いる 城</b>：家臣は それぞれ 城（本城・支城）に いて、<b>その 国でしか はたらけない</b>。ほかの 国で はたらかせたい ときは 👥家臣の 🚶移動で うつす（移動した きせつは はたらけない）。城主に えらぶと その 城へ うつって くる。城を おとされると ちかくの 城へ にげる。</li>
@@ -479,7 +480,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v7.0';
+var VERSION = 'v7.1';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1544,6 +1545,17 @@ function escaped(G, side) {
 function survivors(G, side) {
   return G.units.filter(function (u) { return u.side === side && u.type !== 'taisho' && u.type !== 'konida' && u.hp > 0 && !u.fled; })
     .map(function (u) { return { uid: u.ref, type: u.type, hp: u.hp }; });
+}
+// 合流：へった 隊が となりの おなじ 兵種の 隊に はいる
+function mergeTargets(G, u) {
+  if (!u || u.type === 'taisho' || u.type === 'konida' || u.hp <= 0 || u.fled) return [];
+  return hexNbs(u.c, u.r).map(function (n) { return unitAt(G, n[0], n[1]); }).filter(function (t) { return t && t !== u && t.side === u.side && t.type === u.type && t.hp > 0 && t.hp < 10 && !t.fled; });
+}
+function doMerge(G, u, t) {
+  var mv = Math.min(u.hp, 10 - t.hp); if (mv <= 0) return 0;
+  t.hp = Math.round((t.hp + mv) * 100) / 100; u.hp = Math.round((u.hp - mv) * 100) / 100; u.acted = true;
+  if (u.hp <= 0.01) { var i = G.units.indexOf(u); if (i >= 0) G.units.splice(i, 1); }
+  return mv;
 }
 function unitsOf(G, side) { return G.units.filter(function (u) { return u.hp > 0 && u.side === side && !u.fled; }); }
 function general(G, side) { for (var i = 0; i < G.units.length; i++) { var u = G.units[i]; if (u.side === side && u.type === 'taisho') return u; } return null; }
@@ -3056,9 +3068,27 @@ function streakOf(S, cid) { return cid && S.clans[cid] ? S.clans[cid].streak || 
 function streakBonus(S, cid) { return Math.min(5, streakOf(S, cid)) * 0.02; }
 // まけた がわが うしなった へい（にげた・生きのこった ぶんは のぞく）を 兵種ごとに
 function lostByType(init, surv, fled) {
-  var left = {}; (surv || []).concat(fled || []).forEach(function (u) { left[u.uid] = (left[u.uid] || 0) + u.hp; });
-  var by = {}; (init || []).forEach(function (u) { if (u.type === 'taisho' || u.type === 'konida') return; var l = Math.max(0, u.hp - (left[u.uid] || 0)); if (l > 0) by[u.type] = (by[u.type] || 0) + l; });
+  // 兵種ごとの へった かず（合流で 隊が まとまっても ただしく なるように 合計で くらべる）
+  var ids = {}, by = {}; (init || []).forEach(function (u) { if (u.type === 'taisho' || u.type === 'konida') return; ids[u.uid] = 1; by[u.type] = (by[u.type] || 0) + u.hp; });
+  (surv || []).concat(fled || []).forEach(function (u) { if (ids[u.uid] && by[u.type] !== undefined) by[u.type] -= u.hp; });
+  Object.keys(by).forEach(function (t) { if (by[t] <= 0) delete by[t]; });
   return by;
+}
+// 隊を まとめる：おなじ 兵種で へった 隊どうしを あわせ、10わり（満員）の 隊に する
+function canMergeUnits(list) {
+  var by = {}; (list || []).forEach(function (u) { (by[u.type] = by[u.type] || []).push(u); });
+  return Object.keys(by).some(function (t) { var a = by[t], sum = a.reduce(function (s0, u) { return s0 + u.hp; }, 0); return a.length > Math.ceil(sum / 10 - 1e-6); });
+}
+function mergeUnits(list) {
+  var by = {}, order = [];
+  list.forEach(function (u) { if (!by[u.type]) { by[u.type] = []; order.push(u.type); } by[u.type].push(u); });
+  var out = [], gone = 0;
+  order.forEach(function (t) {
+    var a = by[t].slice().sort(function (x, y) { return y.hp - x.hp; }), sum = a.reduce(function (s0, u) { return s0 + u.hp; }, 0), n = Math.max(1, Math.ceil(sum / 10 - 1e-6));
+    a.forEach(function (u, i) { if (i < n) { var v = Math.min(10, sum); u.hp = Math.round(v * 100) / 100; sum -= v; if (u.full !== undefined) u.full = Math.max(u.full, u.hp); out.push(u); } else gone++; });
+  });
+  list.length = 0; out.forEach(function (u) { list.push(u); });
+  return gone;
 }
 function killJoin(S, b, res) {
   var w = res.winner, lose = w === 'atk' ? 'def' : 'atk';
@@ -4817,12 +4847,24 @@ function showActions() {
   var labels = { attack: '⚔ あかい てきを クリックで こうげき', wall: '🔨 オレンジで かべこわし', open: '🚪 みどりで もんを あける', repair: '🔧 みどりで なおす', close: '🚪 みどりで もんを しめる', bridge: '🌉 みどりで はしを かける' };
   Object.keys(kinds).forEach(function (k) { var s = document.createElement('span'); s.className = 'actlbl'; s.textContent = labels[k]; bar.appendChild(s); });
   if (sel && canFlee(G, sel)) { var ex0 = exitAt(G, sel.side, sel.c, sel.r), fb = document.createElement('button'); fb.className = 'act flee'; fb.textContent = '🏃 にげる（' + ex0.name + 'へ）'; fb.onclick = function () { SFX.tap(); fleeUnit(); }; bar.appendChild(fb); }
+  if (sel && sel.side === G.playerSide && !sel.acted) mergeTargets(G, sel).slice(0, 3).forEach(function (t) {
+    var mb = document.createElement('button'); mb.className = 'act'; mb.textContent = '🔗 合流（' + menOf(t) + menUnit(t.type) + 'の 隊へ）';
+    mb.onclick = function () { SFX.tap(); mergeUnit(t); }; bar.appendChild(mb); });
   var w = document.createElement('button'); w.className = 'act'; w.textContent = '⏸ まつ'; w.onclick = function () { SFX.tap(); finishUnit(); }; bar.appendChild(w);
   var nx = document.createElement('button'); nx.className = 'act sub'; nx.textContent = '▶ つぎ'; nx.onclick = function () { SFX.tap(); nextUnit(); }; bar.appendChild(nx);
   if (phase === 'moved' && undoPos && undoPos.unit === sel) { var ub = document.createElement('button'); ub.className = 'act undo'; ub.textContent = '↩ もどす'; ub.onclick = function () { SFX.tap(); undoMove(); }; bar.appendChild(ub); }
   if (phase === 'idle' && undoStack.length) { var ub2 = document.createElement('button'); ub2.className = 'act undo'; ub2.textContent = '↩ ひとつ前'; ub2.onclick = function () { SFX.tap(); undoLast(); }; bar.appendChild(ub2); }
   if (phase === 'idle') { var c = document.createElement('button'); c.className = 'act sub'; c.textContent = 'やめる'; c.onclick = function () { SFX.tap(); deselect(); }; bar.appendChild(c); }
   bar.classList.add('on');
+}
+// へった 隊を となりの おなじ 兵種の 隊に あわせる（もどせない）
+function mergeUnit(t) {
+  var u = sel; if (!u) return;
+  var m0 = menOf(u), mv = doMerge(G, u, t); if (!mv) return;
+  clearUndo(); SFX.repair && SFX.repair();
+  floatText(t.c, t.r, '🔗+' + dmgMen(t, mv), '#bfe0ff', true);
+  logMsg(unitName(u) + ' が となりの ' + unitName(t) + ' に 合流（' + dmgMen(t, mv) + menUnit(t.type) + '）' + (u.hp > 0 ? '　のこり ' + menOf(u) + menUnit(u.type) : ''));
+  deselect(); updateHud(); afterPlayerAction();
 }
 var confirmAct = null;
 function fleeUnit(ok) {
@@ -5916,7 +5958,7 @@ function kInfo() {
   html += '<div class="kunits">城主：' + offTxt(ofc) + (P.naio && P.naio === KS.player ? '　🦊内応あり' : '') + '</div>';
   if (mine && KS.officers) { var oh = officersHere(KS, KS.player, kSel).filter(function (o) { return o !== ofc; });
     html += '<div class="kunits">👥 この 国に いる 家臣：' + (oh.length ? oh.map(function (o) { return o.name + (o.at !== kSel ? '（' + locName(KS, o.at) + '）' : '') + (offBusy(KS, o) ? '✓' : ''); }).join('・') : (ofc ? '城主だけ' : 'いない（👥家臣から 移動させよう）')) + '</div>'; }
-  html += '<div class="kunits">へい ' + menStr(menTotal(P.units)) + '（' + P.units.length + '隊：' + unitSummary(P.units) + '）<br>動員の めやす ' + menStr(P.koku * MEN_PER_KOKU) + '</div>';
+  html += '<div class="kunits">へい ' + menStr(menTotal(P.units)) + '（' + P.units.length + '隊：' + unitSummary(P.units) + '）' + (mine && KS.phase === 'player' && canMergeUnits(P.units) ? ' <span class="kbr" data-main="' + kSel + '">🔗 へった 隊を まとめる</span>' : '') + '<br>動員の めやす ' + menStr(P.koku * MEN_PER_KOKU) + '</div>';
   var nbl = kNeighborInfo(kSel).map(function (nb) {
     var ic = nb.type === 'sea' ? '⛵' : nb.type === 'pass' ? '⛰' : nb.type === 'land' ? '🛤' : '🚫';
     return '<span class="knb ' + nb.type + '">' + ic + PROV_BY[nb.q].name + (nb.type === 'pass' && nb.name && nb.name !== '峠道' ? '（' + nb.name + '）' : '') + '</span>';
@@ -6126,6 +6168,17 @@ function garrisonHtml(units) {
   });
   return h + '<tr class="tot"><td></td><td>ごうけい</td><td>' + units.length + '</td><td><b>' + menStr(menTotal(units)) + '</b></td><td></td></tr></table>';
 }
+// へった 隊を まとめる ボタン
+function mergeRowHtml(units, mine) {
+  if (!mine || !canMergeUnits(units)) return '';
+  return '<div class="kbrow"><span class="kbrn"><small>へった 隊が ある。おなじ 兵種どうし まとめると 隊の かずが へって、1隊が つよく なる（人数は おなじ）。</small></span><button class="kmini" data-mrg="1">🔗 隊を まとめる</button></div>';
+}
+function bindMerge(units, name, back) {
+  [].forEach.call($('kBody').querySelectorAll('[data-mrg]'), function (e) { e.onclick = function () {
+    SFX.tap(); kSnap('隊を まとめる'); var n0 = units.length, g = mergeUnits(units);
+    if (g) logC(KS, name + 'の 隊を まとめた（' + n0 + '隊 → ' + units.length + '隊）', 'good');
+    kSave(); kUpdate(); back(); }; });
+}
 // 兵糧の ようす
 function riceHtml(pid, cid) {
   var f = castleFood(KS, pid, cid), cap = castleFoodCap(KS, pid, cid), d = castleFoodDays(KS, pid, cid);
@@ -6146,7 +6199,7 @@ function kMainCastleBox(pid) {
   var P = KS.provs[pid], mine = P.owner === KS.player && KS.phase === 'player', ci = castleIndexOf(PROV_BY[pid].castle);
   var brs = KS.castles ? Object.keys(KS.castles).filter(function (k) { var c0 = KS.castles[k]; return c0.owner === P.owner && castleLinks(KS, k).indexOf(pid) >= 0; }) : [];
   var body = '<div class="kintro">' + crestHtml(P.owner, 48) + '<p><b>' + castleNameOf(KS, pid) + '</b>（' + PROV_BY[pid].name + 'の 本城・' + CASTLES[ci].kana + '）<br>もちぬし：' + CLANS[P.owner].name + '　🏯 改築 Lv' + (P.clv || 0) + '／' + CASTLE_LV_MAX + '</p></div>' +
-    '<h4>守備兵</h4>' + garrisonHtml(P.units) + riceHtml(pid, null) +
+    '<h4>守備兵</h4>' + garrisonHtml(P.units) + mergeRowHtml(P.units, mine) + riceHtml(pid, null) +
     (brs.length ? '<h4>支城の 守り（兵の 配置）</h4>' + brs.map(function (k) { var c0 = KS.castles[k];
       return '<div class="kbrow"><span class="kbrn" data-cb="' + k + '">🏰 <b>' + brName(k) + '</b><br><small>' + menStr(menTotal(c0.units)) + '（' + c0.units.length + '隊）・🍙' + castleFood(KS, c0.prov, k) + '石</small></span>' +
         (mine ? '<button class="kmini" data-snd="' + k + '"' + (!P.units.length || c0.units.length >= 8 ? ' disabled' : '') + '>➡ おくる</button><button class="kmini sub" data-rcl="' + k + '"' + (!c0.units.length ? ' disabled' : '') + '>⬅ もどす</button>' : '') + '</div>'; }).join('') : '');
@@ -6158,12 +6211,13 @@ function kMainCastleBox(pid) {
   [].forEach.call($('kBody').querySelectorAll('[data-snd]'), function (e) { e.onclick = function () { SFX.tap(); kGarrisonBox(e.dataset.snd, 'in', pid, back); }; });
   [].forEach.call($('kBody').querySelectorAll('[data-rcl]'), function (e) { e.onclick = function () { SFX.tap(); kGarrisonBox(e.dataset.rcl, 'out', pid, back); }; });
   [].forEach.call($('kBody').querySelectorAll('[data-cb]'), function (e) { e.onclick = function () { SFX.tap(); kCastleBox(e.dataset.cb); }; });
+  bindMerge(P.units, castleNameOf(KS, pid), back);
 }
 function kCastleBox(id) {
   var C0 = KS.castles[id], P = KS.provs[C0.prov], mine = C0.owner === KS.player, links = mine && KS.phase === 'player' ? castleLinks(KS, id) : [];
   var body = '<div class="kintro">' + (C0.owner ? crestHtml(C0.owner, 48) : '') + '<p><b>' + brName(id) + '</b>（' + PROV_BY[C0.prov].name + 'の 支城・' + CASTLES[castleIndexOf(brTpl(id))].kana + '）<br>もちぬし：' + (C0.owner ? CLANS[C0.owner].name : 'なし') + '</p></div>' +
     '<p class="small">🏯 改築 Lv' + (C0.lv || 0) + '／' + CASTLE_LV_MAX + (C0.lv ? '（守り ×' + lvMult(C0.lv).toFixed(2) + '）' : '') + '</p>' +
-    '<h4>守備兵</h4>' + garrisonHtml(C0.units) + riceHtml(C0.prov, id) +
+    '<h4>守備兵</h4>' + garrisonHtml(C0.units) + mergeRowHtml(C0.units, mine && KS.phase === 'player') + riceHtml(C0.prov, id) +
     '<p class="small">' + (P.owner === C0.owner ? '本城と 同じ 家。せめられると 本城から 後詰めが くる。' : C0.owner === KS.player ? 'てきの 国の 中の みかたの 城。ここが あれば ' + castleNameOf(KS, C0.prov) + '（本城）を せめられる。' : 'この 城を おとさないと、この 道から 本城へは せめられない。') + '</p>' +
     '<p class="small">🗾 所領：' + PROV_BY[C0.prov].name + 'の 約' + Math.round(branchShare(id) * 100) + '%（地図で 色の かわる ところ）' + (C0.owner && C0.owner !== P.owner ? '。その ぶんの 年貢・収入は ' + CLANS[C0.owner].name + 'に はいる' : '') + '</p>' +
     (mine && P.owner !== C0.owner ? '<p class="small">兵の 出し入れ：' + (links.length ? links.map(function (q) { return PROV_BY[q].name; }).join('・') + 'と できる（行為は つかわない）' : '<span class="r">となりに みかたの 国が ないので できない</span>') + '</p>' : '');
@@ -6180,6 +6234,7 @@ function kCastleBox(id) {
   kModal('🏯 支城', body, btns);
   [].forEach.call($('kBody').querySelectorAll('[data-gin]'), function (e) { e.onclick = function () { SFX.tap(); kGarrisonBox(id, 'in', e.dataset.gin); }; });
   [].forEach.call($('kBody').querySelectorAll('[data-gout]'), function (e) { e.onclick = function () { SFX.tap(); kGarrisonBox(id, 'out', e.dataset.gout); }; });
+  bindMerge(C0.units, brName(id), function () { kCastleBox(id); });
 }
 // この 国から 出陣できる 支城（国の なかの 支城と、となりの てきの 国に ある みかたの 支城）
 function sortieBranches(pid) {
