@@ -472,7 +472,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v6.4';
+var VERSION = 'v6.5';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -5490,16 +5490,34 @@ function kDrawHexBorders(c, lw, pid, col, wd) {
     return;
   }
   kMap.provEdge = kMap.provEdge || {};
-  if (!kMap.provEdge[pid]) {
-    var pp = new Path2D();
+  var dm = kDomainSet(pid), key = pid + (dm ? '#' + dm.sig : '');
+  if (!kMap.provEdge[key]) {
+    var pp = new Path2D(), inS = dm ? function (cc, rr) { return dm.has(cc, rr); } : function (cc, rr) { return w.provAt(cc, rr) === pid; };
     for (var r2 = 0; r2 < w.h; r2++) for (var c2 = 0; c2 < w.w; c2++) {
-      if (w.provAt(c2, r2) !== pid) continue; var nb2 = hexNbs(c2, r2), i2 = r2 * w.w + c2;
-      for (var j2 = 0; j2 < 6; j2++) { var n2 = nb2[j2]; if (n2[0] >= 0 && n2[1] >= 0 && n2[0] < w.w && n2[1] < w.h && w.provAt(n2[0], n2[1]) === pid) continue; var e2 = EDGE[j2]; pp.moveTo(kMap.HX[i2] + CX[e2[0]], kMap.HY[i2] + CY[e2[0]]); pp.lineTo(kMap.HX[i2] + CX[e2[1]], kMap.HY[i2] + CY[e2[1]]); }
+      if (!inS(c2, r2)) continue; var nb2 = hexNbs(c2, r2), i2 = r2 * w.w + c2;
+      for (var j2 = 0; j2 < 6; j2++) { var n2 = nb2[j2]; if (n2[0] >= 0 && n2[1] >= 0 && n2[0] < w.w && n2[1] < w.h && inS(n2[0], n2[1])) continue; var e2 = EDGE[j2]; pp.moveTo(kMap.HX[i2] + CX[e2[0]], kMap.HY[i2] + CY[e2[0]]); pp.lineTo(kMap.HX[i2] + CX[e2[1]], kMap.HY[i2] + CY[e2[1]]); }
     }
-    kMap.provEdge[pid] = pp;
+    kMap.provEdge[key] = pp;
   }
-  c.lineCap = 'round'; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = (wd + 2) * lw; c.stroke(kMap.provEdge[pid]);
-  c.strokeStyle = col; c.lineWidth = wd * lw; c.stroke(kMap.provEdge[pid]);
+  c.lineCap = 'round'; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = (wd + 2) * lw; c.stroke(kMap.provEdge[key]);
+  c.strokeStyle = col; c.lineWidth = wd * lw; c.stroke(kMap.provEdge[key]);
+}
+// えらんだ 国の 領地：国の なかで その家が もつ ところ ＋ となりの 国で その家が もつ 支城の 所領
+function kDomainSet(pid) {
+  if (!KS || !KS.castles || !KS.provs[pid] || !KS.provs[pid].owner || typeof regionAt !== 'function') return null;
+  var own = KS.provs[pid].owner, w = worldMap(), nb = {}, sig = [];
+  (ADJ[pid] || []).concat((CHUGOKU_GEO.adj && CHUGOKU_GEO.adj[pid]) || []).forEach(function (q) { nb[q] = 1; });
+  var extra = {}, drop = {};
+  Object.keys(KS.castles).forEach(function (id) {
+    var C0 = KS.castles[id];
+    if (C0.prov === pid && C0.owner !== own) { drop[id] = 1; sig.push('-' + id); }
+    else if (C0.prov !== pid && nb[C0.prov] && C0.owner === own && KS.provs[C0.prov].owner !== own) { extra[id] = 1; sig.push('+' + id); }
+  });
+  if (!sig.length) return null;   // ふつうの 国ざかいと おなじ
+  return { sig: sig.join(','), has: function (c, r) {
+    var p = w.provAt(c, r); if (!p) return false; var g = regionAt(c, r);
+    if (p === pid) return !drop[g]; return !!extra[g] && p === KS.castles[g].prov;
+  } };
 }
 function kDrawRegions(c) {
   var cv = kRegionLayer(); if (!cv || !kMap.terrRect) return;
