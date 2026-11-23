@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="フテ猫ドラゴン">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2b1d4e">
 <title>フテ猫ドラゴン どらごんを そだてよう！</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -703,10 +707,11 @@ button{font-family:inherit;cursor:pointer;border:none}
 #homeCv{display:none}
 /* ホーム：たてのスマホで 1がめんに おさめる／よこでは せつめいを みぎに */
 #home{overflow:hidden;height:100%}
-#home .topbar{flex:0 0 auto;position:relative}
+#home .topbar{flex:0 0 auto;position:relative;padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+#btnFull{font-size:17px}
 #home .yardbox{flex:1 1 auto;min-height:140px;display:flex;flex-direction:column;max-width:none}
 #home #yard{flex:1 1 0;height:auto;min-height:0}
-#home .yardbar{flex:0 0 auto;padding:4px 6px;gap:4px}
+#home .yardbar{flex:0 0 auto;padding:4px 6px;gap:4px;padding-left:max(6px,env(safe-area-inset-left));padding-bottom:max(4px,env(safe-area-inset-bottom))}
 #home .yardbar button{padding:5px 8px;font-size:12px}
 #homeWrap{flex:0 1 auto;display:flex;flex-direction:column;overflow:hidden;max-height:66%;padding:6px 8px;padding-bottom:max(6px,env(safe-area-inset-bottom));max-width:none}
 #homeWrap .card{padding:6px 10px;margin-bottom:6px;border-radius:16px;box-shadow:0 3px 0 #d69a4a}
@@ -888,7 +893,7 @@ button{font-family:inherit;cursor:pointer;border:none}
     <div class="ttl">🐉 ドラゴンこや</div>
     <div class="pill">🪙 <span id="hCoin">0</span></div>
     <div class="pill">👣 <span id="hPow">0</span></div>
-    <button class="gear" id="btnGear">⚙</button>
+    <button class="gear" id="btnFull" title="ぜんがめん">⛶</button><button class="gear" id="btnGear">⚙</button>
   </div>
   <div class="yardbox"><canvas id="yard"></canvas><div id="yardBar" class="yardbar"></div></div>
   <div class="wrap" id="homeWrap"></div>
@@ -923,7 +928,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.16';
+const VER='1.17';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -2059,15 +2064,45 @@ function openGear(){
     btns.push({t:'👋 おわかれする',c:'sub',f:()=>{modal('<h2>'+esc(d.name)+'と おわかれ？</h2><p>もりへ かえして あげるよ。<br>もう もどって こないよ。</p>',[{t:'やめる',c:'sub'},{t:'おわかれする',f:()=>{G.dragons.splice(G.sel,1);G.sel=0;save();renderHome();}}]);}});}
   btns.push({t:(G.saveMap!==false?'📍 ちずの ばしょを おぼえる：オン':'📍 ちずの ばしょを おぼえる：オフ'),keep:true,f:()=>{G.saveMap=G.saveMap===false;if(G.saveMap===false)delete G.mapPos;save();openGear();}});
   if(G.mapPos)btns.push({t:'🗑️ おぼえた ちずの ばしょを けす',keep:true,f:()=>{delete G.mapPos;save();toast('けしたよ');openGear();}});
+  btns.push({t:'📦 セーブを うつす',f:saveMove});
   btns.push({t:'🏠 タイトルへ',c:'sub',f:()=>{save();homeOn=false;bgm(null);showScreen('title');renderTitle();}});
   btns.push({t:'とじる',c:'sub'});
   modal('<h2>⚙ せってい</h2><p style="font-size:12px">セーブは じどうで この たんまつに されるよ（ver '+VER+'）<br>📍 ちずの ばしょ：'+(G.saveMap===false?'おぼえない（まいかい いまの ばしょ か とうきょうえき から）':(G.mapPos?'さいごに いた ちずの ばしょを おぼえているよ（ほんとうの いまの ばしょから はじめた ときは その ちかく。この たんまつの なかだけ）':'まだ おぼえていない'))+'<br>そだてた ドラゴンの かず：'+G.dragons.length+'　あるいた ほすう：'+G.steps+'</p>',btns);
+}
+/* セーブを うつす（ホーム画面の アプリと Safariは セーブが べつ なので） */
+function saveCode(){return 'FD1:'+btoa(unescape(encodeURIComponent(JSON.stringify(G))));}
+function saveMove(){
+  modal('<h2>📦 セーブを うつす</h2><p style="font-size:13px;text-align:left">① うつす まえの がめんで「コピー」<br>② うつしたい がめん（ホーム画面の アプリなど）で ここを ひらいて、わくに はりつけて「よみこむ」</p><textarea id="svIn" style="width:92%;height:70px;font-size:11px;border-radius:10px;border:3px solid #e8812a;padding:6px" placeholder="ここに はりつけ"></textarea>',
+   [{t:'📋 コピー',c:'go',keep:true,f:()=>{const c=saveCode();const done=()=>toast('コピーしたよ！');
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(done,()=>{$('svIn').value=c;$('svIn').select();toast('もじを えらんで コピーしてね');});else{$('svIn').value=c;$('svIn').select();toast('もじを えらんで コピーしてね');}}},
+    {t:'📥 よみこむ',keep:true,f:()=>{
+      const t=($('svIn').value||'').trim();let o=null;
+      try{if(!t.startsWith('FD1:'))throw 0;o=JSON.parse(decodeURIComponent(escape(atob(t.slice(4)))));if(!o||!Array.isArray(o.dragons))throw 0;}catch(e){toast('よみこめなかったよ');return;}
+      modal('<h2>よみこむ？</h2><p>ドラゴン '+o.dragons.length+'ひき・🪙'+(o.coins||0)+' の セーブで<br><b>いまの セーブを うわがき</b>するよ。</p>',[{t:'やめる',c:'sub'},{t:'よみこむ',c:'go',f:()=>{G=fixGame(o);save();YARD.inited=false;toast('よみこんだよ！');renderHome();}}]);}},
+    {t:'とじる',c:'sub'}]);
 }
 function nameDragon(d,after){
   modal('<h2>なまえを つけてね</h2><canvas id="mdCv" width="440" height="340"></canvas><p><input id="nmIn" maxlength="8" value="'+esc(d.name)+'"></p>',[{t:'けってい',c:'go',f:()=>{const v=($('nmIn')&&$('nmIn').value||'').trim();d.name=v?v.slice(0,8):d.name;save();if(after)after();}}]);
   mdDragon={sp:d.sp,lv:d.lv,happy:true};
 }
 $('btnGear').onclick=()=>{sfx.tap();openGear();};
+/* ぜんがめん：つかえる ブラウザでは そのまま。iPhoneは「ホーム画面に追加」で ぜんがめんに なる */
+function isStandalone(){return (window.matchMedia&&(window.matchMedia('(display-mode: fullscreen)').matches||window.matchMedia('(display-mode: standalone)').matches))||navigator.standalone===true;}
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement;}
+function updFullBtn(){const b=$('btnFull');if(b)b.style.display=(isStandalone()||fsEl())?'none':'';}
+function goFull(){
+  const el=document.documentElement,rq=el.requestFullscreen||el.webkitRequestFullscreen;
+  if(rq&&(document.fullscreenEnabled||document.webkitFullscreenEnabled)){try{const r=rq.call(el,{navigationUI:'hide'});if(r&&r.catch)r.catch(()=>fullHelp());}catch(e){fullHelp();}return;}
+  fullHelp();
+}
+function fullHelp(){
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  modal('<h2>⛶ ぜんがめんで あそぶ</h2>'+(ios?
+   '<p style="text-align:left;line-height:1.7">iPhoneの Safariでは、このまま ぜんがめんに できません。<br>① したの <b>きょうゆう ボタン</b>（□に ↑）を おす<br>② <b>「ホーム画面に追加」</b>を えらぶ<br>③ ホーム画面の <b>フテ猫ドラゴン</b>の アイコンから ひらく<br>すると、アドレスバーの ない ぜんがめんで あそべるよ。</p><p style="text-align:left;font-size:13px;background:#fff3d6;border-radius:10px;padding:6px 10px">⚠️ ホーム画面から ひらくと、セーブは べつに なるよ。<br>いまの ドラゴンを つれて いくには、⚙「せってい」→「📦 セーブを うつす」で <b>コピー</b>して、ホーム画面の ほうで <b>はりつけ</b>てね。</p>':
+   '<p>この ブラウザでは ぜんがめんに できませんでした。メニューの「ホーム画面に追加」から ひらくと ぜんがめんで あそべるよ。</p>'),[{t:'わかった'}]);
+}
+$('btnFull').onclick=()=>{sfx.tap();goFull();};
+document.addEventListener('fullscreenchange',updFullBtn);document.addEventListener('webkitfullscreenchange',updFullBtn);updFullBtn();
 
 /* ===================== キャンバスと シーン ===================== */
 const cv=$('cv'),cx=cv.getContext('2d');
