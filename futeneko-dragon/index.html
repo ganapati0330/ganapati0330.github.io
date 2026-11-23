@@ -727,7 +727,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 #cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 .hudTop{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:6px;padding:6px 8px;padding-top:max(6px,env(safe-area-inset-top));pointer-events:none;color:#fff;font-weight:bold;font-size:14px;text-shadow:0 1px 2px #000}
 .hudTop>*{pointer-events:auto}
-.hbtn{background:rgba(30,20,60,.75);color:#fff;border-radius:14px;padding:7px 12px;font-size:14px;font-weight:bold;border:2px solid #fff6}
+.hbtn{white-space:nowrap;background:rgba(30,20,60,.75);color:#fff;border-radius:14px;padding:7px 12px;font-size:14px;font-weight:bold;border:2px solid #fff6}
 .hudBot{position:absolute;left:0;right:0;bottom:0;padding:8px;padding-bottom:max(8px,env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;align-items:flex-end;pointer-events:none}
 .hudBot>*{pointer-events:auto}
 .hint{position:absolute;left:50%;transform:translateX(-50%);bottom:max(70px,calc(env(safe-area-inset-bottom) + 62px));background:rgba(30,20,60,.7);color:#fff;border-radius:14px;padding:5px 12px;font-size:13px;font-weight:bold;white-space:nowrap;pointer-events:none}
@@ -789,7 +789,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 .here{position:absolute;left:49px;bottom:-6px;width:22px;height:22px;border-radius:50%;background:#2f7fe8;border:4px solid #fff;box-shadow:0 0 0 10px #2f7fe833,0 1px 4px #0006}
 .meic{position:relative;width:120px;height:96px}
 .meic .mk{position:absolute;left:60px;bottom:6px;height:62px}
-.meic .md{position:absolute;left:-6px;bottom:10px;width:78px;animation:hop 1.4s infinite}
+.meic .md{position:absolute;left:-6px;bottom:10px;width:78px}
 .ppin{position:relative;width:54px;height:62px}
 .ppin .pb{position:absolute;left:5px;top:0;width:44px;height:44px;border-radius:50%;background:#fffaf0;border:3px solid #e8743b;box-shadow:0 2px 4px #0005;display:flex;align-items:center;justify-content:center;font-size:24px}
 .ppin.k-dragon .pb{border-color:#7b5cd6;background:#f3edff}
@@ -801,6 +801,10 @@ button{font-family:inherit;cursor:pointer;border:none}
 .ppin .lb{position:absolute;left:50%;top:46px;transform:translateX(-50%);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:900;background:#fffaf0e6;border-radius:8px;padding:1px 6px;border:1.5px solid #e6cfa3;color:#3a2a1a}
 .pcoin{display:inline-block;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe680,#f0b324 60%,#c98a10);box-shadow:inset 0 0 0 3px #d99a1a}
 @media (max-height:500px) and (orientation:landscape){.mcard{left:auto;right:8px;top:52px;bottom:8px;width:300px;margin:0;border-radius:16px;overflow-y:auto;font-size:13px}.leaflet-top.leaflet-right{right:316px}}
+.meic.fl .mk{left:2px}
+.meic.fl .md{left:50px;transform:scaleX(-1)}
+.leaflet-top.leaflet-left{top:52px}
+.leaflet-touch .leaflet-bar a{width:38px;height:38px;line-height:38px;font-size:22px}
 @keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
 </style>
@@ -838,7 +842,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 <!-- ドラゴンさがし（ほんとうの ちず） -->
 <section id="mapScr" class="screen">
   <div id="dmap"></div>
-  <div class="mtop"><button class="hbtn" id="mBack">← こやへ</button><div class="mttl">🗺️ ドラゴンさがし</div><div class="pill2">👣 <span id="mSteps">0</span></div></div>
+  <div class="mtop"><button class="hbtn" id="mBack">← こやへ</button><div class="mttl">🗺️ ドラゴンさがし</div><div class="pill2">🔎 きょう <span id="mSteps">0</span></div></div>
   <div class="mcard" id="mCard"></div>
 </section>
 
@@ -855,7 +859,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.2';
+const VER='1.3';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -966,14 +970,32 @@ const IMG={};
   list.forEach(n=>{const im=new Image();im.src='img/'+n+'.webp';IMG[n]=im;});
 })();
 const ok=im=>im&&im.complete&&im.naturalWidth>0;
+/* フテ猫ウォークの あるく モーション（w1〜4 みぎむき / wl1〜4 ひだりむき。チャッピーは w を はんてん） */
+const WK={};
+['fute','kuro','chap'].forEach(k=>['idle','w1','w2','w3','w4','wl1','wl2','wl3','wl4','joy','surp','sleep'].forEach(p=>{if(k==='chap'&&p.startsWith('wl'))return;const im=new Image();im.src='wk/'+k+'_'+p+'.webp';WK[k+'_'+p]=im;}));
+function keeperSrc(moving,faceRight,t){
+  const k=G.keeper;
+  if(!moving)return {src:'wk/'+k+'_idle.webp',flip:false};
+  const n=1+Math.floor(t*8)%4;
+  if(k==='chap')return {src:'wk/chap_w'+n+'.webp',flip:!faceRight};
+  return {src:'wk/'+k+(faceRight?'_w':'_wl')+n+'.webp',flip:false};
+}
 function drawKeeper(c,x,y,h,pose,faceRight,t,moving){
-  const im=IMG[G.keeper+'_'+pose]||IMG[G.keeper+'_front'];
+  let im=null,flip=false,wk=false;
+  if(pose==='walk'||pose==='front'||pose==='idle'){
+    const n=1+Math.floor(t*8)%4,k=G.keeper;
+    if(moving){if(k==='chap'){im=WK['chap_w'+n];flip=!faceRight;}else im=WK[k+(faceRight?'_w':'_wl')+n];}
+    else im=WK[k+'_idle'];
+    if(ok(im))wk=true;else im=null;
+  }
+  if(!im){im=IMG[G.keeper+'_'+pose]||IMG[G.keeper+'_front'];flip=faceRight&&pose==='walk';}
   if(!ok(im))return;
   const w=h*im.naturalWidth/im.naturalHeight;
   c.save();c.translate(x,y);
   c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(0,0,w*0.38,h*0.05,0,0,7);c.fill();
-  if(moving){c.translate(0,-Math.abs(Math.sin(t*9))*h*0.04);c.rotate(Math.sin(t*9)*0.05);}
-  if(faceRight&&pose==='walk')c.scale(-1,1);
+  if(moving&&!wk){c.translate(0,-Math.abs(Math.sin(t*9))*h*0.04);c.rotate(Math.sin(t*9)*0.05);}
+  if(moving&&wk)c.translate(0,-Math.abs(Math.sin(t*16))*h*0.015);
+  if(flip)c.scale(-1,1);
   c.drawImage(im,-w/2,-h,w,h);
   c.restore();
 }
@@ -1256,8 +1278,8 @@ function renderHome(){
   }
   const lv=d?d.lv:0;
   h+='<div class="acts">';
-  h+='<button class="act a1" id="aTown"><span>🗺️</span>さがす<small>ほんとうの まち</small></button>';
-  h+='<button class="act a2'+(d?'':' lock')+'" id="aWalk"><span>👣</span>おさんぽ<small>そだてる</small></button>';
+  h+='<button class="act a1" id="aTown"><span>🗺️</span>さがす<small>たまごを さがす</small></button>';
+  h+='<button class="act a2'+(d?'':' lock')+'" id="aWalk"><span>👣</span>おさんぽ<small>あるいて そだてる</small></button>';
   h+='<button class="act a3'+(d?'':' lock')+'" id="aFood"><span>🍎</span>ごはん<small>おなかいっぱい</small></button>';
   h+='<button class="act a4'+(lv>=20?'':' lock')+'" id="aRace"><span>'+(lv>=20?'🏁':'🔒')+'</span>レース<small>Lv20から</small></button>';
   h+='<button class="act a5'+(lv>=30?'':' lock')+'" id="aBattle"><span>'+(lv>=30?'⚔️':'🔒')+'</span>バトル<small>Lv30から</small></button>';
@@ -1284,7 +1306,7 @@ function renderHome(){
   $('aHelp').onclick=()=>{sfx.tap();openHelp();};
 }
 function openHelp(){
-  modal('<h2>❔ あそびかた</h2><div style="text-align:left;font-size:14px;line-height:1.6"><p>🗺️ <b>さがす</b>：ほんとうの まちを あるいて 🥚の ばしょへ。ちかくまで いくと ドラゴンが みつかるかも！ ばしょの しゅるいで みつかる ドラゴンが かわるよ（こうえん→かぜ、えき→かみなり、おみせ→ほのお、みずべ→みず、がっこう→こおり、じんじゃ→ひかり／よるは やみ）。</p><p>👣 <b>あるいて そだつ</b>：つれている ドラゴンは ほんとうに 5ほ あるくと けいけんち 1。</p><p>👣 <b>おさんぽ</b>：ゲームの なかの おさんぽでも そだつよ。とっくんで つよくなる！</p><p>🏁 <b>レース</b>：Lv20から。⚔️ <b>バトル</b>：Lv30から。</p><p style="color:#c0392b;font-size:12px">そとを あるく ときは まわりを よく みてね。くるまや でんしゃの いどうは かぞえないよ。</p></div>',[{t:'わかった',c:'go'}]);
+  modal('<h2>❔ あそびかた</h2><div style="text-align:left;font-size:14px;line-height:1.6"><p>🗺️ <b>さがす</b>：ちずの うえで フテ猫を フリック・タッチ・やじるしキーで うごかして 🥚の ばしょへ。ちかくまで いくと ドラゴンが みつかるかも！ ばしょの しゅるいで みつかる ドラゴンが かわるよ（こうえん→かぜ、えき→かみなり、おみせ→ほのお、みずべ→みず、がっこう→こおり、じんじゃ→ひかり／よるは やみ）。</p><p>👣 <b>おさんぽ</b>：スマホを もって ほんとうに あるいた ほすうだけ すすむよ。3ぽで けいけんち 1。とちゅうの ものを タッチして とっくんも できる！</p><p>🏁 <b>レース</b>：Lv20から。⚔️ <b>バトル</b>：Lv30から。</p><p style="color:#c0392b;font-size:12px">そとを あるく ときは まわりを よく みてね。くるまや でんしゃの いどうは かぞえないよ。</p></div>',[{t:'わかった',c:'go'}]);
 }
 function noDragon(){modal('<h2>ドラゴンが いないよ</h2><p>まずは まちを あるいて ドラゴンを さがそう！</p>',[{t:'さがしに いく',c:'go',f:()=>openMap()},{t:'あとで',c:'sub'}]);}
 function hungry(d){modal('<h2>おなか ぺこぺこ…</h2><p>'+esc(d.name)+'は おなかが すいて うごけない。<br>ごはんを あげよう！</p>',[{t:'ごはんを あげる',c:'go',f:()=>openFood(()=>{if(homeOn)renderHome();})},{t:'とじる',c:'sub'}]);}
@@ -1367,7 +1389,7 @@ window.addEventListener('pointerup',()=>{if(scene&&scene.up)scene.up();});
 window.addEventListener('pointercancel',()=>{if(scene&&scene.up)scene.up();});
 window.addEventListener('keydown',ev=>{if(ev.code==='Space'&&scene&&scene.down&&!$('modal').classList.contains('on')){ev.preventDefault();if(!ev.repeat)scene.down(-1,-1);}});
 window.addEventListener('keyup',ev=>{if(ev.code==='Space'&&scene&&scene.up)scene.up();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){save();if(AC)AC.suspend();if(GEO.watch!==null){stopGeo();GEO.resume=true;}MOT.wake=null;}else{if(AC)AC.resume();if(GEO.resume&&MAPV.on){GEO.resume=false;startGeo();}if(MOT.listening&&navigator.wakeLock&&!MOT.wake){navigator.wakeLock.request('screen').then(w=>{MOT.wake=w;}).catch(()=>{});}}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();if(AC)AC.suspend();if(GEO.watch!==null){stopGeo();GEO.resume=true;}MOT.wake=null;}else{if(AC)AC.resume();if(GEO.resume&&scene===WALK){GEO.resume=false;startStepSources();}if(MOT.listening&&navigator.wakeLock&&!MOT.wake){navigator.wakeLock.request('screen').then(w=>{MOT.wake=w;}).catch(()=>{});}}});
 
 /* こうか（パーティクルと うかぶ もじ） */
 let PARTS=[],FLOATS=[];
@@ -1410,7 +1432,7 @@ function bubble(c,x,y,txt,size){
    フテ猫ウォークと おなじ しくみ：GPSの いまの ばしょ・OSMの ちず・ほんとうの 歩数。
    位置情報は 画面に 出すだけで 保存しない。ひろった ポイントは「きょうの ID」だけ のこす。 */
 const DEMO=/[?&]demo=1/.test(location.search);
-const PT_RADIUS=40, STEP_M=0.7, EXP_STEPS=5, HUNGER_STEPS=50;
+const PT_RADIUS=40, STEP_M=0.7, EXP_STEPS=3, HUNGER_STEPS=30;
 const CAT={
  park:{i:'🌳',n:'こうえん',pref:{wind:4,earth:2,fire:1},msg:'こうえんの しげみで ねむっていた！'},
  shrine:{i:'⛩️',n:'じんじゃ・おてら',pref:{light:2,wind:2,water:1},night:{dark:3,light:1},msg:'おみやの もりで まいごに なっていた！'},
@@ -1503,7 +1525,7 @@ function needsMotionPermission(){return typeof DeviceMotionEvent!=='undefined'&&
 function startMotion(fromTap){
   const go=()=>{if(!MOT.listening){window.addEventListener('devicemotion',motionHandler);MOT.listening=true;}G.motionOn=true;save();
     try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{MOT.wake=w;}).catch(()=>{});}catch(e){}
-    renderMapCard();};
+    if(scene===WALK)WALK.hudBtns();};
   if(typeof DeviceMotionEvent==='undefined'){toast('センサーが つかえないよ','GPSで かぞえるね');return;}
   if(needsMotionPermission()){
     if(!fromTap)return;
@@ -1528,38 +1550,95 @@ function gpsSteps(me,acc){
   const n=Math.round(d/STEP_M);if(n>0)addRealSteps(n);
 }
 let _stepUi=0;
+function startStepSources(){
+  if(G.motionOn&&!needsMotionPermission())startMotion(false);
+  if(navigator.geolocation&&GEO.watch===null){
+    try{GEO.watch=navigator.geolocation.watchPosition(p=>{gpsSteps({lat:p.coords.latitude,lng:p.coords.longitude},p.coords.accuracy||50);},()=>{},{enableHighAccuracy:true,maximumAge:3000,timeout:25000});}catch(e){}
+  }
+}
+function stopStepSources(){stopGeo();if(MOT.listening)stopMotion(true);}
 function addRealSteps(n){
-  if(!G)return;
+  if(!G)return 0;
+  let gain=0;
   const w=walkToday();w.steps+=n;G.steps+=n;
   const d=cur();
   if(d){
     d.steps+=n;G.expAcc=(G.expAcc||0)+n;G.hunAcc=(G.hunAcc||0)+n;
     while(G.hunAcc>=HUNGER_STEPS){G.hunAcc-=HUNGER_STEPS;d.hunger=Math.max(0,d.hunger-1);}
-    let gain=0;while(G.expAcc>=EXP_STEPS){G.expAcc-=EXP_STEPS;if(d.hunger>0)gain+=1+(Math.random()<d.love/200?1:0);}
+    gain=0;while(G.expAcc>=EXP_STEPS){G.expAcc-=EXP_STEPS;if(d.hunger>0)gain+=1+(Math.random()<d.love/200?1:0);}
     if(gain){const b=d.lv;if(gainExp(d,gain))lvUpMsg(d,b);}
+    if(scene===WALK&&WALK.d===d)WALK.onSteps(n,gain);
   }
-  clearTimeout(_stepUi);_stepUi=setTimeout(()=>{save();if(MAPV.on)renderMapCard();},700);
+  clearTimeout(_stepUi);_stepUi=setTimeout(()=>{save();},700);
+  return n;
 }
 
-/* --- いまの ばしょ --- */
-function startGeo(){
-  if(GEO.watch!==null)return;
-  if(!navigator.geolocation){GEO.state='fail';renderMapCard();if(DEMO)demoStart();return;}
-  if(!GEO.me){GEO.state='pending';renderMapCard();}
-  GEO.watch=navigator.geolocation.watchPosition(onGeo,onGeoErr,{enableHighAccuracy:true,maximumAge:3000,timeout:25000});
+/* --- ばしょ：さいしょだけ ほんとうの いまの ばしょ。あとは フテ猫を やじるし・フリック・タッチで うごかす --- */
+const MOVE={keys:{},target:null,face:1,moving:false,t:0,speed:55,uiT:0,lastSrc:''};
+const HOME_LL={lat:35.6812,lng:139.7671};
+function startGeo(force){
+  if(GEO.me&&!force)return;
+  const fallback=()=>{GEO.state='ok';setMe(G.mapPos||HOME_LL,true);if(!G.mapPos)toast('いまの ばしょが わからないので','とうきょうえきから スタート！');renderMapCard();};
+  if(!navigator.geolocation){fallback();return;}
+  GEO.state='pending';renderMapCard();
+  try{navigator.geolocation.getCurrentPosition(p=>{setMe({lat:p.coords.latitude,lng:p.coords.longitude},true);toast('📍 いまの ばしょから スタート！');renderMapCard();},
+    err=>{GEO.geoErr=err&&err.code===1?'denied':'fail';fallback();},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});}catch(e){fallback();}
 }
 function stopGeo(){GSTEP.anchor=null;if(GEO.watch!==null){try{navigator.geolocation.clearWatch(GEO.watch);}catch(e){}GEO.watch=null;}}
-function onGeo(p){const me={lat:p.coords.latitude,lng:p.coords.longitude};GEO.acc=p.coords.accuracy||50;gpsSteps(me,GEO.acc);setMe(me);}
-function onGeoErr(err){
-  if(GEO.me)return;
-  GEO.state=err&&err.code===1?'denied':'fail';stopGeo();renderMapCard();
-  if(DEMO)demoStart();
-}
-function demoStart(){if(GEO.me)return;GEO.acc=10;toast('テストモード','ちずを タッチすると そこへ うごくよ');setMe({lat:35.6812,lng:139.7671});}
-function setMe(me){
-  const first=!GEO.me;GEO.me=me;GEO.state='ok';
+function setMe(me,jump){
+  GEO.me={lat:me.lat,lng:me.lng};GEO.state='ok';GEO.acc=5;G.mapPos={lat:me.lat,lng:me.lng};
   if(!GEO.pts||distM(GEO.ptsCenter,me)>700||(GEO.src==='grid'&&Date.now()-GEO.lastTry>90000))loadPts(me);
-  if(MAPV.on){drawMe();if(first)fitNear();checkPick();renderMapCard();}
+  if(MAPV.on&&MAPV.map){drawMe();if(jump)MAPV.map.setView([me.lat,me.lng],17,{animate:false});else MAPV.map.panTo([me.lat,me.lng],{animate:false});checkPick();}
+}
+function offsetLL(ll,east,north){const k=Math.cos(ll.lat*Math.PI/180);return {lat:ll.lat+north/110540,lng:ll.lng+east/(111320*Math.max(0.2,k))};}
+function mapTick(dt){
+  if(!MAPV.on||!GEO.me||!MAPV.map)return;
+  let vx=0,vy=0;const k=MOVE.keys;
+  if($('modal').classList.contains('on')){setMoving(false);return;}
+  if(k.ArrowLeft||k.KeyA)vx-=1;if(k.ArrowRight||k.KeyD)vx+=1;if(k.ArrowUp||k.KeyW)vy+=1;if(k.ArrowDown||k.KeyS)vy-=1;
+  let lim=Infinity;
+  if(vx||vy)MOVE.target=null;
+  else if(MOVE.target){const d=distM(GEO.me,MOVE.target);if(d<1){MOVE.target=null;}else{const cosl=Math.cos(GEO.me.lat*Math.PI/180);vx=(MOVE.target.lng-GEO.me.lng)*111320*cosl;vy=(MOVE.target.lat-GEO.me.lat)*110540;lim=d;}}
+  const len=Math.hypot(vx,vy);
+  if(!len){setMoving(false);return;}
+  vx/=len;vy/=len;
+  const m=Math.min(MOVE.speed*dt,lim);
+  if(Math.abs(vx)>0.25)MOVE.face=vx>0?1:-1;
+  setMoving(true);
+  setMe(offsetLL(GEO.me,vx*m,vy*m));
+  MOVE.uiT+=dt;if(MOVE.uiT>0.4){MOVE.uiT=0;renderMapCard();}
+}
+function setMoving(m){
+  if(MOVE.moving!==m){MOVE.moving=m;if(!m)renderMapCard();}
+  MOVE.t+=1/60;
+  const el=MAPV.meM&&MAPV.meM.getElement&&MAPV.meM.getElement();if(!el)return;
+  const box=el.querySelector('.meic');if(box)box.classList.toggle('fl',MOVE.face<0);
+  const ks=keeperSrc(m,MOVE.face>0,MOVE.t),mk=el.querySelector('.mk');
+  if(mk&&MOVE.lastSrc!==ks.src+ks.flip){mk.src=ks.src;mk.style.transform=ks.flip?'scaleX(-1)':'';MOVE.lastSrc=ks.src+ks.flip;}
+}
+/* フリック・タッチ */
+const FLK={id:null,x:0,y:0,t:0,n:0};
+function mapPointer(){
+  const el=$('dmap');
+  el.addEventListener('pointerdown',e=>{FLK.n++;if(FLK.n>1){FLK.id=null;return;}FLK.id=e.pointerId;FLK.x=e.clientX;FLK.y=e.clientY;FLK.t=performance.now();audioInit();});
+  const up=e=>{FLK.n=Math.max(0,FLK.n-1);if(FLK.id!==e.pointerId)return;FLK.id=null;
+    if(e.target.closest&&e.target.closest('.leaflet-control'))return;
+    if(!GEO.me||!MAPV.map)return;
+    const dx=e.clientX-FLK.x,dy=e.clientY-FLK.y,L2=Math.hypot(dx,dy),dt=performance.now()-FLK.t;
+    if(L2>28&&dt<900){
+      const z=MAPV.map.getZoom(),mpp=156543.03*Math.cos(GEO.me.lat*Math.PI/180)/Math.pow(2,z);
+      const dist=clamp(L2*mpp*2.5,40,450);
+      MOVE.target=offsetLL(GEO.me,dx/L2*dist,-dy/L2*dist);sfx.tap();
+    } else if(L2<12){
+      const r=el.getBoundingClientRect();const ll=MAPV.map.containerPointToLatLng([e.clientX-r.left,e.clientY-r.top]);
+      if(MOVE.moving&&MOVE.target&&distM(MOVE.target,{lat:ll.lat,lng:ll.lng})<15){MOVE.target=null;return;}
+      MOVE.target={lat:ll.lat,lng:ll.lng};
+    }
+  };
+  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',e=>{FLK.n=Math.max(0,FLK.n-1);if(FLK.id===e.pointerId)FLK.id=null;});
+  window.addEventListener('keydown',e=>{if(!MAPV.on||$('modal').classList.contains('on'))return;if(/^(Arrow|Key[WASD])/.test(e.code)){MOVE.keys[e.code]=true;e.preventDefault();}});
+  window.addEventListener('keyup',e=>{MOVE.keys[e.code]=false;});
+  window.addEventListener('blur',()=>{MOVE.keys={};});
 }
 function loadPts(c){
   if(GEO.loading)return;
@@ -1594,13 +1673,14 @@ function setPts(pts,src){
 /* --- ちず --- */
 function initMap(){
   if(MAPV.map)return;
-  MAPV.map=L.map('dmap',{zoomControl:false,attributionControl:false,minZoom:12,maxZoom:19,zoomSnap:0.25});
+  MAPV.map=L.map('dmap',{zoomControl:false,attributionControl:false,minZoom:13,maxZoom:19,zoomSnap:0.25,dragging:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:'center',scrollWheelZoom:'center'});
   L.control.attribution({position:'topright',prefix:false}).addTo(MAPV.map);
+  L.control.zoom({position:'topleft',zoomInText:'＋',zoomOutText:'－'}).addTo(MAPV.map);
+  mapPointer();
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'})
     .on('tileerror',()=>{MAPV.tileErr++;if(MAPV.tileErr===3&&!MAPV.tileOk)toast('ちずが よみこめないよ','インターネットを たしかめてね');})
     .on('tileload',()=>{MAPV.tileOk++;}).addTo(MAPV.map);
   MAPV.map.setView([35.6812,139.7671],15);
-  MAPV.map.on('click',e=>{if(DEMO){const me={lat:e.latlng.lat,lng:e.latlng.lng};if(GEO.me){const n=Math.round(distM(GEO.me,me)/STEP_M);if(n>0&&n<5000)addRealSteps(n);}GEO.acc=10;setMe(me);}});
 }
 function dragonIconURL(d){
   const c=document.createElement('canvas');c.width=120;c.height=100;
@@ -1611,12 +1691,13 @@ function drawMe(){
   if(!MAPV.map||!GEO.me)return;
   const ll=[GEO.me.lat,GEO.me.lng],d=cur();
   const key=G.keeper+'|'+(d?d.id+':'+stageOf(d.lv)+':'+d.sp+':'+(dsheet(d.sp,['baby','kid','adult'][Math.min(2,stageOf(d.lv))])?1:0):'none');
-  if(!MAPV.accC)MAPV.accC=L.circle(ll,{radius:Math.min(GEO.acc,150),color:'#2f7fe8',weight:1,fillOpacity:0.08,interactive:false}).addTo(MAPV.map);
-  else{MAPV.accC.setLatLng(ll);MAPV.accC.setRadius(Math.min(GEO.acc,150));}
+  if(!MAPV.accC)MAPV.accC=L.circle(ll,{radius:PT_RADIUS,color:'#7b5cd6',weight:1,dashArray:'4 4',fillOpacity:0.06,interactive:false}).addTo(MAPV.map);
+  else MAPV.accC.setLatLng(ll);
   if(!MAPV.meM||MAPV.meKey!==key){
     if(MAPV.meM)MAPV.map.removeLayer(MAPV.meM);
-    const html='<div class="meic"><div class="here"></div>'+(d?'<img class="md" src="'+dragonIconURL(d)+'">':'')+'<img class="mk" src="img/'+G.keeper+'_front.webp"></div>';
-    MAPV.meM=L.marker(ll,{icon:L.divIcon({className:'',html,iconSize:[120,96],iconAnchor:[60,84]}),interactive:false,zIndexOffset:900}).addTo(MAPV.map);
+    const ks=keeperSrc(MOVE.moving,MOVE.face>0,MOVE.t);MOVE.lastSrc=ks.src+ks.flip;
+    const html='<div class="meic'+(MOVE.face<0?' fl':'')+'">'+(d?'<img class="md" src="'+dragonIconURL(d)+'">':'')+'<img class="mk" src="'+ks.src+'" style="'+(ks.flip?'transform:scaleX(-1)':'')+'"></div>';
+    MAPV.meM=L.marker(ll,{icon:L.divIcon({className:'',html,iconSize:[120,96],iconAnchor:[60,90]}),interactive:false,zIndexOffset:900}).addTo(MAPV.map);
     MAPV.meKey=key;
   } else MAPV.meM.setLatLng(ll);
 }
@@ -1646,7 +1727,7 @@ function ptClick(pt){
   sfx.tap();const c=CAT[pt.cat]||CAT.spot;
   if(ptGot(pt.id)){toast(c.i+' '+pt.name,'きょうは もう しらべたよ');return;}
   if(!GEO.me){toast(c.i+' '+pt.name,KIND_TXT[pt.kind]);return;}
-  toast(c.i+' '+pt.name+'　あと '+fmtM(distM(GEO.me,pt)-PT_RADIUS),KIND_TXT[pt.kind]);
+  MOVE.target={lat:pt.lat,lng:pt.lng};toast(c.i+' '+pt.name+'へ いくよ！',KIND_TXT[pt.kind]);
 }
 function nearestPt(){
   if(!GEO.me||!GEO.pts)return null;let best=null,bd=1e9;
@@ -1702,61 +1783,60 @@ function foundDragon(d,msg,after){
 /* --- がめん --- */
 function openMap(){
   if(scene&&scene.leave)scene.leave();scene=null;homeOn=false;closeModal();
-  showScreen('mapScr');bgm('town');MAPV.on=true;
-  initMap();setTimeout(()=>{MAPV.map.invalidateSize();if(GEO.me){drawMe();drawPts();fitNear();checkPick();}},60);
-  startGeo();
-  if(G.motionOn&&!needsMotionPermission())startMotion(false);
+  showScreen('mapScr');bgm('town');MAPV.on=true;MOVE.keys={};MOVE.target=null;
+  initMap();
+  setTimeout(()=>{MAPV.map.invalidateSize();if(GEO.me){MAPV.meKey='';drawMe();drawPts();MAPV.map.setView([GEO.me.lat,GEO.me.lng],Math.max(16,MAPV.map.getZoom()),{animate:false});checkPick();}},60);
+  if(!GEO.me){if(G.mapPos){setMe(G.mapPos,true);}else startGeo(true);}
   renderMapCard();
-  if(!G.tut.map){G.tut.map=1;save();
-    modal('<h2>🗺️ ドラゴンさがし</h2><p>ほんとうの まちを あるいて ドラゴンを さがそう！</p><p style="font-size:13px;text-align:left">🥚 の ばしょの ちかく（40m）まで いくと ドラゴンが いるかも！<br>🍎 ごはん・🪙 コインも おちているよ。<br>ポイントは まいにち かわるよ。<br>つれている ドラゴンは <b>5ほ あるくと けいけんち 1</b>。<br><b>くるまや でんしゃは かぞえないよ。</b></p><p style="font-size:12px;color:#c0392b">そとを あるく ときは まわりを よく みてね。<br>スマホを みながら あるかないでね！</p>',[{t:'さがしに いく！',c:'go'}]);}
+  if(!G.tut.map2){G.tut.map2=1;save();
+    modal('<h2>🗺️ ドラゴンの たまごさがし</h2><p>ちずの うえで フテ猫を うごかして<br>🥚 の ばしょへ いこう！</p><p style="font-size:13px;text-align:left">👆 <b>フリック</b>：その むきへ あるく<br>👆 <b>タッチ</b>：その ばしょまで あるく（🥚を タッチでも OK）<br>⌨️ <b>やじるしキー</b>：おしている あいだ あるく<br><br>🥚 の ちかく（40m）まで いくと ドラゴンが いるかも！<br>🍎 ごはん・🪙 コインも おちているよ。ポイントは まいにち かわるよ。</p><p style="font-size:13px">ドラゴンを そだてるのは <b>👣 おさんぽ</b>（ほんとうに あるいた ほすう）だよ。</p>',[{t:'さがしに いく！',c:'go'}]);}
 }
 function leaveMap(){
-  MAPV.on=false;stopGeo();if(MOT.listening)stopMotion(true);save();
+  MAPV.on=false;MOVE.keys={};MOVE.target=null;MOVE.moving=false;save();
 }
 function renderMapCard(){
   if(!MAPV.on||!G)return;
-  const w=walkToday();$('mSteps').textContent=w.steps.toLocaleString('ja-JP');
+  const w=walkToday();$('mSteps').textContent=w.found;
   const d=cur();let h='';
-  if(GEO.state==='pending')h+='<div class="mrow">📡 いまの ばしょを さがしているよ…</div>';
-  else if(GEO.state==='denied'||GEO.state==='fail'){
-    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
-    h+='<div class="mrow warn">📍 いまの ばしょが わからないよ。<br><small>'+(GEO.state==='denied'?(ios?'iPhoneの「設定」→「アプリ」→「Safari」→「位置情報」を「確認」か「許可」に してね。':'ブラウザの 🔒 →「権限」→「位置情報」を「許可」に してね。'):'そとの ひらけた ところで もう いちど ためしてね。')+'</small><br><button class="sbtn2" id="mRetry">もういちど</button></div>';
-  } else if(GEO.me){
+  if(GEO.state==='pending')h+='<div class="mrow">📡 いまの ばしょを しらべているよ…</div>';
+  else if(GEO.me){
     const n=nearestPt();
     if(!GEO.pts)h+='<div class="mrow">🔎 まわりの ばしょを しらべているよ…</div>';
     else if(n){const c=CAT[n.pt.cat]||CAT.spot;h+='<div class="mrow"><b>'+c.i+' '+esc(n.pt.name)+'</b> まで あと <b>'+fmtM(n.d-PT_RADIUS)+'</b><br><small>'+(n.pt.kind==='dragon'?'🥚 ':'')+KIND_TXT[n.pt.kind]+'</small></div>';}
-    else h+='<div class="mrow">きょうの ポイントは ぜんぶ しらべたよ！ またあした</div>';
+    else h+='<div class="mrow">この あたりの ポイントは ぜんぶ しらべたよ！ とおくへ いくか、またあした</div>';
     if(GEO.src==='grid'&&!GEO.loading)h+='<div class="mrow" style="font-size:11px">（ちずの データが よめないので「ひみつの ばしょ」を だしているよ）</div>';
   }
-  if(d){
-    const hungry=d.hunger<=0;
-    h+='<div class="mrow"><div style="display:flex;justify-content:space-between"><b>🐉 '+esc(d.name)+' Lv'+d.lv+'</b><span>おなか '+Math.round(d.hunger)+'</span></div>'+barHtml(d.lv>=MAX_LV?1:d.exp,d.lv>=MAX_LV?1:need(d.lv),'#5cb8ff','EXP '+(d.lv>=MAX_LV?'MAX':d.exp+' / '+need(d.lv)))+
-      (hungry?'<small style="color:#c0392b">おなか ぺこぺこ！ ごはんを あげないと そだたないよ</small>':'<small>5ほ あるくと けいけんち 1</small>')+'</div>';
-  } else h+='<div class="mrow"><small>まだ ドラゴンが いないよ。🥚 の ばしょへ いってみよう！</small></div>';
-  const sensor=MOT.listening;
-  h+='<div class="mbtn2"><button id="mSensor" class="'+(sensor?'on':'')+'">👟 ほすう '+(sensor?'センサー':'GPS')+'</button><button id="mFood">🍎 ごはん</button><button id="mCenter">📍 いまの ばしょ</button></div>';
-  h+='<div class="mfoot">きょう しらべた ばしょ '+(w.found)+'　'+(DEMO?'<b>テストモード：ちずを タッチで いどう</b>':'')+'</div>';
+  h+='<div class="mrow"><small>👆 フリック・タッチ・やじるしキーで フテ猫が あるくよ'+(MOVE.moving?'（タッチで とまる）':'')+'</small></div>';
+  if(d)h+='<div class="mrow"><b>🐉 '+esc(d.name)+' Lv'+d.lv+'</b>　<small>そだてるのは 👣おさんぽで</small></div>';
+  else h+='<div class="mrow"><small>まだ ドラゴンが いないよ。🥚 の ばしょへ いってみよう！</small></div>';
+  h+='<div class="mbtn2"><button id="mFood">🍎 ごはん</button><button id="mCenter">📍 ほんとうの いまの ばしょ</button></div>';
   $('mCard').innerHTML=h;
-  const rt=$('mRetry');if(rt)rt.onclick=()=>{sfx.tap();GEO.state='idle';stopGeo();startGeo();};
-  $('mSensor').onclick=()=>{sfx.tap();if(MOT.listening){stopMotion(false);toast('GPSで かぞえるよ');renderMapCard();}else startMotion(true);};
   $('mFood').onclick=()=>{sfx.tap();if(!cur())return noDragon();openFood(()=>renderMapCard());};
-  $('mCenter').onclick=()=>{sfx.tap();if(GEO.me)fitNear();else{GEO.state='idle';stopGeo();startGeo();}};
+  $('mCenter').onclick=()=>{sfx.tap();MOVE.target=null;startGeo(true);};
 }
 $('mBack').onclick=()=>{sfx.tap();leaveMap();goHome();};
 
 /* ===================== おさんぽ ===================== */
 const WALK={
   enter(){
-    const d=cur();this.d=d;this.cam=0;this.dist=0;this.stepAcc=0;this.steps=0;this.expGot=0;this.objs=[];this.next=260;this.jy=0;this.jv=0;this.bump=0;this.blocked=null;this.loot={};this.coins=0;this.tbGot={hp:0,atk:0,def:0,spd:0};this.chase=null;this.lvStart=d.lv;
+    const d=cur();this.d=d;this.cam=0;this.dist=0;this.stepAcc=0;this.steps=0;this.expGot=0;this.objs=[];this.next=260;this.jy=0;this.jv=0;this.bump=0;this.blocked=null;this.loot={};this.coins=0;this.tbGot={hp:0,atk:0,def:0,spd:0};this.chase=null;this.lvStart=d.lv;this.queue=0;this.idleT=0;this._hint='';
     PARTS=[];FLOATS=[];bgm('walk');
     $('hudTop').innerHTML='<button class="hbtn" id="wBack">🏠 かえる</button><div class="mini"><div class="lbl" id="wName"></div><div class="bar"><i id="wExp" style="background:#5cb8ff"></i><b id="wExpT"></b></div><div class="bar"><i id="wHun" style="background:#ff9a3c"></i><b id="wHunT"></b></div></div><div class="pill">👣 <span id="wSteps">0</span></div>';
-    $('hudBot').innerHTML='<button class="hbtn" id="wFood" style="font-size:16px;padding:10px 16px">🍎 ごはん</button>';
     $('wBack').onclick=()=>{sfx.tap();this.finish();};
-    $('wFood').onclick=()=>{sfx.tap();this.pause=true;openFood(()=>{this.pause=false;this.updHud();});};
+    this.hudBtns();
     this.pause=false;this.updHud();
-    hint('ものを タッチ！ みずたまりは タッチで ジャンプ');
-    if(!G.tut.walk){G.tut.walk=1;save();this.pause=true;modal('<h2>👣 おさんぽ</h2><p>あるくと けいけんちが たまるよ。</p><p style="font-size:13px;text-align:left">🍎 りんご・🪙 コインは タッチで ひろう<br>🦋 ちょうちょを タッチ → すばやさ とっくん<br>💧 みずたまりは タイミングよく タッチで ジャンプ<br>🪨 いわを れんだ → こうげき とっくん<br>🪵 まるたを れんだ → ぼうぎょ とっくん<br>🌼 おはなを タッチ → HP とっくん</p><p style="font-size:13px">おなかが へったら ごはんを あげてね！</p>',[{t:'しゅっぱつ！',c:'go',f:()=>{this.pause=false;}}]);}
+    startStepSources();
+    if(!G.tut.walk2){G.tut.walk2=1;save();this.pause=true;modal('<h2>👣 おさんぽ</h2><p>スマホを もって <b>ほんとうに あるいた ほすう</b>だけ すすむよ。<br><b>3ぽ あるくと けいけんち 1</b>！</p><p style="font-size:12px">「👟センサー」を オンに すると ほすうを ちゃんと かぞえるよ（オフの ときは GPSで かぞえる。くるま・でんしゃは かぞえない）。がめんは ひらいた ままで あるいてね。</p><p style="font-size:13px;text-align:left">🍎 りんご・🪙 コインは タッチで ひろう<br>🦋 ちょうちょを タッチ → すばやさ とっくん<br>💧 みずたまりは タイミングよく タッチで ジャンプ<br>🪨 いわを れんだ → こうげき とっくん<br>🪵 まるたを れんだ → ぼうぎょ とっくん<br>🌼 おはなを タッチ → HP とっくん</p><p style="font-size:13px">おなかが へったら ごはんを あげてね！</p><p style="font-size:12px;color:#c0392b">あるく ときは まわりを よく みてね。</p>',[{t:'👟 センサーを オンにして しゅっぱつ！',c:'go',f:()=>{this.pause=false;startMotion(true);}},{t:'しゅっぱつ',c:'sub',f:()=>{this.pause=false;}}]);}
   },
+  hudBtns(){
+    if(scene!==WALK)return;
+    $('hudBot').innerHTML='<button class="hbtn" id="wFood" style="font-size:15px;padding:10px 14px">🍎 ごはん</button><button class="hbtn" id="wSensor" style="font-size:15px;padding:10px 14px;'+(MOT.listening?'background:#3fa858':'')+'">👟 '+(MOT.listening?'センサー':'GPS')+'</button>'+(DEMO?'<button class="hbtn" id="wDemo" style="font-size:15px;padding:10px 14px">＋20ほ</button>':'');
+    $('wFood').onclick=()=>{sfx.tap();this.pause=true;openFood(()=>{this.pause=false;this.updHud();});};
+    $('wSensor').onclick=()=>{sfx.tap();if(MOT.listening){stopMotion(false);this.hudBtns();toast('GPSで かぞえるよ');}else startMotion(true);};
+    const dm=$('wDemo');if(dm)dm.onclick=()=>{addRealSteps(20);};
+  },
+  onSteps(n,gain){this.steps+=n;this.expGot+=gain;this.queue=Math.min(this.queue+n*50,2000);this.idleT=0;this.updHud();},
+  setHint(t){if(this._hint!==t){this._hint=t;hint(t);}},
   updHud(){
     const d=this.d;
     $('wName').textContent=d.name+' Lv'+d.lv;
@@ -1790,7 +1870,7 @@ const WALK={
     else if(o.t==='flower'){o.done=true;addTb(d,'hp',1);this.tbGot.hp++;d.love=Math.min(100,d.love+1);sfx.pick();floatText(ox,gy-60,'HP とっくん+1','#8aff8a');burst(ox,gy-20,['#ff8ac8','#fff27a'],10);}
     else if(o.t==='butterfly'){o.done=true;this.chase={x:ox,y:gy+o.y,t:0};addTb(d,'spd',1);this.tbGot.spd++;d.love=Math.min(100,d.love+2);sfx.ring();floatText(ox,gy+o.y-30,'すばやさ とっくん+1','#8ad8ff');}
     else if(o.t==='rock'||o.t==='log'){
-      if(o.wx-this.kx>260)return;
+      if(o.wx-this.kx>260||o.wx-this.kx<-160)return;
       o.hp--;this.bump=0.25;sfx.hit();burst(ox,gy-30,o.t==='rock'?['#999','#bbb','#777']:['#8a5a2a','#c08a50'],8,180);
       if(o.hp<=0){o.done=true;const k=o.t==='rock'?'atk':'def';addTb(d,k,1);this.tbGot[k]++;const b=d.lv;if(gainExp(d,6))lvUpMsg(d,b);this.expGot+=6;floatText(ox,gy-80,(k==='atk'?'こうげき':'ぼうぎょ')+' とっくん+1','#ffb347');sfx.pick();}
     }
@@ -1803,27 +1883,12 @@ const WALK={
     if(this.jv!==0||this.jy<0){this.jv+=1500*dt;this.jy+=this.jv*dt;if(this.jy>=0){this.jy=0;this.jv=0;}}
     if(this.bump>0)this.bump-=dt;
     if(this.chase){this.chase.t+=dt;if(this.chase.t>0.8)this.chase=null;}
-    // じゃまもの
-    this.blocked=null;
-    for(const o of this.objs){if(!o.done&&(o.t==='rock'||o.t==='log')&&o.wx-this.kx<80&&o.wx-this.kx>-20){this.blocked=o;break;}}
-    const moving=!this.blocked&&d.hunger>0;
-    this.moving=moving;
-    if(moving){
-      const v=125;this.cam+=v*dt;this.dist+=v*dt;this.stepAcc+=v*dt;
-      d.hunger=Math.max(0,d.hunger-dt/2.5);
-      while(this.stepAcc>=50){this.stepAcc-=50;this.steps++;G.steps++;d.steps++;
-        const add=1+(Math.random()<d.love/200?1:0);const b=d.lv;const gotLv=gainExp(d,add);this.expGot+=add;
-        if(gotLv)lvUpMsg(d,b);
-        if(this.steps%10===0)this.updHud();
-        if(this.steps%30===0)save();
-      }
-      if(this.dist>this.next){this.spawn();this.next=this.dist+rnd(230,420);}
-    }
-    if(d.hunger<=0&&!this._hungry){this._hungry=true;this.updHud();hint('おなか ぺこぺこ！ ごはんを あげよう');}
-    if(d.hunger>0&&this._hungry){this._hungry=false;hint('ものを タッチ！ みずたまりは タッチで ジャンプ');}
-    if(this.blocked)hint(this.blocked.t==='rock'?'いわを タッチで れんだ！':'まるたを タッチで れんだ！');
-    else if(!this._hungry&&this._wasBlocked)hint('ものを タッチ！ みずたまりは タッチで ジャンプ');
-    this._wasBlocked=!!this.blocked;
+    const v=this.queue>0?Math.min(this.queue,Math.max(130,this.queue*1.2)*dt):0;
+    this.moving=v>0;this.idleT+=dt;
+    if(v>0){this.queue-=v;this.cam+=v;this.dist+=v;if(this.dist>this.next){this.spawn();this.next=this.dist+rnd(230,420);}}
+    if(d.hunger<=0)this.setHint('おなか ぺこぺこ！ ごはんを あげないと そだたないよ');
+    else if(this.idleT>4)this.setHint('スマホを もって あるいてね 👣 あるいた ぶんだけ すすむよ');
+    else this.setHint('ものを タッチ！ みずたまりは タッチで ジャンプ');
     // みずたまり
     for(const o of this.objs){
       if(o.t!=='puddle'||o.done)continue;
@@ -1863,7 +1928,7 @@ const WALK={
     const flyNow=st>=2||!!this.chase;drawDragon(c,dx,dy+this.jy*0.8,72+st*4,d.sp,d.lv,T,face,{fly:!hungry&&flyNow,walk:!hungry&&!flyNow&&this.moving,alt:flyNow?0.55:0,sad:hungry,happy:!!this.chase||this.bump>0});
     if(hungry)bubble(c,dx+20,dy-80,'ぐぅ〜',16);
     // フテ猫
-    drawKeeper(c,this.kx-cam,gy+12+this.jy,130,hungry?'sad':'walk',true,T,this.moving);
+    drawKeeper(c,this.kx-cam,gy+12+this.jy,130,hungry&&!this.moving?'sad':'walk',true,T,this.moving);
     drawFx(c,cam);
   },
   drawObj(c,o,x,gy){
@@ -1879,7 +1944,7 @@ const WALK={
       c.fillStyle='#fff';c.font='bold 14px sans-serif';if(dmg)c.fillText('ぐらぐら'.slice(0,dmg*2),x-5,gy-55);}
   },
   finish(){
-    this.pause=true;const d=this.d;
+    this.pause=true;const d=this.d;stopStepSources();
     save();
     let h='<h2>おさんぽ おしまい！</h2><canvas id="mdCv" width="440" height="340"></canvas><p>👣 '+this.steps+'ほ あるいたよ<br>けいけんち +'+this.expGot+(d.lv>this.lvStart?'<br><b style="color:#e8582a">Lv'+this.lvStart+' → Lv'+d.lv+'</b>':'')+'</p>';
     const tb=[];if(this.tbGot.hp)tb.push('HP+'+this.tbGot.hp);if(this.tbGot.atk)tb.push('こうげき+'+this.tbGot.atk);if(this.tbGot.def)tb.push('ぼうぎょ+'+this.tbGot.def);if(this.tbGot.spd)tb.push('すばやさ+'+this.tbGot.spd);
@@ -1888,7 +1953,7 @@ const WALK={
     modal(h,[{t:'こやへ もどる',c:'go',f:()=>goHome()}]);
     mdDragon={sp:d.sp,lv:d.lv,happy:true};
   },
-  leave(){save();}
+  leave(){stopStepSources();save();}
 };
 
 /* ===================== レース ===================== */
@@ -2219,6 +2284,7 @@ function loop(ts){
   const dt=Math.min(0.05,(ts-last)/1000||0);last=ts;T+=dt;
   try{
     if(scene&&$('stage').classList.contains('on')){scene.update(dt);cx.setTransform(DPR*U,0,0,DPR*U,0,0);cx.clearRect(0,0,VW,VH);scene.draw();}
+    if(MAPV.on)mapTick(dt);
     if(homeOn){drawHomeCv();_pt+=dt;if(_pt>1){_pt=0;updTop();}}
     if(mdDragon&&$('modal').classList.contains('on'))drawModalDragon();
     drawTitleCv();
