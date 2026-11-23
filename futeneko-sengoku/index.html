@@ -431,6 +431,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>🙇 降参した へい</b>：城を おとすと、のこった てきの へいの 3割くらい（せめた 国の 城主の 政が 高いほど ふえる。2〜5割）が 降参して みかたに くわわる。のこりは となりの 国へ にげる。</li>
       <li><b>🙇 たおした てきも 仲間に</b>：合戦に かつと、せめても 守りも、たおした てきの へいの 2〜4割くらい（大将の 政が 高いほど・連勝中ほど ふえる）が けがから たちなおって 降参し、みかたに くわわる。まけると みかたの へいが てきに くだる。</li>
       <li><b>🔥 連勝</b>：合戦に つづけて かつと（攻めでも 守りでも）、うわさを きいた <b>志願兵</b>が あつまる（2連勝で 足軽90人、1つ ふえるごとに +90人、さいだい 450人）。降参する てきも ふえ、となりの 家の 武将が <b>寝返って</b> くる ことも ある（智が ひくい 武将・まけている 家ほど）。まけると 連勝は 0に もどる。てきの 連勝にも 気をつけよう。</li>
+      <li><b>🍙 出陣の 兵糧</b>：出陣や 🐴補給の 兵糧は、まず <b>出陣する 城（と 応援を だした 城）の 蔵</b>から もちだす。お金は いらない。蔵に たりない ぶんだけ、お金で いそいで かう（ふつうの 1.5ばいの ねだん）。</li>
       <li><b>🍙 にげた てきの 兵糧</b>：攻めてきた てきが ひきあげたり にげたり したら、のこした 兵糧の 半分（ぜんめつ させたら 8わり。とどいて いない 小荷駄の 荷も）が 城の 蔵に はいる。兵糧ぎれで ひきあげた ときは なにも のこらない。</li>
       <li><b>🏯 城を おとして いく</b>：国ごとに 本城と 支城（2つ）が ある。となりの 国から せめると、まず その 道の 入り口を まもる <b>支城</b>を おとす（地図の 小さな 櫓。赤く 光るのが せめられる 城）。支城を とれば <b>本城</b>を せめられ、本城が おちると その 国が 手に はいる（のこった 支城の 多くは 降参、のこりは 抵抗を つづける）。支城が せめられると 本城から 後詰めが くる。支城の まわりは その城の <b>所領</b>（国の 1〜3わりほど）。支城を とると 所領が じぶんの 色に かわり、その ぶんの 年貢・収入が はいる（とられた 側は へる。とられた 所領には 田畑や 町を つくれない）。じぶんの 支城を タップして「所領を ひらく」と、その まわりに 田畑・町などを つくれる（支城ごとに きせつに 1回。年貢は 田畑の かずで わける）。支城を タップすると 守備兵の 出し入れが できる。</li>
       <li><b>⚔ 合戦は 国ざかいから</b>：となりの 国から 道を すすみ、国ざかいを こえて 城へ むかう。<b>本丸に はいれば かち</b>（大将を たおしても かち）。ターンの かぎりは なく、<b>兵糧</b>が つきると ひきあげ。出陣の とき なん日ぶん もっていくか えらぶ（お金が かかる。へいが へると ながもち）。城が とおい 国ほど 日数が いる。合戦中は「🐴補給」で <b>小荷駄隊</b>を よべる（お金が かかる）。攻め口に あらわれるので、本隊（みかた 3隊いじょう）の 2マス いないまで はこぶと 兵糧が ふえる。小荷駄隊は たたかえず、森・山・丘を みかたなしで すすむと 伏兵に おそわれ、てきにも ねらわれる。てきの 小荷駄隊を おそえば 兵糧ぎれを ねらえる。出陣の とき、おなじ 城を せめられる ほかの 国が あれば「＋◯◯からも せめる」で <b>何か所からも 同時に</b> せめられる（それぞれの 攻め口から あらわれる）。</li>
@@ -501,7 +502,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v8.9';
+var VERSION = 'v9.0';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -3010,6 +3011,19 @@ function moveRice(S, from, to, koku) {
   setCastleFood(S, a[0], a[1], have - koku); setCastleFood(S, b[0], b[1], castleFood(S, b[0], b[1]) + koku);
   return { ok: true, koku: koku };
 }
+// ---- 出陣の 兵糧：まず 城の 蔵から。たりない ぶんだけ お金で いそいで かう ----
+var RUSH_PRICE = 1.5;   // いそぎの かいいれは ふつうの 1.5ばい
+function ricePlan(S, locs, koku) {
+  var need = Math.ceil(koku), take = [], seen = {};
+  (locs || []).forEach(function (loc) { if (need <= 0 || !loc || seen[loc]) return; seen[loc] = 1; var pc = locPC(S, loc), have = castleFood(S, pc[0], pc[1]), k = Math.min(have, need); if (k > 0) { take.push([loc, k]); need -= k; } });
+  var short = Math.max(0, need);
+  return { koku: Math.ceil(koku), take: take, fromStore: Math.ceil(koku) - short, short: short, gold: Math.ceil(short * RICE_PRICE * RUSH_PRICE / KAN) };
+}
+function applyRicePlan(S, cid, plan) {
+  if (S.clans[cid].gold < plan.gold) return false;
+  plan.take.forEach(function (t) { var pc = locPC(S, t[0]); setCastleFood(S, pc[0], pc[1], castleFood(S, pc[0], pc[1]) - t[1]); });
+  S.clans[cid].gold -= plan.gold; return true;
+}
 // お金で 兵糧を かいいれる（石）
 function buyRice(S, pid, cid, koku) {
   var own = cid ? S.castles[cid].owner : S.provs[pid].owner, cap = castleFoodCap(S, pid, cid), have = castleFood(S, pid, cid);
@@ -5201,15 +5215,20 @@ function reinGo() {
 function supplyCost(days) { return Math.ceil(foodCost(atkMen(G), days) * 1.3); }   // はこぶ 手間で すこし たかい
 function openSupply() {
   if (!G || G.food === undefined || activeConvoy(G, 'atk')) return;
-  var gold = KS.clans[KS.player].gold;
-  $('supplyMsg').innerHTML = 'いまの 兵糧：あと <b>' + foodDays(G) + '日</b>（お金 💰' + kan(gold) + '）<br>攻め口に 小荷駄隊が あらわれる。<b>本隊（みかた 3隊いじょう）の 2マス いない</b>まで はこぶと 兵糧が ふえる。<br><span style="color:#b33">⚠ たたかえない。森・山・丘を みかたなしで すすむと 伏兵に おそわれやすい。てきにも ねらわれる。</span>';
+  var gold = KS.clans[KS.player].gold, b0 = G.kBattle, home = b0 ? (b0.srcCastle || b0.from) : null, hpc = home ? locPC(KS, home) : null;
+  if (home && locOwner(KS, home) !== KS.player) home = null;
+  var store = home ? castleFood(KS, hpc[0], hpc[1]) : 0;
+  $('supplyMsg').innerHTML = 'いまの 兵糧：あと <b>' + foodDays(G) + '日</b>（' + (home ? '🏯' + locName(KS, home) + 'の 蔵 ' + store.toLocaleString('ja-JP') + '石・' : '') + 'お金 💰' + kan(gold) + '）<br>兵糧は 出陣した 城の 蔵から。たりない ぶんは お金で かう。<br>攻め口に 小荷駄隊が あらわれる。<b>本隊（みかた 3隊いじょう）の 2マス いない</b>まで はこぶと 兵糧が ふえる。<br><span style="color:#b33">⚠ たたかえない。森・山・丘を みかたなしで すすむと 伏兵に おそわれやすい。てきにも ねらわれる。</span>';
   var box = $('supplyOpts'); box.innerHTML = '';
   [5, 10, 15].forEach(function (d) {
-    var c = supplyCost(d), b = document.createElement('button'); b.className = 'act'; b.innerHTML = d + '日ぶん<br><small>💰' + kan(c) + '</small>'; b.disabled = c > gold;
+    var rp = ricePlan(KS, home ? [home] : [], atkMen(G) * d * RICE_PER_MAN), c = rp.gold, b = document.createElement('button'); b.className = 'act';
+    b.innerHTML = d + '日ぶん<br><small>🍙' + rp.koku.toLocaleString('ja-JP') + '石' + (rp.short ? '・💰' + kan(c) : '（蔵から）') + '</small>'; b.disabled = c > gold;
     b.onclick = function () {
       SFX.tap(); $('supplyBox').classList.remove('on');
+      if (KS.clans[KS.player].gold < rp.gold) return;
       var u = sendSupply(G, d, 'atk'); if (!u) return;
-      KS.clans[KS.player].gold -= c; kSave && kSave();
+      applyRicePlan(KS, KS.player, rp);
+      kSave && kSave();
       logMsg('🐴 小荷駄隊（兵糧 ' + d + '日ぶん）が 攻め口に ついた。本隊の そばまで はこぼう', 'sys'); banner('小荷駄隊が ついた', 1000);
       floatText(u.c, u.r, '🐴', '#ffe24a', true); updateHud();
     };
@@ -6651,9 +6670,13 @@ function kAttackBox(from, to, castleId, src) {
     var left = A.units.length - A.units.filter(function (u) { return ids.indexOf(u.uid) >= 0; }).length;
     $('kOdds').innerHTML = 'かちめ：<b class="' + t[1] + '">' + t[0] + '</b>（' + us.length + '隊・' + menStr(menTotal(us)) + (nf > 1 ? '・' + nf + 'か所から' : '') + '）' +
       (left === 0 && (src || isFrontier(KS, from)) ? '<br><span class="r">⚠ ' + (src ? brName(src) : PROV_BY[from].name) + 'が からっぽに なる！ てきに とられるかも</span>' : '　るすばん ' + left + '隊');
-    var fd = +$('kFood').value, fc = foodCost(menTotal(us), fd), gold = KS.clans[KS.player].gold;
-    $('kFoodV').innerHTML = fd + '日<br><small>💰' + kan(fc) + '</small>';
-    $('kFoodW').innerHTML = (fd < need ? '<span class="r">⚠ めやす（' + need + '日）より すくない！ とちゅうで ひきあげるかも</span>' : '') + (fc > gold ? '<br><span class="r">お金が たりない</span>' : '');
+    var fd = +$('kFood').value, gold = KS.clans[KS.player].gold, locs = [loc];
+    co.forEach(function (c, i) { if (coUnits(c, i).length) locs.push(c.loc); });
+    var rp = ricePlan(KS, locs, menTotal(us) * fd * RICE_PER_MAN), fc = rp.gold;
+    $('kFoodV').innerHTML = fd + '日<br><small>🍙' + rp.koku.toLocaleString('ja-JP') + '石</small>';
+    $('kFoodW').innerHTML = (fd < need ? '<span class="r">⚠ めやす（' + need + '日）より すくない！ とちゅうで ひきあげるかも</span><br>' : '') +
+      '🏯 城の 蔵から <b>' + rp.fromStore.toLocaleString('ja-JP') + '石</b>' + (rp.take.length ? '（' + rp.take.map(function (t) { return locName(KS, t[0]) + ' ' + t[1].toLocaleString('ja-JP'); }).join('・') + '）' : '') +
+      (rp.short ? '<br>たりない <b>' + rp.short.toLocaleString('ja-JP') + '石</b>は いそいで かう 💰' + kan(fc) + (fc > gold ? '　<span class="r">お金が たりない</span>' : '') : '　お金は いらない');
     $('kFight').disabled = $('kAuto').disabled = ids.length === 0 || fc > gold;
   }
   kModal('出陣', body, [
@@ -6677,7 +6700,13 @@ function kLaunch(from, to, how, castleId, extra, food, gen, src) {
   var ids = pickerUids(src ? KS.castles[src].units : KS.provs[from].units); if (!ids.length) return;
   kCloseModal(); kMode = 'idle';
   var b = src ? makeBranchBattle(KS, src, to, ids, castleId || null, extra || []) : makeBattle(KS, from, to, ids, castleId || null, extra || []);
-  if (food) { b.foodDays = food; b.foodCost = foodCost(menTotal(b.atkUnits), food); }
+  if (food) {   // 兵糧は 城の 蔵から（出陣する 城 → 応援の 城）。たりない ぶんだけ お金
+    b.foodDays = food; b.foodCost = 0;
+    var rl = [src || from].concat((extra || []).map(function (e) { return e.castle || e.from; })), rp = ricePlan(KS, rl, menTotal(b.atkUnits) * food * RICE_PER_MAN);
+    if (!applyRicePlan(KS, KS.player, rp)) { banner('お金が たりない', 1200); return; }
+    if (rp.fromStore) logC(KS, '城の 蔵から 兵糧 ' + rp.fromStore.toLocaleString('ja-JP') + '石を もちだした' + (rp.short ? '（たりない ' + rp.short.toLocaleString('ja-JP') + '石は 💰' + kan(rp.gold) + 'で かった）' : ''), 'sys');
+    else if (rp.gold) logC(KS, '兵糧 ' + rp.short.toLocaleString('ja-JP') + '石を 💰' + kan(rp.gold) + 'で かった', 'sys');
+  }
   if (gen) {   // えらんだ 大将。武が 高いと 奇襲（てきの 守りが はじめから よわる）
     b.atkOff = gen.id; useOfficer(KS, gen.id);
     if (cRand(KS) < premiumP(gen.st[0])) { b.defUnits.forEach(function (u) { u.hp = Math.max(1, u.hp - 1.5); }); b.kishu = true; logC(KS, '★ ' + gen.name + 'の 奇襲が きまった！ てきの 守りが みだれた', 'good'); setTimeout(function () { banner('★ ' + gen.name + 'の 奇襲！', 1500); }, 300); }
