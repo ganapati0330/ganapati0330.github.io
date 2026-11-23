@@ -452,7 +452,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v5.4';
+var VERSION = 'v5.5';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2761,6 +2761,15 @@ function takePrisoners(S, b, list) {
   });
   return { joined: joined, rest: rest, men: Math.round(men), rate: rate };
 }
+// 城の 絵（縄張りの 型 → 絵）
+var CASTLE_ART = { koriyama: 'yama', gassan: 'yama', matsuyama: 'yama', takada: 'yama', kanayama: 'yama', katsuyama: 'yama', ridge: 'yama', ridge_r: 'yama', oo: 'yama',
+  kagami: 'yamas', yamajiro_s: 'yamas', yama: 'yamas', kannabe: 'hirayama', odaka: 'hirayama', nino: 'hirayama', fuse: 'hira', hira: 'hira', mizu: 'hira',
+  sakurao: 'umi', umi: 'umi', yakata: 'yakata', toride: 'toride' };
+// cid（支城）か pid（本城）の 絵の 名前。おとされた きせつは 焼け跡
+function castleArtOf(S, pid, cid) {
+  var k = cid || pid; if (S && S.fallen && S.fallen[k] === S.turn) return 'castle_ruin';
+  return 'castle_' + (CASTLE_ART[cid ? brTpl(cid) : PROV_BY[pid].castle] || 'yamas');
+}
 function applyBattle(S, b, res) {
   if (S.provs[b.to]) S.provs[b.to].warHit = (S.provs[b.to].warHit || 0) + 4;   // いくさで 田畑が あれる
   var A = S.provs[b.from], B = S.provs[b.to];
@@ -2778,7 +2787,7 @@ function applyBattle(S, b, res) {
     if (res.winner === 'atk') {
       var pr = takePrisoners(S, b, res.defSurv); res.defSurv = pr.rest; res.prisMen = pr.men;
       var winners = res.atkSurv.concat(pr.joined);
-      C0.owner = b.atkClan;
+      C0.owner = b.atkClan; (S.fallen || (S.fallen = {}))[b.castleId] = S.turn;
       // 支城には 3隊だけ のこす（降参した へいと よわった 隊から）。のこりは 出陣した 国へ もどる
       var jid = pr.joined.map(function (u) { return u.uid; });
       var order = winners.slice().sort(function (x, y) { return (jid.indexOf(y.uid) >= 0) - (jid.indexOf(x.uid) >= 0) || x.hp - y.hp; });
@@ -2816,7 +2825,7 @@ function applyBattle(S, b, res) {
     });
     // のこった 守りの 何割かは 降参して みかたに
     var pr2 = takePrisoners(S, b, res.defSurv); res.defSurv = pr2.rest; res.prisMen = pr2.men;
-    B.owner = b.atkClan; B.units = res.atkSurv.concat(pr2.joined).slice(0, PROV_CAP); B.acted = true;
+    B.owner = b.atkClan; B.units = res.atkSurv.concat(pr2.joined).slice(0, PROV_CAP); B.acted = true; (S.fallen || (S.fallen = {}))[b.to] = S.turn;
     B.fuman = Math.max(B.owner === IKKI ? 0 : 20, Math.min(B.fuman || 0, 40)); if (b.defClan === IKKI) B.tax = TAX_DEF;
     if (pr2.men) logC(S, 'てきの へい ' + pr2.men.toLocaleString('ja-JP') + '人が 降参して ' + atkName + 'に くわわった', b.atkClan === S.player ? 'good' : 'sys');
     sendFled(res.atkFled, b.atkClan); sendFled(res.defFled, b.defClan);
@@ -3914,7 +3923,7 @@ function drawTile(t) {
   ctx.restore();
 }
 // ---- 画像グラフィック（img/ フォルダ。読めないときは 上の 図形描画に もどる） ----
-var GFX_NAMES = ['t_grass', 't_court', 't_water', 't_sea', 'forest', 'sakura', 'bamboo', 'hill', 'mount', 'snow', 'bridge', 'wall', 'dorui', 'gate', 'gateopen', 'gatebroken', 'rubble', 'yagura',
+var GFX_NAMES = ['castle_yama', 'castle_yamas', 'castle_hirayama', 'castle_hira', 'castle_umi', 'castle_yakata', 'castle_toride', 'castle_ruin', 't_grass', 't_court', 't_water', 't_sea', 'forest', 'sakura', 'bamboo', 'hill', 'mount', 'snow', 'bridge', 'wall', 'dorui', 'gate', 'gateopen', 'gatebroken', 'rubble', 'yagura',
   'ashi_stand_b', 'ashi_stand_r', 'ashi_atk_b', 'ashi_atk_r', 'ashi_down_b', 'ashi_down_r',
   'kosaku_stand_b', 'kosaku_stand_r', 'kosaku_atk_b', 'kosaku_atk_r', 'kosaku_down_b', 'kosaku_down_r',
   'teppo_stand_b', 'teppo_stand_r', 'teppo_atk_b', 'teppo_atk_r', 'teppo_down_b', 'teppo_down_r',
@@ -5246,6 +5255,14 @@ function kRender() {
   // 城
   PROVS.forEach(function (p) {
     var pin = kProj(p.pin[0], p.pin[1]), u = kU(1) ;
+    var art = gx(castleArtOf(KS, p.id, null));
+    if (art) {   // 城の 絵（山城・平城・海城・館…）
+      c.save(); c.translate(pin[0], pin[1]); c.scale(u, u);
+      var aw = 58, ah = aw * art.naturalHeight / art.naturalWidth;
+      c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.ellipse(0, 6, aw * 0.42, 5, 0, 0, Math.PI * 2); c.fill();
+      c.drawImage(art, -aw / 2, 8 - ah, aw, ah);
+      c.restore(); return;
+    }
     c.save(); c.translate(pin[0], pin[1]); c.scale(u, u);
     c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.ellipse(0, 6, 11, 3, 0, 0, Math.PI * 2); c.fill();
     c.fillStyle = '#8a7a5a'; c.fillRect(-9, 1, 18, 5);
@@ -5264,9 +5281,17 @@ function kRender() {
     var isT = atkT.some(function (t) { return t.castle === id; });
     c.save(); c.translate(q[0], q[1]); c.scale(u, u);
     if (isT) { c.beginPath(); c.arc(0, -4, 13, 0, Math.PI * 2); c.fillStyle = 'rgba(255,60,30,0.45)'; c.fill(); c.strokeStyle = '#ff5a3a'; c.lineWidth = 2.5; c.stroke(); }
+    var bart = gx(castleArtOf(KS, C0.prov, id));
+    if (bart) {
+      var bw = 38, bh2 = bw * bart.naturalHeight / bart.naturalWidth, oc = C0.owner ? CLANS[C0.owner].color : '#999';
+      c.fillStyle = oc; c.globalAlpha = 0.55; c.beginPath(); c.ellipse(0, 2, bw * 0.46, 4.5, 0, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1;
+      c.drawImage(bart, -bw / 2, 4 - bh2, bw, bh2);
+      c.fillStyle = oc; c.fillRect(bw * 0.38, 4 - bh2 - 2, 8, 6); c.strokeStyle = '#222'; c.lineWidth = 1; c.beginPath(); c.moveTo(bw * 0.38, 4 - bh2 - 2); c.lineTo(bw * 0.38, 4 - bh2 + 12); c.stroke();
+    } else {
     c.fillStyle = '#fbf8ef'; c.strokeStyle = '#3d2a1a'; c.lineWidth = 1; c.fillRect(-5, -6, 10, 7); c.strokeRect(-5, -6, 10, 7);
     c.fillStyle = '#4a3a2a'; c.beginPath(); c.moveTo(-7, -6); c.lineTo(0, -11); c.lineTo(7, -6); c.closePath(); c.fill();
     c.fillStyle = C0.owner ? CLANS[C0.owner].color : '#999'; c.fillRect(5, -16, 7, 5); c.strokeStyle = '#222'; c.beginPath(); c.moveTo(5, -16); c.lineTo(5, -4); c.stroke();
+    }
     if (kMap.s > 1.6) { c.font = 'bold 8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'top'; c.lineWidth = 2.5; c.strokeStyle = 'rgba(255,255,255,0.9)'; c.strokeText(brName(id), 0, 3); c.fillStyle = '#3a2210'; c.fillText(brName(id), 0, 3); }
     c.restore();
   });
@@ -6112,13 +6137,22 @@ function domRender() {
   var dep = d[pid].dep;
   for (var dk in dep) { var p0 = dk.split(',').map(Number); if (!(P.bld && P.bld[dk])) { icon(p0[0], p0[1], '◆', 'rgba(255,255,255,0.75)'); c.fillStyle = '#7a2fb0'; } }
   var visP = {}; visP[pid] = 1; Object.keys(DS.brOK).forEach(function (k9) { visP[KS.castles[k9].prov] = 1; });
-  Object.keys(visP).forEach(function (vp) { var PB = KS.provs[vp]; for (var bk in (PB.bld || {})) { var b = PB.bld[bk], p1 = bk.split(',').map(Number); if (vp !== pid && regionOwner(KS, p1[0], p1[1]) !== DS.who) continue; if (b === 'field') { if (s >= 14) icon(p1[0], p1[1], '🌾'); continue; } icon(p1[0], p1[1], BLD[b === 'town0' ? 'town' : b].icon, 'rgba(255,250,235,0.85)'); } });
+  Object.keys(visP).forEach(function (vp) { var PB = KS.provs[vp]; for (var bk in (PB.bld || {})) { var b = PB.bld[bk], p1 = bk.split(',').map(Number); if (vp !== pid && regionOwner(KS, p1[0], p1[1]) !== DS.who) continue; if (b === 'field') { if (s >= 14) icon(p1[0], p1[1], '🌾'); continue; }
+      if (b === 'toride' && gx('castle_toride')) { var ti = gx('castle_toride'), q9 = domXY(p1[0], p1[1]), tw9 = s * 2.2, th9 = tw9 * ti.naturalHeight / ti.naturalWidth; c.drawImage(ti, DS.x + q9[0] * s - tw9 / 2, DS.y + q9[1] * s + s * 0.6 - th9, tw9, th9); continue; }
+      icon(p1[0], p1[1], BLD[b === 'town0' ? 'town' : b].icon, 'rgba(255,250,235,0.85)'); } });
   // 支城（持ち主の いろの わく と 名前）
   var bhx = branchHexes() || {};
-  function castleTag(h, name, own, big) {
-    var q7 = domXY(h[0], h[1]), x7 = DS.x + q7[0] * s, y7 = DS.y + q7[1] * s, rr7 = s * (big ? 0.95 : 0.85);
+  function castleTag(h, name, own, big, art) {
+    var q7 = domXY(h[0], h[1]), x7 = DS.x + q7[0] * s, y7 = DS.y + q7[1] * s, rr7 = s * (big ? 0.95 : 0.85), im7 = art ? gx(art) : null;
+    if (im7) {   // 城の 絵：足もとに 持ち主の いろ
+      var aw7 = s * (big ? 5.6 : 4.2), ah7 = aw7 * im7.naturalHeight / im7.naturalWidth;
+      c.fillStyle = own && CLANS[own] ? CLANS[own].color : '#888'; c.globalAlpha = 0.7; c.beginPath(); c.ellipse(x7, y7 + s * 0.35, aw7 * 0.44, s * 0.45, 0, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1;
+      c.drawImage(im7, x7 - aw7 / 2, y7 + s * 0.55 - ah7, aw7, ah7);
+      rr7 = ah7 - s * 0.55;
+    } else {
     c.beginPath(); c.arc(x7, y7, rr7, 0, Math.PI * 2); c.fillStyle = 'rgba(255,250,235,0.95)'; c.fill(); c.lineWidth = Math.max(2, s * 0.2); c.strokeStyle = own && CLANS[own] ? CLANS[own].color : '#888'; c.stroke();
     c.font = Math.max(9, s * (big ? 1.15 : 1)) + 'px sans-serif'; c.fillStyle = '#000'; c.fillText(big ? '🏯' : '🏰', x7, y7 + 1);
+    }
     var fz = Math.max(10, Math.min(16, s * 0.8)); c.font = 'bold ' + fz + 'px sans-serif'; c.lineWidth = 3; c.strokeStyle = '#fff';
     var lab = name + (own && CLANS[own] ? '（' + CLANS[own].name + '）' : ''); c.strokeText(lab, x7, y7 - rr7 - fz * 0.7); c.fillStyle = own && CLANS[own] ? '#2a1a0a' : '#555'; c.fillText(lab, x7, y7 - rr7 - fz * 0.7);
     var tw7 = c.measureText(lab).width; lrects.push([x7 - tw7 / 2 - 2, y7 - rr7 - fz * 1.3, tw7 + 4, fz + 4], [x7 - rr7, y7 - rr7, rr7 * 2, rr7 * 2]);
@@ -6126,8 +6160,8 @@ function domRender() {
   var lrects = [];
   // 見えている 国の 城を ぜんぶ（本城・支城）
   PROVS.forEach(function (p9) {
-    var ch = castleHex(p9.id); if (ch && ch[1] >= r0 - 2 && ch[1] <= r1 + 2 && ch[0] >= c0 - 2 && ch[0] <= c1 + 2) castleTag(ch, castleNameOf(KS, p9.id), KS.provs[p9.id].owner, true);
-    branchesIn(KS, p9.id).forEach(function (c8) { var h8 = bhx[c8.id]; if (h8 && h8[1] >= r0 - 2 && h8[1] <= r1 + 2 && h8[0] >= c0 - 2 && h8[0] <= c1 + 2) castleTag(h8, brName(c8.id), c8.owner || KS.provs[p9.id].owner, false); });
+    var ch = castleHex(p9.id); if (ch && ch[1] >= r0 - 2 && ch[1] <= r1 + 2 && ch[0] >= c0 - 2 && ch[0] <= c1 + 2) castleTag(ch, castleNameOf(KS, p9.id), KS.provs[p9.id].owner, true, castleArtOf(KS, p9.id, null));
+    branchesIn(KS, p9.id).forEach(function (c8) { var h8 = bhx[c8.id]; if (h8 && h8[1] >= r0 - 2 && h8[1] <= r1 + 2 && h8[0] >= c0 - 2 && h8[0] <= c1 + 2) castleTag(h8, brName(c8.id), c8.owner || KS.provs[p9.id].owner, false, castleArtOf(KS, p9.id, c8.id)); });
   });
   // 地名（山・川・峠・町・湖）
   domLabels(c, s, lrects);
