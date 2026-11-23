@@ -444,7 +444,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>⚔ 出陣の ながれ</b>：城を えらんで（地図の 城・下の「🏯 ◯◯城の めいれい」・📜の 表）⚔出陣 → → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
       <li><b>⚔ 支城から 出陣</b>：じぶんの 支城を タップして「⚔ ここから 出陣」。その 支城の 守備兵で、おなじ 国の てきの 本城・支城や、となりの 国の 城を せめられる（支城 ごとに きせつに 1かい、国の めいれいは つかわない）。てきの 国の なかに ある 支城からは、国ざかいを こえずに すぐ 本城へ せめかかれる。生きのこった へいは 支城へ もどる。</li>
       <li><b>📍 家臣の いる 城</b>：家臣は それぞれ 城（本城・支城）に いて、<b>その 国でしか はたらけない</b>。ほかの 国で はたらかせたい ときは 👥家臣の 🚶移動で うつす（移動した きせつは はたらけない）。城主に えらぶと その 城へ うつって くる。城を おとされると ちかくの 城へ にげる。</li>
-      <li><b>🏯 城の 守りと 兵糧</b>：城（本城・支城）を タップすると 守備兵の 内わけと <b>兵糧（石）</b>が 見られる。本城から 支城へ 兵を おくったり よびもどしたり できる（行為は つかわない）。せめられると 守りの へいは 城の 蔵の 兵糧を たべる（1人 1日 5合）。<b>つきると 開城</b>。秋に 米が はいり、お金で かいたす ことも できる。改築すると 蔵が 大きく なる。</li>
+      <li><b>🏯 城の 守りと 兵糧</b>：城（本城・支城）を タップすると 守備兵の 内わけと <b>兵糧（石）</b>が 見られる。本城から 支城へ 兵を おくったり よびもどしたり できる（行為は つかわない）。せめられると 守りの へいは 城の 蔵の 兵糧を たべる（1人 1日 2.5合）。<b>つきると 開城</b>。秋に 米が はいり、お金で かいたす ことも できる。改築すると 蔵が 大きく なる。</li>
       <li><b>🌾 年貢と 一揆</b>：国ごとに 年貢の 割合（三公七民〜七公三民）を −／＋で きめられる（行為は つかわない）。おもくすると 秋の 年貢が ふえるが、農民の <b>不満</b>が たまる。不満が 60を こえると <b>一揆</b>が おきる。兵が おおければ しずめられる（田畑が すこし あれる）が、すくないと 国を うばわれて <b>一揆衆</b>の 国に なる。一揆衆は せめて こないが、せめて とりかえす ことが できる。いくさが あると 不満が ふえ、政の たかい 城主や 町が あると へる。</li>
       <li><b>中国地方は 1まいの ヘックス地図</b>：海岸線・国境は 国土数値情報、山・峠・川は 地理の 知識で つくった もの。国取りの 地図の こい 茶色が <b>けわしい山（とおれない）</b>。国どうしは <b>道</b>で つながる：🛤 陸路・⛰ <b>峠道</b>（四十曲峠・志戸坂峠・明地峠 など。守りが すこし ゆうり）・⛵ <b>海路</b>（船で 上陸。騎馬は つれていけない）。🚫 は 山が けわしくて 国境が あっても せめられない ところ。</li>
       <li><b>合戦の ちずは その 場所の 地形</b>：同じ 地図から 城の まわりを きりだす。<b>攻め手が とおってきた 道が ちずの 下</b>（左上の 方位で 北が わかる）。点線は 国ざかい、こい 茶色の 山は とおれない。</li>
@@ -497,7 +497,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v8.3';
+var VERSION = 'v8.4';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -1175,7 +1175,7 @@ function estimateDamage(G, a, aC, aR, d) {
 }
 // その隊の いまの 人数（騎馬は 騎、鉄砲は 挺）
 function defMen(G) { var m = 0; G.units.forEach(function (u) { if (u.side === 'def' && u.hp > 0 && !u.fled && u.type !== 'taisho') m += menOf(u); }); return m; }
-function defFoodDays(G) { if (G.defFood === undefined) return null; var m = defMen(G); return m ? Math.floor(G.defFood / (m * 0.005)) : 999; }
+function defFoodDays(G) { if (G.defFood === undefined) return null; var m = defMen(G); return m ? Math.floor(G.defFood / (m * 0.0025)) : 999; }
 function atkMen(G) { var m = 0; G.units.forEach(function (u) { if (u.side === 'atk' && u.hp > 0 && !u.fled && u.type !== 'taisho' && u.type !== 'konida') m += menOf(u); }); return m; }
 // ---- 補給（小荷駄隊） ----
 function activeConvoy(G, side) { return G.units.filter(function (u) { return u.type === 'konida' && u.side === side && u.hp > 0 && !u.delivered; })[0] || null; }
@@ -1446,7 +1446,7 @@ function newGame(opts) {
   if (G.map.h > size.h) G.turnLimit = size.turns + Math.ceil((G.map.h - size.h) / 1.2) + 3;
   // 兵糧：攻め手が もってきた 日数ぶん（へいが へると ながもち）。ターン制限の かわり
   if (opts.food) { G.food = opts.food * Math.max(1, atkMen(G)); G.food0 = opts.food; G.turnLimit = 999; }
-  // 城の 兵糧（石）：守りの へいが 1日 1人 5合
+  // 城の 兵糧（石）：守りの へいが 1日 1人 2.5合
   if (opts.defFood !== undefined) G.defFood = opts.defFood;
   // 城の 改築：石垣・門が かたく、城の 中の 守りが つよい
   G.fortLv = opts.fortLv || 0; G.castleBottom = castle.t.length + 1;
@@ -1656,7 +1656,7 @@ function endTurn(G) {
       G.food -= atkMen(G);
       if (G.food < 0) { G.food = 0; G.over = true; G.winner = 'def'; G.reason = 'せめての 兵糧が つきた！（ひきあげ）'; return; }
       if (G.defFood !== undefined) {   // 守りも 城の 蔵から たべる
-        G.defFood -= defMen(G) * 0.005;
+        G.defFood -= defMen(G) * 0.0025;
         if (G.defFood < 0) { G.defFood = 0; G.over = true; G.winner = 'atk'; G.reason = '城の 兵糧が つきて 開城した！'; return; }
       }
       // CPU の 攻め手は 兵糧が へると 小荷駄隊を よぶ（2回まで）
@@ -2957,7 +2957,7 @@ function makeBattle(S, from, to, uids, castleId, extra, src) {
   return b;
 }
 // ---- 城の 兵糧（石）：籠城の とき 守りの へいが たべる ----
-var RICE_PER_MAN = 0.005;        // 1人 1日 5合
+var RICE_PER_MAN = 0.0025;       // 1人 1日 2.5合
 var RICE_PRICE = 3;              // 1石 3貫（100貫 = 1 の お金で 33石）
 function castleFoodCap(S, pid, cid) { return cid ? 220 + 120 * ((S.castles[cid] && S.castles[cid].lv) || 0) : Math.round(600 + S.provs[pid].koku * 60 + 300 * (S.provs[pid].clv || 0)); }
 function castleFood(S, pid, cid) {
@@ -3009,7 +3009,7 @@ function harvestRice(S) {
   if (S.castles) for (var k in S.castles) { var c0 = S.castles[k]; if (!c0.owner) continue; setCastleFood(S, c0.prov, k, Math.min(castleFoodCap(S, c0.prov, k), castleFood(S, c0.prov, k) + 60)); }
 }
 // ---- 兵糧 ----
-var FOOD_PRICE = 0.4;   // 1000人の 1日ぶん（×100貫）
+var FOOD_PRICE = 0.2;   // 1000人の 1日ぶん（×100貫）
 function foodCost(men, days) { return Math.ceil(men / 1000 * days * FOOD_PRICE); }
 // 城まで すすんで せめおとすのに かかる めやすの 日数（国ざかいからの きょりで かわる）
 function needDays(S, b) {
@@ -6373,7 +6373,7 @@ function bindMerge(units, name, back) {
 function riceHtml(pid, cid) {
   var f = castleFood(KS, pid, cid), cap = castleFoodCap(KS, pid, cid), d = castleFoodDays(KS, pid, cid);
   return '<div class="kodds">🍙 兵糧 <b>' + f.toLocaleString('ja-JP') + '石</b>／蔵 ' + cap.toLocaleString('ja-JP') + '石　<span class="kfbar"><i style="width:' + Math.min(100, f / cap * 100) + '%;background:#d9b44a"></i></span><br>' +
-    'いまの 守備兵で <b class="' + (d < 15 ? 'r' : d < 30 ? 'y' : 'g') + '">約' + (d > 365 ? '365日いじょう' : d + '日') + '</b> 籠城できる（1人 1日 5合）。秋に 米が はいる。</div>';
+    'いまの 守備兵で <b class="' + (d < 15 ? 'r' : d < 30 ? 'y' : 'g') + '">約' + (d > 365 ? '365日いじょう' : d + '日') + '</b> 籠城できる（1人 1日 2.5合）。秋に 米が はいる。</div>';
 }
 // 兵糧を はこぶ（じぶんの 城どうし。めいれいは つかわない）
 function kRiceMoveBox(loc, back) {
