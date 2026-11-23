@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2b1d4e">
-<title>フテ猫ドラゴンそだて</title>
+<title>フテ猫ドラゴン どらごんを そだてよう！</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 /* required styles */
@@ -680,6 +680,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 #title{background:radial-gradient(circle at 50% 30%,#5a3fa0 0%,#2b1d4e 55%,#140c26 100%);align-items:center;justify-content:safe center;overflow-y:auto;color:#fff;text-align:center;padding:20px}
 #title h1{margin:0 0 4px;font-size:clamp(28px,8vw,52px);letter-spacing:2px;text-shadow:0 4px 0 #8a3c10,0 0 20px #ffb347;color:#ffe9a8}
 #title .sub{font-size:14px;opacity:.85;margin-bottom:8px}
+#title .sub2{font-size:clamp(18px,5vw,28px);font-weight:bold;color:#fff;text-shadow:0 3px 0 #5a2a8a,0 0 12px #ffb347;margin:0 0 6px;letter-spacing:2px}
 #titleCv{width:min(80vw,360px);height:min(52vw,230px);flex:0 0 auto}
 @media (max-height:500px){#title .sub{display:none}#titleCv{height:110px;width:240px}#title h1{font-size:28px}.keepers img{width:44px;height:44px}.bigbtn{padding:10px;font-size:17px}}
 .bigbtn{display:block;width:min(80vw,320px);margin:8px auto;padding:14px 10px;font-size:20px;font-weight:bold;border-radius:18px;color:#fff;background:linear-gradient(#ff9a3c,#e8582a);box-shadow:0 5px 0 #9a3510;letter-spacing:1px}
@@ -828,7 +829,8 @@ button{font-family:inherit;cursor:pointer;border:none}
 
 <!-- タイトル -->
 <section id="title" class="screen on">
-  <h1>フテ猫ドラゴンそだて</h1>
+  <h1>フテ猫ドラゴン</h1>
+  <div class="sub2">どらごんを そだてよう！</div>
   <div class="sub">あかりちゃんと ちいさな ドラゴンの ものがたり</div>
   <canvas id="titleCv"></canvas>
   <div id="titleMain"></div>
@@ -876,7 +878,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.9';
+const VER='1.10';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
