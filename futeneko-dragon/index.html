@@ -877,7 +877,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.13';
+const VER='1.14';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1306,7 +1306,31 @@ const CROPS={
 const FLOWERS={tulip:{n:'チューリップ',ic:'🌷',shape:'tulip'},rose:{n:'バラ',ic:'🌹',shape:'rose'},cosmos:{n:'コスモス',ic:'🌸',shape:'cosmos'},pansy:{n:'パンジー',ic:'🌼',shape:'pansy'},himawari:{n:'ひまわり',ic:'🌻',shape:'sun'}};
 const FCOL={red:{n:'あかい',c:'#e8344a'},white:{n:'しろい',c:'#ffffff'},yellow:{n:'きいろい',c:'#ffd23f'},pink:{n:'ピンクの',c:'#ff8ac0'},orange:{n:'オレンジの',c:'#ff9a2a'},purple:{n:'むらさきの',c:'#a05ad8'},blue:{n:'あおい',c:'#4a8aff'}};
 const GROW_H=3;  // みずを あげてから 1だんかい そだつまでの じかん（フテ猫ワールドと おなじ 3じかん）
+/* あかりちゃんの へやの かぐ・ゆか・かべ（てがきの え） */
+const RMI={};['bed','chair','rug','window','desk','curtain','pot','door','floor','wall'].forEach(k=>{const im=new Image();im.src='rm/'+k+'.webp';RMI[k]=im;});
+Object.assign(FURN,{
+ akari_bed:{n:'ドラゴンの ししゅうの ベッド',ic:'🛏️',w:2,h:3,k:'bed',img:'bed',top:1,c:['#b07a40','#fff','#e8b840'],price:150},
+ akari_chair:{n:'クッションの いす',ic:'🪑',w:1,h:1,k:'chair',img:'chair',c:['#c08848','#5a8a80'],price:40},
+ akari_rug:{n:'はながらの じゅうたん',ic:'🟩',w:3,h:2,k:'rug',img:'rug',top:1,rug:1,c:['#8aa860','#e8c050'],price:60},
+ akari_desk:{n:'きの つくえ',ic:'🟫',w:2,h:1,k:'table',img:'desk',c:['#b07a40','#8a5a2a'],price:60},
+ akari_pot:{n:'ピンクの はなの はちうえ',ic:'🪴',w:1,h:1,k:'pot',img:'pot',c:['#c0603a','#ff6b8a'],price:40}
+});
+function drawFurnImg(c,d,r,X,Y,fw,fh){
+  const im=RMI[d.img];if(!ok(im))return false;
+  const W=fw*TS,D=fh*TS,iw=im.naturalWidth,ih=im.naturalHeight;
+  if(d.top){ // うえから みた え：わくに あわせて（よこむきは 90どまわす）
+    c.save();c.translate(X+W/2,Y+D/2);c.rotate(r*Math.PI/2);
+    const w0=r%2?D:W,h0=r%2?W:D,sc=Math.min((w0-2)/iw,(h0-2)/ih),bw=iw*sc,bh=ih*sc;
+    if(!d.rug){c.fillStyle='rgba(0,0,0,.16)';c.fillRect(-bw/2+3,bh/2-4,bw-6,6);}
+    c.drawImage(im,-bw/2,-bh/2-(d.rug?0:3),bw,bh);c.restore();return true;}
+  // まえから みた え：あしもとを わくの したに そろえる
+  const sc=Math.min((W-4)/iw,(D+TS*1.2)/ih),bw=iw*sc,bh=ih*sc;
+  c.fillStyle='rgba(0,0,0,.16)';c.beginPath();c.ellipse(X+W/2,Y+D-4,bw*0.45,5,0,0,7);c.fill();
+  c.save();if(r===3||r===1&&d.k==='chair'){c.translate(X+W/2,0);c.scale(-1,1);c.translate(-(X+W/2),0);}
+  c.drawImage(im,X+(W-bw)/2,Y+D-2-bh,bw,bh);c.restore();return true;
+}
 function drawFurn(c,id,r,X,Y,fw,fh,on){
+  if(FURN[id].img&&drawFurnImg(c,FURN[id],r,X,Y,fw,fh))return;
   const d=FURN[id],c0=d.c[0],c1=d.c[1],W=fw*TS,D=fh*TS,t=T;
   c.fillStyle='rgba(0,0,0,.16)';if(!d.rug){c.fillRect(X+3,Y+D-8,W-6,7);}
   switch(d.k){
@@ -1492,7 +1516,9 @@ Object.keys(CROPS).forEach(k=>{const C=CROPS[k];FOOD[k]={n:C.n,e:C.ic,h:C.h,love
 function homeData(){
   if(!G.home)G.home={};const H=G.home;
   if(!Array.isArray(H.plots)||H.plots.length!==ALLPLOTS.length)H.plots=ALLPLOTS.map((_,i)=>(H.plots&&H.plots[i])||null);
-  if(!Array.isArray(H.room))H.room=[{id:'straw_bed',x:1,y:2,r:0},{id:'wood_table',x:4,y:5,r:0},{id:'wood_chair',x:3,y:5,r:0},{id:'grass_rug',x:3,y:8,r:0},{id:'flower_pot',x:7,y:2,r:0}];
+  if(!Array.isArray(H.room)){H.room=[{id:'akari_bed',x:0,y:2,r:0},{id:'akari_desk',x:4,y:5,r:0},{id:'akari_chair',x:3,y:5,r:0},{id:'akari_rug',x:3,y:8,r:0},{id:'akari_pot',x:6,y:2,r:0}];H.akf=1;}
+  if(!H.akf){H.akf=1;const MP={straw_bed:'akari_bed',wood_table:'akari_desk',wood_chair:'akari_chair',grass_rug:'akari_rug',flower_pot:'akari_pot'};
+    H.room.forEach(it=>{if(MP[it.id]){it.id=MP[it.id];if(it.id==='akari_rug'&&it.x>WALL_C-3)it.x=WALL_C-3;}});}
   H.room=H.room.filter(it=>FURN[it.id]);
   H.inv=H.inv||{};H.seeds=H.seeds||{turnip_seed:3,tulip_seed:2};H.flw=H.flw||0;H.pet=H.pet||{};
   Object.keys(CROPS).forEach(k=>{if(typeof G.food[k]!=='number')G.food[k]=0;});
@@ -1601,14 +1627,14 @@ function yardUpdate(dt){
   {const dx=a.x-ox,dy=a.y-oy;if(dx||dy)a.dir=Math.abs(dx)>=Math.abs(dy)*0.8?(dx>0?'R':'L'):(dy>0?'F':'B');}
   if(night&&a.pose&&a.pose!=='sleep'&&!a.mv&&sideOf(a.x)===sideOf(0)&&a.poseT>0.5)a.poseT=0.5;
   if(!a.mv&&!a.act&&!a.pose){a.idle-=dt;if(a.idle<=0){a.idle=rnd(2,5);
-    if(night){const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+1.6)*TS,y:(bed.y+2.4)*TS}:randSpot(true);routeTo(a,s.x,s.y);a.act=()=>{a.dir='R';a.pose='sleep';a.poseT=rnd(20,40);};}
+    if(night){const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+fsize(bed).w+0.6)*TS,y:(bed.y+fsize(bed).h+0.4)*TS}:randSpot(true);routeTo(a,s.x,s.y);a.act=()=>{a.dir='R';a.pose='sleep';a.poseT=rnd(20,40);};}
     else if(Math.random()<0.3&&YARD.ents.length){const e=pick(YARD.ents);routeTo(a,e.x-24,e.y+4);a.act=()=>{a.face=e.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose=Math.random()<0.5?'pet':'joy';a.poseT=1.6;e.heart=1.6;e.hop=0.6;};}
     else{const room=Math.random()<0.4,s=randSpot(room);routeTo(a,s.x,s.y);
       a.act=()=>{a.pose=pick(room?['read','chair','toys','drink','stretch','sweep','throw']:['butterfly','basket','sitknee','look','stretch','dig']);a.poseT=rnd(3,7);};}}}
   if(!night)(YARD.par||[]).forEach(q=>parentAI(q,dt));
   YARD.ents.forEach((e,i)=>{
     e.hop=Math.max(0,e.hop-dt);e.heart=Math.max(0,e.heart-dt);
-    if(night&&e.st!=='sleep'&&e.st!=='bed'){e.st='bed';const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+0.6+i*0.3)*TS,y:(bed.y+2.3)*TS}:randSpot(true);routeTo(e,s.x,s.y);}
+    if(night&&e.st!=='sleep'&&e.st!=='bed'){e.st='bed';const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+0.6+i*0.3)*TS,y:(bed.y+fsize(bed).h+0.3)*TS}:randSpot(true);routeTo(e,s.x,s.y);}
     if(!night&&(e.st==='sleep'||e.st==='bed'))e.st='idle';
     const done=moveEnt(e,dt,e.job?60:45);
     if(e.st==='bed'&&done){e.st='sleep';}
@@ -1642,14 +1668,24 @@ function yardDraw(){
   ALLPLOTS.forEach((P,i)=>{const p=G.home.plots[i];if(p&&p.w){c.fillStyle='rgba(40,20,5,.28)';wrr(c,P.c*TS+1,P.r*TS+1,TS-2,TS-2,6);}});
   c.fillStyle='#fff';c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=3;c.font='bold 11px sans-serif';c.textAlign='left';c.strokeText('はたけ',12*TS,2.75*TS);c.fillText('はたけ',12*TS,2.75*TS);c.strokeText('かだん',14.1*TS,7.8*TS);c.fillText('かだん',14.1*TS,7.8*TS);
   // おへや
-  c.fillStyle='#e8c890';c.fillRect(0,2*TS,(WALL_C)*TS,(YH-2)*TS+8);
-  c.strokeStyle='rgba(150,100,50,.25)';c.lineWidth=1;for(let y=2;y<=YH;y++){c.beginPath();c.moveTo(0,y*TS);c.lineTo(WALL_C*TS,y*TS);c.stroke();}
-  for(let y=2;y<YH;y++)for(let x=0;x<WALL_C;x+=2){const o=(y%2)*TS;c.beginPath();c.moveTo(x*TS+o,y*TS);c.lineTo(x*TS+o,(y+1)*TS);c.stroke();}
-  c.fillStyle='#f4e8d0';c.fillRect(0,0,WALL_C*TS,2*TS);c.fillStyle='#d8b890';c.fillRect(0,2*TS-6,WALL_C*TS,6);
-  c.fillStyle=night?'#2a3060':'#bfe6ff';c.fillRect(2*TS,0.4*TS,2*TS,1.1*TS);c.fillRect(5.5*TS,0.4*TS,1.6*TS,1.1*TS);c.strokeStyle='#a87848';c.lineWidth=3;c.strokeRect(2*TS,0.4*TS,2*TS,1.1*TS);c.strokeRect(5.5*TS,0.4*TS,1.6*TS,1.1*TS);
+  const FT=4*TS; // ゆかの え 1まいの おおきさ
+  c.save();c.beginPath();c.rect(0,2*TS,WALL_C*TS,(YH-2)*TS+8);c.clip();
+  if(ok(RMI.floor)){for(let y=2*TS;y<YH*TS+8;y+=FT)for(let x=0;x<WALL_C*TS;x+=FT)c.drawImage(RMI.floor,x,y,FT+0.5,FT+0.5);}
+  else{c.fillStyle='#e8c890';c.fillRect(0,2*TS,WALL_C*TS,(YH-2)*TS+8);}
+  c.restore();
+  if(ok(RMI.wall)){for(let x=0;x<WALL_C*TS;x+=2*TS)c.drawImage(RMI.wall,x,0,Math.min(2*TS,WALL_C*TS-x)+0.5,2*TS);}
+  else{c.fillStyle='#f4e8d0';c.fillRect(0,0,WALL_C*TS,2*TS);}
+  const winImg=(im,x,y,w)=>{if(!ok(im))return;const h=w*im.naturalHeight/im.naturalWidth;
+    if(night){c.fillStyle='#2a3060';c.fillRect(x+w*0.08,y+h*0.1,w*0.84,h*0.8);}
+    c.drawImage(im,x,y,w,h);
+    if(night){c.fillStyle='rgba(20,24,70,.55)';c.fillRect(x+w*0.08,y+h*0.12,w*0.84,h*0.76);}};
+  winImg(RMI.window,0.7*TS,0.32*TS,2.6*TS);
+  winImg(RMI.curtain,4.6*TS,0.2*TS,2.4*TS);
   c.fillStyle='#c8a070';c.fillRect(WALL_C*TS,0,TS,YH*TS+8);c.fillStyle='#a87848';c.fillRect(WALL_C*TS,0,6,YH*TS+8);
-  c.fillStyle='#e8c890';c.fillRect(WALL_C*TS,DOOR_R[0]*TS,TS,(DOOR_R[1]-DOOR_R[0]+1)*TS);
-  c.fillStyle='#fff';c.font='bold 11px sans-serif';c.fillText('おへや',0.3*TS,2.75*TS);
+  c.save();c.beginPath();c.rect(WALL_C*TS,DOOR_R[0]*TS,TS,(DOOR_R[1]-DOOR_R[0]+1)*TS);c.clip();
+  if(ok(RMI.floor))c.drawImage(RMI.floor,WALL_C*TS-TS,DOOR_R[0]*TS-TS,FT,FT);else{c.fillStyle='#e8c890';c.fill();}c.restore();
+  if(ok(RMI.door)){const dh=(DOOR_R[1]-DOOR_R[0]+1)*TS+10,dw=dh*RMI.door.naturalWidth/RMI.door.naturalHeight;c.drawImage(RMI.door,(WALL_C+0.5)*TS-dw/2,(DOOR_R[1]+1)*TS-dh,dw,dh);}
+  c.fillStyle='#fff';c.font='bold 11px sans-serif';c.fillText('おへや',0.3*TS,(YH-0.25)*TS);
   // しきもの → かぐ・はな・キャラを y じゅんに
   const rugs=G.home.room.filter(it=>FURN[it.id].rug);
   rugs.forEach(it=>drawRoomItem(c,it,night));
