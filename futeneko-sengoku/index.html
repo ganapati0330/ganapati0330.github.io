@@ -455,7 +455,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v5.7';
+var VERSION = 'v5.8';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2333,17 +2333,17 @@ function recruit(S, pid, order) {   // order: {type: count}
 }
 // ==== 領内（国の 中の ヘックス）：開墾・町・鉱山・名産・塩田 ====
 var BLD = {
-  field:    { name: '田畑',  icon: '🌾', cost: 15, desc: '開墾して 石高 +0.5万石。水を ひける ところ（川や 田畑の 近く）なら いくらでも' },
-  town:     { name: '町',    icon: '🏘', cost: 30, inc: 2, desc: '市を ひらいて まいきせつ +200貫。町 1つを 田畑 6マスで ささえる' },
-  mine:     { name: '鉱山',  icon: '⛏', cost: 40, desc: '鉱脈（◆）を ほる。まいきせつ 収入' },
-  meibutsu: { name: '名産',  icon: '🏺', cost: 35, inc: 4, desc: 'その 国の 名産品を つくる 工房（町の となりなら いくつでも）。まいきせつ +400貫' },
-  salt:     { name: '塩田',  icon: '🧂', cost: 20, inc: 2, desc: '海べで 塩を つくる。まいきせつ +200貫' },
-  saku:     { name: '柵',    icon: '🚧', cost: 6,  war: 1, desc: '木の 柵。合戦で てきの 足を とめる（こわせる）。道や 城の まわりに' },
-  hori:     { name: '堀',    icon: '〰', cost: 10, war: 1, desc: '空堀・水堀。合戦で 川のように わたりにくい' },
-  toride:   { name: '砦',    icon: '🏰', cost: 35, war: 1, desc: '小さな 城。合戦で 柵に かこまれた 曲輪に なり、守りの へいが こもる（所領に 2つまで）' }
+  field:    { name: '田畑',  icon: '🌾', cost: 7, desc: '開墾して 石高 +0.5万石。水を ひける ところ（川や 田畑の 近く）なら いくらでも' },
+  town:     { name: '町',    icon: '🏘', cost: 14, inc: 2, desc: '市を ひらいて まいきせつ +200貫。町 1つを 田畑 6マスで ささえる' },
+  mine:     { name: '鉱山',  icon: '⛏', cost: 20, desc: '鉱脈（◆）を ほる。まいきせつ 収入' },
+  meibutsu: { name: '名産',  icon: '🏺', cost: 16, inc: 4, desc: 'その 国の 名産品を つくる 工房（町の となりなら いくつでも）。まいきせつ +400貫' },
+  salt:     { name: '塩田',  icon: '🧂', cost: 9, inc: 2, desc: '海べで 塩を つくる。まいきせつ +200貫' },
+  saku:     { name: '柵',    icon: '🚧', cost: 3,  war: 1, desc: '木の 柵。合戦で てきの 足を とめる（こわせる）。道や 城の まわりに' },
+  hori:     { name: '堀',    icon: '〰', cost: 5, war: 1, desc: '空堀・水堀。合戦で 川のように わたりにくい' },
+  toride:   { name: '砦',    icon: '🏰', cost: 16, war: 1, desc: '小さな 城。合戦で 柵に かこまれた 曲輪に なり、守りの へいが こもる（所領に 2つまで）' }
 };
 // 城の 改築（Lv0〜3）：石垣・門が かたくなり、守りが つよい
-var CASTLE_LV_MAX = 3, CASTLE_LV_COST = [40, 80, 130];
+var CASTLE_LV_MAX = 3, CASTLE_LV_COST = [25, 50, 80];
 function castleLv(S, pid, cid) { return cid ? ((S.castles[cid] && S.castles[cid].lv) || 0) : (S.provs[pid].clv || 0); }
 function upgradeCost(S, pid, cid) { var lv = castleLv(S, pid, cid); return lv >= CASTLE_LV_MAX ? null : Math.round(CASTLE_LV_COST[lv] * (cid ? 0.6 : 1)); }
 function canUpgrade(S, pid, cid, who) {
@@ -2444,10 +2444,10 @@ function bldCost(S, pid, type, c, r, who) {
     // ひらけば ひらくほど 人手が たりなくなり 高くなる（上限は ない）。所領の ひろさに おうじて
     var land = 0; provRegions(S, pid).forEach(function (g) { if (g.owner === who) land += g.land; });
     var f0 = Math.max(4, Math.round(PROV_BY[pid].koku * 2 * Math.max(0.15, land))), extra = Math.max(0, bldCountIn(S, pid, who, 'field') - f0);
-    cost *= 1 + extra / f0;
+    cost *= 1 + extra / (f0 * 2);   // ゆるやかに 高く
   }
   var o = S.officers && who === P0.owner ? officerAt(S, pid) : null;
-  return Math.max(5, Math.round(cost * (1 - (offP(o) - 50) / 200)));
+  return Math.max(2, Math.round(cost * (1 - (offP(o) - 50) / 200)));
 }
 // その マスに たてられるか
 // その 家が この 国で もつ 城の マス（本城・支城）
