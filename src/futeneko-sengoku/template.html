@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2b1d14">
+<title>フテ猫 毛利元就の戦国シミュレーション</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;height:100%;overflow:hidden;background:#2b1d14;font-family:"Hiragino Maru Gothic ProN","Rounded Mplus 1c","BIZ UDPGothic",sans-serif;color:#3a2a1a;touch-action:none;}
+button{font-family:inherit;cursor:pointer;}
+.screen{display:none;position:fixed;inset:0;}
+.screen.on{display:flex;}
+/* タイトル */
+#title{align-items:center;justify-content:center;background:#7fb3dc;}
+.menuArt{position:relative;height:min(100vh,calc(100vw * 1672 / 941));height:min(100dvh,calc(100vw * 1672 / 941));aspect-ratio:941/1672;}
+.menuArt img{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+.hot{position:absolute;background:transparent;border:0;border-radius:18px;padding:0;}
+.hot:active{background:rgba(255,255,255,.18);transform:translateY(2px);}
+.big{background:linear-gradient(#ffcf5a,#e8941e);border:0;border-radius:16px;color:#3a2000;font-size:clamp(20px,5vw,26px);font-weight:bold;padding:14px 44px;box-shadow:0 6px 0 #9a5a08,0 10px 20px rgba(0,0,0,.4);}
+.big:active{transform:translateY(4px);box-shadow:0 2px 0 #9a5a08;}
+.bgmT{position:absolute;top:1.2%;right:2.5%;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.35);color:#fff;font-size:20px;}
+.ver{position:absolute;top:.6%;left:2%;right:auto;text-align:left;font-size:12px;color:rgba(255,255,255,.85);text-shadow:0 1px 2px #000;pointer-events:none;}.ver #verLbl{display:inline-block;background:rgba(0,0,0,.55);color:#ffe24a;font-weight:bold;font-size:14px;padding:2px 8px;border-radius:8px;margin-right:4px}
+#title .tver{position:absolute;right:2%;bottom:1.2%;z-index:5;background:rgba(255,250,235,.96);color:#3a2210;font:bold 15px sans-serif;padding:3px 10px;border-radius:9px;border:1.5px solid #8a6a40;box-shadow:0 1px 4px rgba(0,0,0,.45);pointer-events:none}
+#title.on ~ #verFix{display:none}
+#verFix{position:fixed;right:6px;bottom:calc(4px + env(safe-area-inset-bottom));z-index:60;background:rgba(255,250,235,.95);color:#3a2210;font:bold 13px sans-serif;padding:3px 9px;border-radius:9px;border:1.5px solid #8a6a40;box-shadow:0 1px 4px rgba(0,0,0,.4);pointer-events:none;letter-spacing:.5px}
+.vtag{display:inline-block;font-size:11px;color:#ffe8b0;opacity:.85;border:1px solid rgba(255,232,176,.5);border-radius:7px;padding:0 5px;margin-left:6px;font-weight:normal}
+/* セットアップ */
+#setupScreen,#clanScreen{flex-direction:column;background:#f6ead2;overflow:hidden;}
+#setupScreen .head,#clanScreen .head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#5a2a1a;color:#ffe8b0;font-weight:bold;font-size:18px;}
+#setupScreen .head button,#clanScreen .head button{background:#8a4a2a;color:#fff;border:0;border-radius:10px;padding:8px 14px;font-size:14px;}
+#setupScreen .body,#clanScreen .body{flex:1;overflow-y:auto;padding:12px 14px 90px;touch-action:pan-y;}
+.sec{background:#fff;border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+.sec h3{margin:0 0 8px;font-size:16px;color:#7a3a1a;}
+.row{display:flex;gap:8px;flex-wrap:wrap;}
+.opt{flex:1;min-width:90px;border:3px solid #ddd;background:#fafafa;border-radius:12px;padding:10px 6px;font-size:16px;font-weight:bold;color:#444;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.opt small{font-weight:normal;font-size:12px;color:#888;}
+.opt.sel{border-color:#e8841e;background:#fff3df;color:#7a3a1a;}
+.opt.sel small{color:#b06a2a;}
+.opt.castle{min-width:calc(25% - 8px);flex:0 0 calc(25% - 6px);padding:8px 2px;font-size:14px;}
+@media (max-width:420px){.opt.castle{flex:0 0 calc(33.3% - 6px);}}
+.pvwrap{position:relative;margin-top:10px;background:#6f8f5a;border-radius:10px;padding:6px;}
+#preview{width:100%;display:block;}
+.reroll{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);border:0;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:bold;color:#7a3a1a;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+.charbtn{border:3px solid #ddd;background:#fafafa;border-radius:12px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:4px;width:calc(25% - 6px);font-size:12px;color:#444;}
+.charbtn img{height:64px;object-fit:contain;}
+.charbtn.small img{height:40px;}
+.charbtn.small{width:calc(33.3% - 6px);font-size:11px;}
+.charbtn.sel{border-color:#2f6fe0;background:#e8f0ff;}
+#enemyList .charbtn.sel{border-color:#d9452f;background:#ffe9e5;}
+.desc{font-size:13px;color:#666;margin:6px 0 0;}
+.arow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #eee;}
+.uic{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#fff;font-weight:bold;font-size:18px;flex:none;}
+.uic.blue{background:#2f6fe0;}.uic.red{background:#d9452f;}
+.uname{flex:1;line-height:1.2;}
+.uname small{display:block;color:#888;font-size:11px;}
+.pm{width:40px;height:40px;border-radius:50%;border:0;background:#e8841e;color:#fff;font-size:22px;font-weight:bold;}
+.pm.big{width:auto;border-radius:20px;padding:0 8px;font-size:14px;margin-left:3px;background:#c0602a;}
+@media (max-width:480px){.arow .pm{width:34px;height:34px;font-size:19px;}.arow .pm.big{width:auto;font-size:13px;padding:0 7px;}.num.rcn{min-width:46px;font-size:14px;}}
+.pm.big{white-space:nowrap;}
+.num.rcn{min-width:56px;font-size:15px;}
+.pm:disabled{background:#ddd;color:#aaa;}
+.num{width:28px;text-align:center;font-size:20px;font-weight:bold;}
+#ptsInfo{font-size:13px;color:#7a3a1a;font-weight:bold;margin-bottom:6px;}
+#armyDesc p{font-size:12px;color:#555;margin:4px 0;}
+.foot{position:absolute;bottom:0;left:0;right:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#f6ead2 30%);text-align:center;}
+/* ゲーム */
+#gameScreen{flex-direction:column;background:#6f8f5a;}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;}
+#hud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top));background:rgba(40,25,15,.88);color:#fff;font-size:14px;z-index:5;}
+.hrow{display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.hrow.right{margin-left:auto;gap:6px;}
+@media (max-width:520px){#hud{font-size:13px;} .hb{padding:6px 9px;font-size:13px;}}
+#turnLbl{font-weight:bold;}
+#sideLbl{padding:3px 10px;border-radius:999px;font-weight:bold;font-size:13px;}
+#sideLbl.me{background:#2f6fe0;}#sideLbl.cpu{background:#d9452f;}
+#countLbl{font-size:12px;color:#ffe8b0;}
+.hb{background:#8a4a2a;color:#fff;border:0;border-radius:10px;padding:7px 10px;font-size:14px;font-weight:bold;}
+#endTurnBtn{background:linear-gradient(#ffcf5a,#e8941e);color:#3a2000;}
+#endTurnBtn:disabled{opacity:.4;}
+#bottom{position:absolute;left:0;right:0;bottom:0;z-index:5;pointer-events:none;background:rgba(40,25,15,.9);color:#fff;padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
+#logLine{font-size:12px;color:#ffe8b0;min-height:18px;margin-bottom:4px;cursor:pointer;background:rgba(255,255,255,.07);border-radius:8px;padding:3px 8px;position:relative;}
+#logLine::after{content:'📜 ぜんぶ';position:absolute;right:6px;top:3px;font-size:11px;color:#ffd98a;}
+.lg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:56px;line-height:1.5;}
+.lg .lt{display:inline-block;min-width:26px;color:#aaa;font-size:10px;}
+.lg.me{color:#bcd4ff;}.lg.cpu{color:#ffc0b0;}.lg.sys{color:#ffe8b0;}
+#logFull{text-align:left;font-size:13px;max-height:60vh;overflow-y:auto;background:#2b1d14;border-radius:10px;padding:8px;touch-action:pan-y;}
+#logFull .lg{white-space:normal;padding-right:0;border-bottom:1px solid rgba(255,255,255,.08);padding:3px 0;}
+.act.undo{background:#e8841e;}
+.act.flee{background:#2a7a4a;}
+#infoBox{font-size:13px;min-height:44px;}
+#infoBox .irow{display:flex;align-items:center;gap:8px;}
+#infoBox .irow .uic{width:26px;height:26px;font-size:14px;}
+#infoBox .tag{font-size:11px;background:rgba(255,255,255,.2);padding:1px 8px;border-radius:999px;}
+#infoBox .stats{color:#ddd;margin-top:3px;font-size:12px;}
+#infoBox .hint,.hint{color:#ffd98a;margin:3px 0 0;font-size:12px;}
+#bottom button,#logLine{pointer-events:auto;}
+.nextrow{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+#armyDesc .st{color:#b06a2a;font-weight:bold;}
+@media (max-height:520px){#logLine .lg:not(:last-child){display:none;} #infoBox .stats{display:none;} #bottom{padding-top:4px;padding-bottom:4px;}}
+#actBar{display:none;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;}
+#actBar.on{display:flex;}
+.actlbl{font-size:12px;color:#fff;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:8px;}
+.act{background:#2f6fe0;color:#fff;border:0;border-radius:10px;padding:8px 14px;font-size:14px;font-weight:bold;}
+.act.sub{background:#777;}
+#banner{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%) scale(.8);background:rgba(40,25,15,.9);color:#ffe8b0;font-size:clamp(22px,6vw,34px);font-weight:bold;padding:14px 30px;border-radius:16px;opacity:0;pointer-events:none;transition:all .25s;z-index:15;white-space:nowrap;}
+#banner.on{opacity:1;transform:translate(-50%,-50%) scale(1);}
+
+/* 国取り */
+.kmode{display:flex;flex-direction:column;gap:12px;margin:14px 0;}
+.kmode .big{display:flex;flex-direction:column;align-items:center;padding:12px 20px;}
+.kmode .big small{font-size:12px;font-weight:normal;margin-top:2px;}
+.big.alt{background:linear-gradient(#9fd27a,#5aa14a);color:#163a10;box-shadow:0 6px 0 #2f6a28,0 10px 20px rgba(0,0,0,.3);}
+.big.alt2{background:linear-gradient(#e8e0d0,#bfae90);color:#3a2a1a;box-shadow:0 6px 0 #7a6a50,0 10px 20px rgba(0,0,0,.3);}
+.kscen{flex:1;min-width:140px;}
+.kclan{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:3px solid #ddd;background:#fafafa;border-radius:12px;padding:8px;margin-bottom:8px;position:relative;}
+.kclan.sel{border-color:#e8841e;background:#fff3df;}
+.kcrest{display:inline-flex;align-items:center;justify-content:center;flex:none;width:52px;height:52px;border-radius:50%;border:3px solid #999;background:#fff;color:#fff;font-weight:bold;font-family:serif;font-size:26px;overflow:hidden;}
+.kcrest img{width:120%;margin-top:18%;}
+.kcrest img[src^="data:image/webp;base64,UklGR"]{}
+.kav img.art,.kcrest img.art{width:100%;margin-top:0;}
+.kmini{width:26px;height:26px;border-radius:50%;vertical-align:middle;margin-right:4px;object-fit:cover;}
+.kci{flex:1;line-height:1.3;}
+.kci small{display:block;color:#888;font-size:12px;}
+.kci em{display:block;font-style:normal;font-size:12px;color:#555;margin-top:2px;}
+.krec{position:absolute;top:6px;right:8px;background:#e8841e;color:#fff;font-size:11px;padding:1px 8px;border-radius:999px;}
+#mapScreen{background:#3f7fb8;}
+#domScreen{background:#3f7fb8;}
+#dcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+#dhud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top));background:rgba(40,25,15,.9);color:#fff;font-size:15px;z-index:5;}
+#dhud .hrow span{font-size:13px;color:#ffe8b0;margin-left:8px;}
+#dbottom{position:absolute;left:0;right:0;bottom:0;z-index:5;background:rgba(40,25,15,.92);color:#fff;padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
+#dInfo{font-size:14px;line-height:1.5;margin-bottom:6px;min-height:40px;}
+#dActs{display:flex;flex-wrap:wrap;gap:6px;}
+#dActs .dbld{flex:1 1 30%;min-width:100px;padding:6px 6px;border-radius:10px;border:2px solid #8a6a40;background:#f6ecd6;color:#3a2210;font-size:13px;font-weight:bold;cursor:pointer;line-height:1.25;}
+#dActs .dbld small{display:block;font-weight:normal;font-size:11px;color:#6a4a2a;}
+#dActs .dbld.on{background:#ffd34a;border-color:#c07a00;box-shadow:0 0 0 2px #fff inset;}
+#dActs .dbld:disabled{opacity:.45;}
+#dActs .dbld.dback{background:#8a6a40;color:#fff;border-color:#5a4020}#dActs .dbld.dback small{color:#f3e2c0}
+#kcv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+#khud{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top));background:rgba(40,25,15,.9);color:#fff;font-size:14px;z-index:5;}
+#khud .hrow span{font-size:13px;color:#ffe8b0;}
+@media (max-width:520px){#khud .hrow.right{gap:4px;flex-wrap:wrap}#khud .hb{padding:6px 7px;font-size:13px}#khud #kEndBtn{padding:6px 8px}}
+#kEndBtn{background:linear-gradient(#ffcf5a,#e8941e);color:#3a2000;}
+#kEndBtn:disabled{opacity:.4;}
+#kbottom{position:absolute;left:0;right:0;bottom:0;z-index:5;background:rgba(40,25,15,.92);color:#fff;padding:8px 10px calc(10px + env(safe-area-inset-bottom));}
+#kLog{font-size:12px;cursor:pointer;background:rgba(255,255,255,.07);border-radius:8px;padding:3px 8px;margin-bottom:6px;min-height:18px;}
+#kLog .lg{padding-right:0;}
+#kInfo{font-size:13px;}
+.kirow{display:flex;align-items:center;gap:8px;}
+.kirow .kcrest{width:34px;height:34px;font-size:18px;}
+.kirow small{color:#ddd;}
+.kunits{color:#ffe8b0;font-size:12px;margin-top:4px;}
+#kActs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+#kActs .act{flex:1;min-width:70px;}
+.act:disabled{opacity:.4;}
+.act.katk{background:#d9452f;}
+.act.kdev{background:#5aa14a;}
+.act.kscheme{background:#8a4ac8;}
+.kevdate{font-size:12px;color:#9a6a3a;margin:0 0 6px;}
+.kev{display:flex;flex-direction:column;gap:8px;}
+.kline{display:flex;gap:8px;align-items:flex-start;}
+.kav{flex:none;width:44px;height:44px;border-radius:50%;border:3px solid #c9b48a;background:#fff;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-family:serif;font-size:20px;overflow:hidden;}
+.kav img{width:120%;margin-top:18%;}
+.kav.nar{background:#f3ead6;border-color:#d9c08a;font-size:22px;}
+.kbub{background:#fff;border:2px solid #e6d6a8;border-radius:12px;padding:6px 10px;font-size:14px;line-height:1.5;position:relative;}
+.kbub b{display:block;font-size:12px;color:#7a3a1a;}
+.kline.nar .kbub{background:#f7f1e3;border-style:dashed;font-style:italic;color:#5a4a3a;}
+.knote{margin-top:10px;background:#eef4fb;border-left:4px solid #3a78b0;border-radius:8px;padding:6px 10px;font-size:12px;line-height:1.6;color:#2b3a4a;}
+.knote p{margin:3px 0 0;}
+.khist{border-bottom:1px solid #eee;padding:6px 0;font-size:13px;}
+.khist summary{cursor:pointer;font-weight:bold;color:#5a2a1a;}
+.khist p{font-size:12px;color:#444;line-height:1.6;margin:6px 0 0;}
+.khist .lt{color:#999;font-size:11px;margin-right:4px;}
+.koffs{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow-y:auto;touch-action:pan-y;}
+.koff{display:grid;grid-template-columns:1fr;gap:2px;text-align:left;border:2px solid #ddd;background:#fafafa;border-radius:10px;padding:6px 10px;}
+.koff.sel{border-color:#e8841e;background:#fff3df;}
+.koff small{color:#777;font-size:11px;}
+.kst{display:block;height:5px;background:#eee;border-radius:3px;overflow:hidden;}
+.kst i{display:block;height:100%;}.kst i.w{background:#d9452f;}.kst i.p{background:#5aa14a;}.kst i.i{background:#8a4ac8;}
+.ktab{width:100%;border-collapse:collapse;font-size:12px;}
+.ktab th{background:#f3ead6;color:#7a3a1a;padding:3px;}.ktab td{border-bottom:1px solid #eee;padding:3px;text-align:center;}.ktab td:first-child{text-align:left;}
+#kBody{max-height:62vh;overflow-y:auto;touch-action:pan-y;}
+.kschemes{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.kopt{display:grid;grid-template-columns:1fr auto;text-align:left;border:2px solid #c9b0e8;background:#f7f0ff;border-radius:10px;padding:8px 10px;}
+.kopt b{grid-column:1;}.kopt small{grid-column:1;color:#666;font-size:11px;}.kopt em{grid-column:2;grid-row:1 / span 2;align-self:center;font-style:normal;font-weight:bold;font-size:18px;color:#6a2ab0;}
+.kopt:disabled{opacity:.45;}
+#kBody{text-align:left;font-size:14px;}
+#kBody h4{margin:10px 0 4px;color:#7a3a1a;}
+#kBody .small,.small{font-size:12px;color:#777;}
+.kbrow{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid rgba(120,90,50,.15)}.kbrn{flex:1;font-size:13px;cursor:pointer}button.kmini{border:0;border-radius:8px;padding:7px 9px!important;font-weight:bold;font-size:13px!important;background:#2f6fe0;color:#fff;white-space:nowrap;width:auto!important;min-width:84px!important;height:auto!important;flex:none!important;overflow:visible!important}button.kmini.sub{background:#8a7a6a}button.kmini:disabled{opacity:.4}
+.card.wide{max-width:780px}
+.klink{flex-wrap:wrap}.klink .kbrn{min-width:150px;text-align:left}.klbtn{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.klbtn .kmini{min-width:0!important;padding:6px 7px!important;font-size:12px!important}
+.kowner{display:flex;align-items:center;gap:8px;color:#fff;border-radius:12px;padding:6px 10px;margin:-4px 0 8px;text-align:left;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);text-shadow:0 1px 2px rgba(0,0,0,.5)}.kowner>span:not(.kcrest){flex:1;line-height:1.2}.kowner .kcrest{flex:none;background:#fff}.kowner b{font-size:16px;display:block}.kowner small{font-size:12px;opacity:.95}.kowner em{font-style:normal}
+.krel{display:inline-block;color:#fff;font-weight:bold;font-size:11px;padding:1px 7px;border-radius:9px;white-space:nowrap}
+.ktabs{display:flex;gap:6px;margin-bottom:8px}.ktab1{flex:1;border:2px solid #c9b48a;background:#f6ecd6;border-radius:10px;padding:7px 4px;font-weight:bold;font-size:13px;color:#5a2a10;cursor:pointer}.ktab1.on{background:#ffd34a;border-color:#c07a00}
+.kacts{white-space:nowrap}.kact{border:0;border-radius:7px;background:#2f6fe0;color:#fff;font-size:13px;padding:3px 4px;margin:1px;min-width:28px;cursor:pointer}.kact small{display:block;font-size:9px;line-height:1}.kact:disabled{background:#ccc;opacity:.6}.kact.done{display:inline-block;background:#e8f3e0;color:#2a6a2a;border-radius:7px;font-size:11px;padding:3px 3px;margin:1px}
+.kland tr.kprow td{background:#f3ead6;text-align:left;cursor:pointer;color:#5a2a10}.kland tr.kcrow{cursor:pointer}.kland tr.kcrow:hover td{background:#fff3d0}.kland td{font-size:12px}
+.kco{border:1px solid rgba(120,90,50,.25);border-radius:8px;padding:4px 8px;margin:4px 0;background:#fffaf0}.kco summary{cursor:pointer;font-size:13px;padding:3px 0}.kco summary b{color:#2a6a2a}
+.kmv{border:0;border-radius:7px;padding:4px 8px;font-size:12px;font-weight:bold;background:#2f6fe0;color:#fff;white-space:nowrap;margin-top:3px;cursor:pointer}
+.ktab td.kloc{font-size:11px;text-align:left;min-width:86px}
+.koffpick{margin:4px 0 8px;font-size:14px;font-weight:bold;color:#5a3a1a}.koffpick select{font-size:14px;padding:5px;border-radius:8px;border:1px solid #c9b48a;background:#fffaf0;max-width:62%}.koffpick small{color:#c27a00;margin-left:6px}
+.kbuy{flex-wrap:wrap}.kbuy .uname{flex:1 1 60%;display:block}.kbuy .uname small{display:inline}.kbuy .uname small[id]{display:block}.kbuy .kctl{display:flex;gap:6px;width:100%;justify-content:flex-end;align-items:center;margin-top:4px}.kbuy .kctl .pm{width:40px;height:40px;min-width:40px;font-size:20px}.kbuy .kctl .pm.big{width:auto;min-width:52px;padding:0 8px;font-size:14px}.kbuy .kctl .pm.minus,.kbuy .kctl .pm.sub0{background:#8a7a6a}.kbuy .kctl{flex-wrap:wrap;gap:4px!important}.kbuy .kctl .pm{width:34px!important;height:36px!important;min-width:34px!important;font-size:18px!important}.kbuy .kctl .pm.big{min-width:42px!important;width:auto!important;padding:0 5px!important;font-size:13px!important}.kbuy .kctl .pm.sub0{min-width:30px!important}.kbuy .kctl .rcin{width:56px}
+@media (max-width:420px){.kbuy .kctl{gap:3px!important}.kbuy .kctl .rcin{width:46px;font-size:15px}.kbuy .kctl .pm{width:30px!important;min-width:30px!important}.kbuy .kctl .pm.big{min-width:36px!important;padding:0 3px!important;font-size:12px!important}.kbuy .kctl .pm.sub0{min-width:26px!important}}
+.kbuy .rcin{width:64px;font-size:16px;text-align:center;padding:6px 2px;border:1px solid #c9b48a;border-radius:8px}
+.krep{list-style:none;margin:4px 0;padding:0;font-size:14px;text-align:left}.krep li{padding:5px 2px;border-bottom:1px solid rgba(120,90,50,.15)}.krep li.mine{background:rgba(255,226,74,.22);font-weight:bold}.krept tr.mine td{background:rgba(255,226,74,.22)}.krept .g{color:#2a8a2a}.krept .r{color:#d33}.kdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.krein{border-top:1px solid rgba(120,90,50,.2);padding-top:6px;margin-top:6px;text-align:left}.krein small{color:#8a7a5a;margin-left:4px}
+.kgar{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0}.kgar th{font-size:11px;color:#8a7a5a;font-weight:normal;text-align:left;padding:2px 4px}.kgar td{padding:3px 4px;border-top:1px solid rgba(120,90,50,.15)}.kgar .uic{width:24px;height:24px;font-size:13px}.kgar tr.tot td{border-top:2px solid rgba(120,90,50,.35)}
+.kfbar{display:inline-block;position:relative;width:70px;height:9px;background:rgba(255,255,255,.18);border-radius:5px;vertical-align:middle;overflow:hidden}.kfbar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}.kfbar em{position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:.8}
+.ktx{min-width:34px;height:28px;margin:0 6px;border:0;border-radius:8px;background:#e08a2e;color:#fff;font-weight:bold;font-size:17px;line-height:1;vertical-align:middle}.ktx:disabled{background:#6a5a4a;color:#aaa}
+.kbr{cursor:pointer;display:inline-block;margin:1px 2px;padding:0 6px;border-radius:8px;font-size:12px;border:2px solid #999;background:#3a2a1a;}
+.knb{display:inline-block;margin:1px 2px;padding:0 6px;border-radius:8px;font-size:12px;background:#5a4630;}
+.knb.none{background:#8a2a20;text-decoration:line-through;}
+.knb.pass{background:#8a4a1a;}
+.knb.sea{background:#24557a;}
+#kLegend{position:absolute;left:8px;z-index:4;background:rgba(255,250,235,0.92);border-radius:8px;padding:4px 8px;font-size:11px;color:#3a2210;line-height:1.5;pointer-events:none;}
+#kLegend i{display:inline-block;width:18px;height:4px;vertical-align:middle;margin-right:3px;}
+.kodds{margin:8px 0;padding:6px 10px;background:#f3ead6;border-radius:8px;font-size:14px;}
+.kamt{display:flex;align-items:center;gap:10px;margin:6px 0;}
+.kamt input{flex:1;height:34px;accent-color:#c0392b;}
+.kamt b{min-width:96px;text-align:right;font-size:16px;}
+.kodds .g{color:#2f8a2f;}.kodds .y{color:#b08a00;}.kodds .r{color:#d9452f;}
+.kintro{display:flex;gap:12px;align-items:center;}
+.kintro .kcrest{width:72px;height:72px;}
+.khelp{font-size:13px;padding-left:18px;line-height:1.6;}
+.kres{text-align:center;}
+.kres img{height:130px;object-fit:contain;}
+#kBtns{margin-top:12px;}
+#kBtns{flex-wrap:wrap;gap:8px}#kBtns .act{flex:1 1 28%;min-width:96px;white-space:nowrap;padding-left:6px;padding-right:6px}
+/* 結果・ヘルプ */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;align-items:center;justify-content:center;padding:16px;}
+.modal.on{display:flex;}
+.card{background:#fff8ea;border-radius:18px;padding:20px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4);touch-action:pan-y;}
+.card h2{margin:0 0 8px;font-size:32px;}
+.card h2.win{color:#e8841e;}.card h2.lose{color:#5a6a8a;}
+#resultImg{height:160px;object-fit:contain;}
+#resultReason{font-size:15px;color:#555;margin:8px 0 14px;}
+.card .row{justify-content:center;}
+.card .row button{flex:1;}
+.help{text-align:left;font-size:14px;line-height:1.6;}
+.help h3{margin:12px 0 4px;color:#7a3a1a;font-size:15px;}
+.help ul{margin:0;padding-left:20px;}
+.close{margin-top:10px;background:#8a4a2a;color:#fff;border:0;border-radius:10px;padding:10px 24px;font-size:16px;}
+</style>
+</head>
+<body>
+
+<div id="title" class="screen on">
+  <div class="menuArt">
+    <img src="__MENU__" alt="フテ猫 毛利元就の戦国シミュレーション" draggable="false">
+    <button class="hot" id="startBtn" style="left:16.5%;top:83.6%;width:67%;height:9.2%" aria-label="はじめる"></button>
+    <button class="hot" id="helpBtn" style="left:29.5%;top:93.6%;width:41%;height:5.2%" aria-label="あそびかた"></button>
+    <button class="bgmT" id="bgmBtn3" aria-label="おんがく">🔊</button>
+    <div class="ver">© 泉正道 / フテ猫実行委員会</div>
+    <div id="verLbl" class="tver"></div>
+  </div>
+</div>
+
+<div id="setupScreen" class="screen">
+  <div class="head"><span>さくせん かいぎ</span><button id="backBtn">もどる</button></div>
+  <div class="body">
+    <div class="sec"><h3>① どっちで たたかう？</h3>
+      <div class="row">
+        <button class="opt" id="sideAtk"><b>⚔ しろを せめる</b><small>ほんまるを おとせ／大将を たおせ</small></button>
+        <button class="opt" id="sideDef"><b>🏯 しろを まもる</b><small>さいごまで まもりきれ／大将を たおせ</small></button>
+      </div>
+    </div>
+    <div class="sec"><h3>② どの しろ？</h3><div class="row" id="mapList"></div><p class="desc" id="mapDesc"></p>
+      <h3 style="margin-top:12px">ちずの おおきさ</h3><div class="row" id="sizeList"></div>
+      <div class="pvwrap"><canvas id="preview"></canvas><button class="reroll" id="rerollBtn">🎲 べつの ちず</button></div>
+    </div>
+    <div class="sec"><h3>③ あなたの 大将</h3><div class="row" id="charList"></div>
+      <h3 style="margin-top:10px">あいての 大将</h3><div class="row" id="enemyList"></div></div>
+    <div class="sec"><h3>④ つよさ</h3>
+      <div class="row">
+        <button class="opt" id="dif_easy"><b>かんたん</b></button>
+        <button class="opt" id="dif_normal"><b>ふつう</b></button>
+        <button class="opt" id="dif_hard"><b>むずかしい</b></button>
+      </div>
+    </div>
+    <div class="sec"><h3>⑤ へんせい（へいを えらぶ）</h3>
+      <div id="ptsInfo"></div>
+      <div id="armyList"></div>
+      <div id="armyDesc" style="margin-top:8px"></div>
+    </div>
+  </div>
+  <div class="foot"><button class="big" id="goBtn">しゅつじん！</button></div>
+</div>
+
+
+<div class="modal" id="modeBox"><div class="card">
+  <h2 style="font-size:24px;color:#7a3a1a">あそびかたを えらぶ</h2>
+  <div class="kmode">
+    <button class="big" id="ngBtn">🗾 国取り<small>中国地方を 統一せよ！</small></button>
+    <button class="big alt" id="contBtn">▶ つづきから</button>
+    <button class="big alt2" id="quickBtn">⚔ いっぱつ合戦<small>城を 1つ えらんで すぐ たたかう</small></button>
+  </div>
+  <button class="close" id="modeClose">とじる</button>
+</div></div>
+
+<div id="clanScreen" class="screen">
+  <div class="head"><span>国取りの じゅんび</span><button id="kBackBtn">もどる</button></div>
+  <div class="body">
+    <div class="sec"><h3>① いつから はじめる？</h3><div class="row" id="scenList"></div><p class="desc" id="scenDesc"></p></div>
+    <div class="sec"><h3>② どの 大名で 国取りする？</h3><div id="clanList"></div></div>
+    <div class="sec"><h3>③ あなたの かお</h3><div class="row" id="faceList"></div><p class="desc">えらんだ 大名の 大将として 合戦に でます。</p></div>
+    <div class="sec"><h3>④ つよさ</h3>
+      <div class="row">
+        <button class="opt" id="kdif_easy"><b>かんたん</b><small>お金 おおめ・てき おとなしい</small></button>
+        <button class="opt" id="kdif_normal"><b>ふつう</b></button>
+        <button class="opt" id="kdif_hard"><b>むずかしい</b><small>てき つよい・すぐ せめてくる</small></button>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><button class="big" id="kGoBtn">国取り かいし！</button></div>
+</div>
+
+<div id="mapScreen" class="screen">
+  <canvas id="kcv"></canvas>
+  <div id="khud">
+    <div class="hrow"><b id="kDate"></b><span id="kGold"></span><span id="kKoku"></span><span id="kProv"></span></div>
+    <div class="hrow right">
+      <button class="hb" id="bgmBtn2" title="おんがく">🔊</button>
+      <button class="hb" id="kFitBtn" title="ぜんたい">⤢</button>
+      <button class="hb" id="kLandBtn" title="領地の 一覧">📜</button><button class="hb" id="kOffBtn" title="家臣">👥</button>
+      <button class="hb" id="kHistBtn" title="れきし">📖</button>
+      <button class="hb" id="kHelpBtn">?</button>
+      <button class="hb" id="kQuitBtn">✕</button>
+      <button class="hb" id="kEndBtn">きせつを おわる ▶</button>
+    </div>
+  </div>
+  <div id="kLegend"><i style="background:#ffcf5a"></i>陸路　<i style="background:#ff8a3a"></i>⛰峠道　<i style="background:#7fd0ff"></i>⛵海路<br><i style="background:#ff3030"></i>🚫山で とおれない　<i style="background:#3e2e24;height:8px"></i>けわしい山</div>
+  <div id="kbottom">
+    <div id="kLog"></div>
+    <div id="kInfo"></div>
+    <div id="kActs"></div>
+  </div>
+</div>
+
+<div id="domScreen" class="screen">
+  <canvas id="dcv"></canvas>
+  <div id="dhud">
+    <div class="hrow"><b id="dTitle"></b><span id="dStat"></span></div>
+    <div class="hrow right"><button class="hb" id="dFitBtn" title="ぜんたい">⤢</button><button class="hb" id="dDoneBtn">↩ 地図へ もどる</button></div>
+  </div>
+  <div id="dbottom">
+    <div id="dInfo"></div>
+    <div id="dActs"></div>
+  </div>
+</div>
+
+<div class="modal" id="kBox"><div class="card">
+  <h2 id="kTitle" style="font-size:22px;color:#7a3a1a"></h2>
+  <div id="kBody"></div>
+  <div class="row" id="kBtns"></div>
+</div></div>
+
+<div id="gameScreen" class="screen">
+  <canvas id="cv"></canvas>
+  <div id="hud">
+    <div class="hrow"><span id="turnLbl"></span><span id="sideLbl"></span><span id="countLbl"></span></div>
+    <div class="hrow right">
+      <button class="hb" id="bgmBtn" title="おんがく">🔊</button>
+      <button class="hb" id="fitBtn" title="ぜんたい">⤢</button>
+      <button class="hb" id="helpBtn2">?</button>
+      <button class="hb" id="quitBtn">✕</button>
+      <button class="hb" id="reinBtn" title="援軍" style="display:none">🚩援軍</button>
+      <button class="hb" id="supplyBtn" title="補給" style="display:none">🐴補給</button>
+      <button class="hb" id="retreatBtn" title="全軍 撤退">🏳撤退</button>
+      <button class="hb" id="endTurnBtn">ターンおわり ▶</button>
+    </div>
+  </div>
+  <div id="bottom">
+    <div id="logLine"></div>
+    <div id="infoBox"></div>
+    <div id="actBar"></div>
+  </div>
+</div>
+
+<div id="banner"></div>
+
+<div class="modal" id="resultBox"><div class="card">
+  <h2 id="resultTitle"></h2>
+  <img id="resultImg" alt="">
+  <p id="resultReason"></p>
+  <div class="row" id="resultBtns"><button class="act" id="againBtn">もういちど</button><button class="act sub" id="toSetupBtn">さくせん</button><button class="act sub" id="toTitleBtn">タイトル</button></div>
+  <div class="row" id="resultBtnsK" style="display:none"><button class="act" id="backMapBtn">🗾 ちずに もどる</button></div>
+</div></div>
+
+<div class="modal" id="logBox"><div class="card">
+  <h2 style="font-size:22px;color:#7a3a1a">たたかいの きろく</h2>
+  <p style="font-size:12px;color:#888;margin:0 0 6px">あたらしい じゅん</p>
+  <div id="logFull"></div>
+  <button class="close" id="logClose">とじる</button>
+</div></div>
+
+<div class="modal" id="reinBox"><div class="card" style="max-height:92vh;overflow:auto">
+  <h2 style="font-size:21px;color:#7a3a1a">🚩 援軍を だす</h2>
+  <p style="font-size:13px;color:#666;margin:4px 0">まわりの 国の 地図。じぶんの 城を タップして えらぶ。とおいほど つくまで 日数が かかる。</p>
+  <canvas id="reinMap" width="680" height="440" style="width:100%;max-width:340px;height:auto;border-radius:10px;background:#4f8fc6;touch-action:none"></canvas>
+  <div id="reinList" style="text-align:left"></div>
+  <div id="reinPick" style="text-align:left"></div>
+  <div class="row"><button class="act" id="reinGo" disabled>🚩 出陣させる</button><button class="act sub" id="reinNo">とじる</button></div>
+</div></div>
+<div class="modal" id="supplyBox"><div class="card">
+  <h2 style="font-size:22px;color:#7a3a1a">🐴 小荷駄隊を よぶ</h2>
+  <p id="supplyMsg" style="font-size:14px;color:#555;text-align:left"></p>
+  <div class="row" id="supplyOpts"></div>
+  <div class="row"><button class="act sub" id="supplyNo">やめる</button></div>
+</div></div>
+<div class="modal" id="confirmBox"><div class="card">
+  <h2 style="font-size:22px;color:#7a3a1a">ターンを おわる？</h2>
+  <p id="confirmMsg" style="font-size:15px;color:#555"></p>
+  <div class="row"><button class="act" id="confirmYes">おわる</button><button class="act sub" id="confirmNo">もどる</button></div>
+</div></div>
+
+<div class="modal" id="helpBox"><div class="card help">
+  <h2 style="text-align:center;font-size:24px;color:#7a3a1a">あそびかた <span class="vlbl" style="font-size:13px;color:#a07040;font-weight:normal"></span></h2>
+  <h3>国取り（くにとり）</h3>
+  <ul><li>中国地方の 国取り。<b>1523年</b>（毛利元就が 当主に なった とし）か <b>1554年</b>（厳島の 戦いの 前）から はじめる。18の りょうちを ぜんぶ とれば <b>統一</b>！ じぶんの りょうちが なくなると まけ。</li>
+      <li><b>家臣</b>：城主に した 家臣が その 城で 力を だす。<b>武</b>＝ひきいる 軍が つよい、<b>政</b>＝収入・内政（80いじょうで +2万石）・徴兵の わりびき、<b>智</b>＝城の 守り・調略。家臣は 年代で くわわったり なくなったり する。城を おとすと てきの 城主を 家臣に できる ことも。</li>
+      <li><b>調略</b>（💰30）：となりの 家を まるごと <b>したがわせる</b>（小さな 家だけ）・城に <b>内応</b>させて よわらせる・<b>同盟</b>を むすぶ。</li>
+      <li><b>史実の できごと</b>：その 年に なると 武将たちが 話し、「📖 史実では」で ほんとうの 歴史を しょうかい。歴史が うごく できごとも（当主の 交代・養子・厳島の 戦い など）。📖ボタンで あとから 読みかえせる。</li>
+      <li><b>同盟</b>（🤝）の あいてとは おたがい せめない。でも ときどき きれる。じぶんから せめると 同盟は きれる。</li>
+      <li>鉄砲は <b>1543年</b>に 伝わるまで やとえない。石見の 銀山は <b>1527年</b>に みつかって お金が ふえる。</li>
+      <li>きせつ（はる・なつ・あき・ふゆ）ごとに、じぶんの 国 1つで <b>出陣</b>（となりを せめる）・<b>徴兵</b>（お金で へいを ふやす）・<b>内政</b>（石高 +1）・<b>移動</b>（へいを となりの じぶんの 国へ）・<b>調略</b> から <b>3つまで</b> えらんで できる（おなじ めいれいは 1回ずつ。徴兵して から 出陣、なども できる）。うごいた へいは その きせつ もう 移動 できない。とったばかりの 国は その きせつ めいれい できない。</li>
+      <li>お金の たんいは <b>貫</b>。石高からの <b>年貢は 秋に まとめて</b> はいる。ほかの きせつは 商いの 収入だけ。石見の 銀山は まいきせつ お金が ふえる。</li>
+      <li>へいは <b>隊</b>で うごく。1隊の 人数：足軽 300人・弓 200人・騎馬 50騎・鉄砲 50挺・工作 150人・忍び 20人。騎馬と 鉄砲は 人数は すくないが 高くて つよい。数字は いまの 人数。</li>
+      <li>出陣や てきの 攻撃は「⚔ 合戦する」で じぶんで たたかうか、「🎲 おまかせ」で すぐ けっかを きめるか えらべる。</li>
+      <li><b>🌾 内政は 領内マップで</b>：じぶんの 国の 中の ヘックスに たてる。<b>🌾田畑</b>（開墾：川や 田畑の 近く。石高 +0.5万石。石高の 上限は なく、水を ひける 土地が あるだけ ふやせる。ただし ひらくほど 人手が たりなくなって 高くなる。森・丘は 割高）・<b>🏘町</b>（道や 城の となり。まいきせつ +200貫。町 1つを 田畑 6マスで ささえる）・<b>⛏鉱山</b>（◆鉱脈の ある 国だけ：石見銀山・吉岡銅山・奥出雲の たたら など）・<b>🏺名産</b>（町の となり。備前焼・因州和紙・備後表 など）・<b>🧂塩田</b>（海べ）。お金の かぎり いくつでも たてられ、↩で 1つずつ もどせる。たてた ものは 合戦の ちずにも でる。🗾ボタンで いつでも 見られる。</li>
+      <li><b>🙇 降参した へい</b>：城を おとすと、のこった てきの へいの 3割くらい（せめた 国の 城主の 政が 高いほど ふえる。2〜5割）が 降参して みかたに くわわる。のこりは となりの 国へ にげる。</li>
+      <li><b>🙇 たおした てきも 仲間に</b>：合戦に かつと、せめても 守りも、たおした てきの へいの 2〜4割くらい（大将の 政が 高いほど・連勝中ほど ふえる）が けがから たちなおって 降参し、みかたに くわわる。まけると みかたの へいが てきに くだる。</li>
+      <li><b>🔥 連勝</b>：合戦に つづけて かつと（攻めでも 守りでも）、うわさを きいた <b>志願兵</b>が あつまる（2連勝で 足軽90人、1つ ふえるごとに +90人、さいだい 450人）。降参する てきも ふえ、となりの 家の 武将が <b>寝返って</b> くる ことも ある（智が ひくい 武将・まけている 家ほど）。まけると 連勝は 0に もどる。てきの 連勝にも 気をつけよう。</li>
+      <li><b>🍙 出陣の 兵糧</b>：出陣や 🐴補給の 兵糧は、まず <b>出陣する 城（と 応援を だした 城）の 蔵</b>から もちだす。お金は いらない。蔵に たりない ぶんだけ、お金で いそいで かう（ふつうの 1.5ばいの ねだん）。</li>
+      <li><b>🍙 にげた てきの 兵糧</b>：攻めてきた てきが ひきあげたり にげたり したら、のこした 兵糧の 半分（ぜんめつ させたら 8わり。とどいて いない 小荷駄の 荷も）が 城の 蔵に はいる。兵糧ぎれで ひきあげた ときは なにも のこらない。</li>
+      <li><b>🏯 城を おとして いく</b>：国ごとに 本城と 支城（2つ）が ある。となりの 国から せめると、まず その 道の 入り口を まもる <b>支城</b>を おとす（地図の 小さな 櫓。赤く 光るのが せめられる 城）。支城を とれば <b>本城</b>を せめられ、本城が おちると その 国が 手に はいる（のこった 支城の 多くは 降参、のこりは 抵抗を つづける）。支城が せめられると 本城から 後詰めが くる。支城の まわりは その城の <b>所領</b>（国の 1〜3わりほど）。支城を とると 所領が じぶんの 色に かわり、その ぶんの 年貢・収入が はいる（とられた 側は へる。とられた 所領には 田畑や 町を つくれない）。じぶんの 支城を タップして「所領を ひらく」と、その まわりに 田畑・町などを つくれる（支城ごとに きせつに 1回。年貢は 田畑の かずで わける）。支城を タップすると 守備兵の 出し入れが できる。</li>
+      <li><b>⚔ 合戦は 国ざかいから</b>：となりの 国から 道を すすみ、国ざかいを こえて 城へ むかう。<b>本丸に はいれば かち</b>（大将を たおしても かち）。ターンの かぎりは なく、<b>兵糧</b>が つきると ひきあげ。出陣の とき なん日ぶん もっていくか えらぶ（お金が かかる。へいが へると ながもち）。城が とおい 国ほど 日数が いる。合戦中は「🐴補給」で <b>小荷駄隊</b>を よべる（お金が かかる）。攻め口に あらわれるので、本隊（みかた 3隊いじょう）の 2マス いないまで はこぶと 兵糧が ふえる。小荷駄隊は たたかえず、森・山・丘を みかたなしで すすむと 伏兵に おそわれ、てきにも ねらわれる。てきの 小荷駄隊を おそえば 兵糧ぎれを ねらえる。出陣の とき、おなじ 城を せめられる ほかの 国が あれば「＋◯◯からも せめる」で <b>何か所からも 同時に</b> せめられる（それぞれの 攻め口から あらわれる）。</li>
+      <li><b>🚧 普請と 改築</b>：領内（内政）で <b>柵・堀・砦</b>を つくれる。合戦の とき 地図に そのまま あらわれ、柵は てきの 足どめ、堀は わたりにくく、砦は 柵に かこまれた 小さな 城に なる。<b>城の 改築</b>（Lv3まで）で 石垣と 門が かたくなり 守りが つよく なる。支城も 所領の 内政から 改築 できる。</li>
+      <li><b>🚩 援軍</b>：せめられたら、となりの じぶんの 国や おなじ 国の 城から 援軍を おくれる。援軍は それぞれの 城の ほうから 合戦場に あらわれる（とおいと おそく つく）。合戦の あと 生きのこりは もとの 城へ もどる。</li>
+      <li><b>👥 家臣に まかせる</b>：出陣・徴兵・内政・調略は、えらぶ 画面で <b>担当の 家臣</b>を きめる（1きせつに 1人 1つ）。武・政・智が 高いと ★大成功（奇襲・2わり 多く あつまる・石高 倍 など）が でる。👥ボタンで 家臣の 一覧。徴兵は 1人 から やとえる。</li>
+      <li><b>🔥 こわれた 城</b>：おとした（おとされた）城は 石垣・門が こわれて、地図で 焼け跡の 絵に なる。守りが よわく（合戦では 石垣・門が 4わりの つよさから）、改築も できない。城の 画面か 内政の 画面の「🔨 なおす」で お金を はらうと すぐ なおる（めいれいは つかわない）。</li>
+      <li><b>🤝 関係</b>：地図の 国名の 下に、じぶんとの 関係が でる。<b>🤝同盟</b>（おたがい せめない。せめると 同盟が きれる）・<b>〰中立</b>（いまは 合戦して いない。せめて くる ことも ある）・<b>⚔敵対</b>（この 1年に 合戦した あいて）。📜の「大名との 関係」で 一覧に できる。</li>
+      <li><b>🏯 城 ごとの めいれい</b>：本城・支城の 画面から ⚔出陣・🪖徴兵・🌾内政・🦊調略 が できる。本城は 国の めいれい（3つまで）、支城は それぞれ きせつに 1かい。📜の「城と めいれい」の 表から まとめて めいれい できる。</li>
+      <li><b>📜 領地の 一覧</b>：上の 📜ボタンで、じぶんの 国と 城（本城・支城、てきの 国の なかの 支城も）を 一覧で 見られる。国ごとの 石高・収入・秋の 年貢・不満・めいれいの かず、城ごとの へい・兵糧（なん日 もつか）・いる 家臣。城の 行を タップすると その 城の 画面へ。</li>
+      <li><b>🗾 内政の 画面</b>：田畑・町・改築などは <b>領地 ぜんぶ</b>（どの 国の 本城・支城の 所領でも）に、めいれいを つかわずに お金の かぎり たてられる。⤢で 領地 ぜんぶを 見わたせる。<b>城を タップ</b>すると その 城の 守備兵を 見て、<b>その 城で 徴兵</b>（支城は 城 ごとに きせつ 1かい・8たいまで、本城は 国の 徴兵の めいれい）、<b>家臣を よぶ／ほかの 城へ うつす</b>、本城の 城主えらびが できる。「↩ 地図へ もどる」で 国取りの 地図へ。</li>
+      <li><b>🚶 兵を うつす・🍙 兵糧を はこぶ</b>：城の 画面から、<b>領地の なか</b>（じぶんの 城が ある 国が となりづたいに つながって いる はんい）なら どの 城へでも すぐ うつせる。めいれいは つかわない。うつした 隊は その きせつ もう うつせない。城には 入る かず（本城19隊・支城8隊、蔵の 大きさ）の かぎりが ある。</li>
+      <li><b>🏳 撤退</b>：合戦中、じぶんの ばんに 上の「🏳撤退」で 全軍を ひかせられる。攻めのときは 合戦を やめて もとの 城へ もどる（しんがりで 1わり ほど へり、のこった 兵糧の 一部は てきに とられる）。守りのときは 城を すてて 退き口の 国へ にげる（1.5わり ほど へる）。退き口が ない 籠城では 撤退 できない。</li>
+      <li><b>🔗 合流</b>：へった 隊は おなじ 兵種の 隊に まとめられる。国取りでは 本城・支城の 画面の「🔗 隊を まとめる」（人数は そのまま、隊の かずが へる。めいれいは つかわない）。合戦では となりに いる おなじ 兵種の みかたを えらんで「🔗 合流」（その 隊の 行動は おわり。もどせない）。</li>
+      <li><b>⚔ 出陣の ながれ</b>：城を えらんで（地図の 城・下の「🏯 ◯◯城の めいれい」・📜の 表）⚔出陣 → → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
+      <li><b>⚔ 支城から 出陣</b>：じぶんの 支城を タップして「⚔ ここから 出陣」。その 支城の 守備兵で、おなじ 国の てきの 本城・支城や、となりの 国の 城を せめられる（支城 ごとに きせつに 1かい、国の めいれいは つかわない）。てきの 国の なかに ある 支城からは、国ざかいを こえずに すぐ 本城へ せめかかれる。生きのこった へいは 支城へ もどる。</li>
+      <li><b>📍 家臣の いる 城</b>：家臣は それぞれ 城（本城・支城）に いて、<b>その 国でしか はたらけない</b>。ほかの 国で はたらかせたい ときは 👥家臣の 🚶移動で うつす（移動した きせつは はたらけない）。城主に えらぶと その 城へ うつって くる。城を おとされると ちかくの 城へ にげる。</li>
+      <li><b>🏯 城の 守りと 兵糧</b>：城（本城・支城）を タップすると 守備兵の 内わけと <b>兵糧（石）</b>が 見られる。本城から 支城へ 兵を おくったり よびもどしたり できる（行為は つかわない）。せめられると 守りの へいは 城の 蔵の 兵糧を たべる（1人 1日 2.5合）。<b>つきると 開城</b>。秋に 米が はいり、お金で かいたす ことも できる。改築すると 蔵が 大きく なる。</li>
+      <li><b>🌾 年貢と 一揆</b>：国ごとに 年貢の 割合（三公七民〜七公三民）を −／＋で きめられる（行為は つかわない）。おもくすると 秋の 年貢が ふえるが、農民の <b>不満</b>が たまる。不満が 60を こえると <b>一揆</b>が おきる。兵が おおければ しずめられる（田畑が すこし あれる）が、すくないと 国を うばわれて <b>一揆衆</b>の 国に なる。一揆衆は せめて こないが、せめて とりかえす ことが できる。いくさが あると 不満が ふえ、政の たかい 城主や 町が あると へる。</li>
+      <li><b>中国地方は 1まいの ヘックス地図</b>：海岸線・国境は 国土数値情報、山・峠・川は 地理の 知識で つくった もの。国取りの 地図の こい 茶色が <b>けわしい山（とおれない）</b>。国どうしは <b>道</b>で つながる：🛤 陸路・⛰ <b>峠道</b>（四十曲峠・志戸坂峠・明地峠 など。守りが すこし ゆうり）・⛵ <b>海路</b>（船で 上陸。騎馬は つれていけない）。🚫 は 山が けわしくて 国境が あっても せめられない ところ。</li>
+      <li><b>合戦の ちずは その 場所の 地形</b>：同じ 地図から 城の まわりを きりだす。<b>攻め手が とおってきた 道が ちずの 下</b>（左上の 方位で 北が わかる）。点線は 国ざかい、こい 茶色の 山は とおれない。</li>
+      <li><b>退き口（🏃）</b>：守りは みかたの となりの 国の 方角に、攻めは うしろ（出陣した 国）に にげ道が ある。そこに いる 隊は「🏃 にげる」で その国へ 退却できる（へいは そのまま のこる）。城が おちたとき にげおくれた 守りの へいは 半分に へる。大将が にげると その合戦は まけ。となりに みかたの 国が ないと 籠城で にげ場は ない。</li>
+      <li>へった 隊は きせつごとに すこし（2わり）もどる。1つの りょうちには 19隊まで。すすみは じどうで ほぞん される。</li>
+      <li class="small">音楽：「毛利合戦譜」。🔊ボタンで オン・オフ。</li>
+      <li class="small">地図：「国土数値情報（行政区域データ）」（国土交通省）を 加工して 作成。昔の 国の 境は 今の 市町村から 再現した めやすです。</li></ul>
+  <h3>もくてき（合戦）</h3>
+  <ul><li><b>せめる</b>：てきの <b>ほんまる</b>（しろの まんなか）に へいを のせるか、てきの <b>大将</b>を たおせば かち。</li>
+      <li><b>まもる</b>：さいごの ターンまで まもりきるか、せめての 大将を たおせば かち。</li>
+      <li>ターンの かずは ちずの おおきさで かわる（ちいさい 15・ふつう 20・おおきい 25）。ひきわけは ありません。</li></ul>
+  <h3>しろの しゅるい</h3>
+  <ul><li><b>平城</b>：へいちの しろ。<b>砦</b>：きの さく（こわれやすい）。<b>山城</b>：やまに かこまれる。<b>水城</b>：ほりで かこまれる。</li>
+      <li><b>二の丸城</b>：かべが 2じゅう。<b>海城</b>：うみに かこまれ まえからしか せめられない（忍者は およげる）。<b>大城</b>：ほり＋2じゅうの かべの きょだいな しろ。</li>
+      <li>しろの まわりの もり・おか・かわは まいかい かわる。「🎲 べつの ちず」で えらびなおせる。</li></ul>
+  <h3>そうさ</h3>
+  <ul><li><b>クリックだけで あそべる！</b> じぶんの へい（あお）を クリック → あおい マスを クリックで いどう。</li>
+      <li>あかい てき・オレンジの かべを クリックすると、ちょうど いい ばしょへ うごいて そのまま <b>こうげき</b>（てんせんの わくは うごいてから こうげき）。</li>
+      <li>えらんだ へいを もう一度 クリック → その場で まつ。うごいた あとに ほかの ばしょを クリック → まつ。</li>
+      <li>「▶ つぎの へい」で、まだ うごいていない へいを じゅんばんに えらべる（ちずも そこへ うごく）。</li>
+      <li>大将が てきに ねらわれる ばしょに いると、あかい てんせんの わくが でる。</li>
+      <li>うごいた あとでも、こうげきする まえなら「↩ もどす」で やりなおせる。</li>
+      <li>「まつ」で その へいの ばんは おわり。まだ うごいていない へいには きいろい ●。</li>
+      <li>したの きろくを タッチすると、たたかいの きろくが ぜんぶ みられる。</li>
+      <li>ちずは ドラッグで うごかせる。2ほんゆびで かくだい・しゅくしょう。⤢ で ぜんたい ⇔ アップ を きりかえ。</li></ul>
+  <h3>へいしゅ</h3>
+  <ul><li><b>足軽</b>：うごき・こうげき・まもり ぜんぶ ふつう。騎馬に よわい。鉄砲には つよい。</li>
+      <li><b>騎馬</b>：はやくて つよくて かたい エリート。足軽・鉄砲に とつげき！ 山に はいれない。川は にがて。</li>
+      <li><b>鉄砲</b>：こうげき さいきょう。2マス はなれて うつ。でも おそくて やわらかく、足軽・騎馬に よわい。うごいた ターンは うてない。</li>
+      <li><b>弓</b>：いちばん とおくまで とどく（1〜3マス。3マス さきは いりょく よわめ）。うごいてから うてる。もんや かべにも すこし ダメージ。まもりは よわい。</li>
+      <li><b>工作</b>：おそくて こうげきは よわいが、まもりは かたい。じょうへき・もんを おおきく こわす（6）。まもりでは なおす（+2）。川に はしを かけられる。</li>
+      <li><b>忍者</b>：かべや 山を のりこえ、もんを あけられる。こうげきは つよいが まもりは よわい。てきの となりに いくまで みえない！</li>
+      <li><b>大将</b>：よろいが かたく ダメージを うけにくい。となりの みかたの こうげき UP。やられたら まけ。</li></ul>
+  <h3>ダメージの しくみ</h3>
+  <ul><li>ダメージは「こうげき − まもり」では ありません。<b>こうげき × のこりの へいの かず</b> を もとに、あいての まもり・<b>ちけい</b>（じょうへきの うえは とても かたい）・<b>あいしょう</b>・となりの 大将 で かわり、さいごに すこし <b>ランダム</b> に ふれます。</li>
+      <li>右下の すうじは その 隊の <b>人数</b>（騎馬は 騎、鉄砲は 挺）。合戦中は <b>ふえません</b>。人数が へると こうげきも よわくなります。</li>
+      <li>こうげきされた がわは、とどく ばあいだけ <b>はんげき</b> します（すこし よわめ）。</li></ul>
+  <h3>かべ・もんへの ダメージ</h3>
+  <ul><li>工作 6／鉄砲 3／足軽・騎馬・大将 2／弓・忍者 1。じょうへきは 10、もんは 8、きの さくは 5 で こわれる。</li>
+      <li>まもりの 工作は 1かいに <b>+2</b> なおせる。でも <b>こわれて あいた あなは なおせない</b>。</li></ul>
+  <h3>ちけい</h3>
+  <ul><li>もり・おか・やま・ほんまる：まもりが つよくなる。かわ：まもりが よわくなる。</li>
+      <li>じょうへきの うえの へいは とても かたい。かべは こわせば とおれる。</li></ul>
+  <div style="text-align:center"><button class="close" id="helpClose">とじる</button></div>
+</div></div>
+
+<script>
+__SPR__
+__GAME__
+__UI__
+</script>
+<div id="verFix" class="vlbl"></div>
+</body>
+</html>
