@@ -475,7 +475,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v6.6';
+var VERSION = 'v6.7';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -6555,14 +6555,20 @@ function kDefenseBox(b, sel) {
   if (srcs.length) {
     h += '<p class="small">ボタンで 援軍を おくる 城と へいを えらぶ。援軍は その 城の ほうから 合戦場へ むかう。合戦の とちゅうでも「🚩援軍」で よべる。</p>';
     srcs.forEach(function (sr, i) { var l = sel[sr.src] || [], m = menTotal(sr.units.filter(function (u) { return l.indexOf(u.uid) >= 0; }));
-      h += '<div class="kbrow"><span class="kbrn">' + (sr.kind === 'prov' ? '🏯 ' : '🏰 ') + '<b>' + sr.name + '</b><br><small>' + menStr(menTotal(sr.units)) + (m ? '・<b style="color:#2a6a2a">援軍 ' + menStr(m) + '</b>' : '') + '</small></span><button class="kmini" data-rs="' + i + '">🚩 援軍を おくる</button></div>'; });
-    h += '<div class="kodds">みかた <b>' + menStr(menTotal(b.defUnits) + addMen) + '</b>' + (addMen ? '（援軍 ' + menStr(addMen) + '）' : '') + '　てき ' + menStr(menTotal(b.atkUnits)) + '</div>';
+      var tot = menTotal(sr.units);
+      h += '<div class="kbrow"><span class="kbrn">' + (sr.kind === 'prov' ? '🏯 ' : '🏰 ') + '<b>' + sr.name + '</b><br><small>' +
+        (m ? '<b style="color:#2a6a2a">✓ 援軍 ' + menStr(m) + 'を おくる</b>（のこり ' + menStr(tot - m) + 'で 城を まもる）' : 'いる へい ' + menStr(tot) + '・まだ おくらない') + '</small></span>' +
+        '<button class="kmini' + (m ? ' sub' : '') + '" data-rs="' + i + '">🚩 ' + (m ? 'えらびなおす' : '援軍を おくる') + '</button></div>'; });
+    var dm = menTotal(b.defUnits), am = menTotal(b.atkUnits);
+    h += '<div class="kodds">まもる へい：城の 守り ' + menStr(dm) + (addMen ? ' ＋ 援軍 <b style="color:#2a6a2a">' + menStr(addMen) + '</b> ＝ <b>' + menStr(dm + addMen) + '</b>' : '') + '<br>せめてくる てき：<b>' + menStr(am) + '</b>' +
+      (addMen ? '<br><small>援軍は 合戦が はじまると それぞれの 城の ほうから かけつける。</small>' : '') + '</div>';
   } else h += '<p class="small">援軍を おくれる 城が ない（となりの じぶんの 国・おなじ 国の 城に へいが いない）。</p>';
   function picks() { return Object.keys(sel).map(function (k) { return { src: k, uids: sel[k] }; }).filter(function (e) { return e.uids.length; }); }
   function go(fn) { var pk = picks(); if (pk.length) { addReinf(KS, b, pk); logC(KS, '援軍が ' + (b.castleName || PROV_BY[b.to].name) + 'へ むかった（' + pk.map(function (e) { return KS.castles[e.src] ? brName(e.src) : e.src === b.to ? castleNameOf(KS, b.to) : PROV_BY[e.src].name; }).join('・') + 'から）', 'good'); } kSave(); kCloseModal(); fn(b); }
   kModal('てきが せめてきた！', h,
-    [{ label: '⚔ じぶんで まもる', cls: 'act', fn: function () { go(kFightBattle); } },
-     { label: '🎲 おまかせ', cls: 'act sub', fn: function () { go(kAutoBattle); } }]);
+    [{ label: '⚔ 合戦を 指揮する', cls: 'act', fn: function () { go(kFightBattle); } },
+     { label: '🎲 おまかせで 決着', cls: 'act sub', fn: function () { go(kAutoBattle); } }]);
+  $('kBody').insertAdjacentHTML('beforeend', '<p class="small">⚔＝じぶんで 兵を うごかして たたかう' + (addMen ? '（援軍も いっしょに）' : '') + '。🎲＝けっかだけ すぐ きまる' + (addMen ? '（援軍も 数に はいる）' : '') + '。</p>');
   [].forEach.call($('kBody').querySelectorAll('[data-rs]'), function (e) { e.onclick = function () {
     SFX.tap(); var sr = srcs[+e.dataset.rs];
     kModal('🚩 ' + sr.name + 'から 援軍', '<p class="small">おくる へいを えらぶ（のこりは ' + sr.name + 'を まもる）。</p>' + pickerHtml(sr.units, 0, 'rs_'), [
