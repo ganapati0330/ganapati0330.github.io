@@ -193,7 +193,9 @@ button{font-family:inherit;cursor:pointer;}
 .kmv{border:0;border-radius:7px;padding:4px 8px;font-size:12px;font-weight:bold;background:#2f6fe0;color:#fff;white-space:nowrap;margin-top:3px;cursor:pointer}
 .ktab td.kloc{font-size:11px;text-align:left;min-width:86px}
 .koffpick{margin:4px 0 8px;font-size:14px;font-weight:bold;color:#5a3a1a}.koffpick select{font-size:14px;padding:5px;border-radius:8px;border:1px solid #c9b48a;background:#fffaf0;max-width:62%}.koffpick small{color:#c27a00;margin-left:6px}
-.kbuy{flex-wrap:wrap}.kbuy .uname{flex:1 1 60%;display:block}.kbuy .uname small{display:inline}.kbuy .uname small[id]{display:block}.kbuy .kctl{display:flex;gap:6px;width:100%;justify-content:flex-end;align-items:center;margin-top:4px}.kbuy .kctl .pm{width:40px;height:40px;min-width:40px;font-size:20px}.kbuy .kctl .pm.big{width:auto;min-width:52px;padding:0 8px;font-size:14px}.kbuy .rcin{width:64px;font-size:16px;text-align:center;padding:6px 2px;border:1px solid #c9b48a;border-radius:8px}
+.kbuy{flex-wrap:wrap}.kbuy .uname{flex:1 1 60%;display:block}.kbuy .uname small{display:inline}.kbuy .uname small[id]{display:block}.kbuy .kctl{display:flex;gap:6px;width:100%;justify-content:flex-end;align-items:center;margin-top:4px}.kbuy .kctl .pm{width:40px;height:40px;min-width:40px;font-size:20px}.kbuy .kctl .pm.big{width:auto;min-width:52px;padding:0 8px;font-size:14px}.kbuy .kctl .pm.minus,.kbuy .kctl .pm.sub0{background:#8a7a6a}.kbuy .kctl{flex-wrap:wrap;gap:4px!important}.kbuy .kctl .pm{width:34px!important;height:36px!important;min-width:34px!important;font-size:18px!important}.kbuy .kctl .pm.big{min-width:42px!important;width:auto!important;padding:0 5px!important;font-size:13px!important}.kbuy .kctl .pm.sub0{min-width:30px!important}.kbuy .kctl .rcin{width:56px}
+@media (max-width:420px){.kbuy .kctl{gap:3px!important}.kbuy .kctl .rcin{width:46px;font-size:15px}.kbuy .kctl .pm{width:30px!important;min-width:30px!important}.kbuy .kctl .pm.big{min-width:36px!important;padding:0 3px!important;font-size:12px!important}.kbuy .kctl .pm.sub0{min-width:26px!important}}
+.kbuy .rcin{width:64px;font-size:16px;text-align:center;padding:6px 2px;border:1px solid #c9b48a;border-radius:8px}
 .krep{list-style:none;margin:4px 0;padding:0;font-size:14px;text-align:left}.krep li{padding:5px 2px;border-bottom:1px solid rgba(120,90,50,.15)}.krep li.mine{background:rgba(255,226,74,.22);font-weight:bold}.krept tr.mine td{background:rgba(255,226,74,.22)}.krept .g{color:#2a8a2a}.krept .r{color:#d33}.kdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
 .krein{border-top:1px solid rgba(120,90,50,.2);padding-top:6px;margin-top:6px;text-align:left}.krein small{color:#8a7a5a;margin-left:4px}
 .kgar{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0}.kgar th{font-size:11px;color:#8a7a5a;font-weight:normal;text-align:left;padding:2px 4px}.kgar td{padding:3px 4px;border-top:1px solid rgba(120,90,50,.15)}.kgar .uic{width:24px;height:24px;font-size:13px}.kgar tr.tot td{border-top:2px solid rgba(120,90,50,.35)}
@@ -486,7 +488,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v7.7';
+var VERSION = 'v7.8';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -6586,7 +6588,8 @@ function kRecruitBox(pid, cs, back) {
     if (t === 'teppo' && !teppoOk(KS)) { h += '<div class="arow"><span class="uic blue" style="opacity:.4">' + T.ch + '</span><span class="uname"><b style="color:#aaa">' + T.name + '</b><small>' + TEPPO_YEAR + '年に 伝来するまで やとえない</small></span></div>'; return; }
     var cur = P.units.filter(function (u) { return u.type === t; });
     h += '<div class="arow kbuy"><span class="uic blue">' + T.ch + '</span><span class="uname"><b>' + T.name + '</b>' + (cur.length ? '<small style="color:#2a6a2a"><b>　いま ' + menTotal(cur).toLocaleString('ja-JP') + menUnit(t) + '（' + cur.length + '隊）</b></small>' : '<small>　いま 0</small>') + '<small id="rcp_' + t + '"></small></span>' +
-      '<div class="kctl"><button class="pm" data-t="' + t + '" data-d="-1">－</button><input class="rcin" type="number" inputmode="numeric" min="0" step="1" id="rc_' + t + '" value="0"><button class="pm" data-t="' + t + '" data-d="1">＋</button>' +
+      '<div class="kctl"><button class="pm big sub0" data-t="' + t + '" data-d="0" title="0に もどす">0</button><button class="pm big minus" data-t="' + t + '" data-d="-' + T.men + '">−隊</button><button class="pm big minus" data-t="' + t + '" data-d="-10">−10</button>' +
+      '<button class="pm" data-t="' + t + '" data-d="-1">－</button><input class="rcin" type="number" inputmode="numeric" min="0" step="1" id="rc_' + t + '" value="0"><button class="pm" data-t="' + t + '" data-d="1">＋</button>' +
       '<button class="pm big" data-t="' + t + '" data-d="10">+10</button><button class="pm big" data-t="' + t + '" data-d="' + T.men + '">+隊</button></div></div>';
   });
   h += '<div id="kCost" class="kodds"></div>';
@@ -6602,7 +6605,7 @@ function kRecruitBox(pid, cs, back) {
     $('kCost').innerHTML = 'やとった あと：<b>' + menStr(menTotal(P.units) + Math.round(menAdd)) + '</b>（' + (P.units.length + pl.newN) + '隊）<br>ごうけい 💰<b>' + kan(pl.cost) + '</b>（' + Math.round(menAdd).toLocaleString('ja-JP') + '人' + (pl.fill ? '・補充あり' : '') + (pl.newN ? '・新しい 隊 ' + pl.newN : '') + '）　のこり 💰' + kan(gold - pl.cost) +
       (P.units.length + pl.newN > CAP ? '<br><span class="r">隊が ' + CAP + 'を こえる</span>' : '') + (pl.cost > gold ? '<br><span class="r">お金が たりない</span>' : '');
     $('kRecOk').disabled = (!pl.fill && !pl.newN) || pl.cost > gold || P.units.length + pl.newN > CAP;
-    Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) { var t = b.getAttribute('data-t'), d = +b.getAttribute('data-d'); if (d < 0) b.disabled = !(pts[t] > 0); });
+    Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) { var t = b.getAttribute('data-t'), d = +b.getAttribute('data-d'); if (d <= 0) b.disabled = !(pts[t] > 0); });
   }
   kModal('徴兵（' + where + '）', h, [
     { label: '🪖 やとう', cls: 'act', id: 'kRecOk', fn: function () { var o = off(); kSnap('徴兵'); var r = recruitPts(KS, pid, pts, o ? o.id : null, cs); if (!r.ok) { kUndoStack.pop(); banner(r.msg, 1200); return; }
@@ -6612,7 +6615,7 @@ function kRecruitBox(pid, cs, back) {
     { label: 'やめる', cls: 'act sub', fn: back || kCloseModal }
   ]);
   Array.prototype.forEach.call($('kBody').querySelectorAll('.pm'), function (b) {
-    b.onclick = function () { SFX.tap(); var t = b.getAttribute('data-t'); pts[t] = Math.max(0, (pts[t] || 0) + (+b.getAttribute('data-d'))); upd(); };
+    b.onclick = function () { SFX.tap(); var t = b.getAttribute('data-t'), d = +b.getAttribute('data-d'); pts[t] = d === 0 ? 0 : Math.max(0, (pts[t] || 0) + d); upd(); };
   });
   Array.prototype.forEach.call($('kBody').querySelectorAll('.rcin'), function (el) { el.oninput = function () { pts[el.id.slice(3)] = Math.max(0, Math.floor(+el.value || 0)); upd(); }; el.onblur = upd; });
   if ($('kRecOff')) $('kRecOff').onchange = upd;
