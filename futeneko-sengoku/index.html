@@ -438,6 +438,7 @@ button{font-family:inherit;cursor:pointer;}
       <li><b>🏯 城 ごとの めいれい</b>：本城・支城の 画面から ⚔出陣・🪖徴兵・🌾内政・🦊調略 が できる。本城は 国の めいれい（3つまで）、支城は それぞれ きせつに 1かい。📜の「城と めいれい」の 表から まとめて めいれい できる。</li>
       <li><b>📜 領地の 一覧</b>：上の 📜ボタンで、じぶんの 国と 城（本城・支城、てきの 国の なかの 支城も）を 一覧で 見られる。国ごとの 石高・収入・秋の 年貢・不満・めいれいの かず、城ごとの へい・兵糧（なん日 もつか）・いる 家臣。城の 行を タップすると その 城の 画面へ。</li>
       <li><b>🗾 内政の 画面</b>：田畑・町などは 本城と 支城の 所領を まとめて たてられる。<b>城を タップ</b>すると その 城の 守備兵を 見て、<b>その 城で 徴兵</b>（支城は 城 ごとに きせつ 1かい・8たいまで、本城は 国の 徴兵の めいれい）、<b>家臣を よぶ／ほかの 城へ うつす</b>、本城の 城主えらびが できる。「↩ 地図へ もどる」で 国取りの 地図へ。</li>
+      <li><b>🍙 兵糧を はこぶ</b>：城の 画面の「🍙 兵糧を はこぶ」で、おなじ 国か となりの 国の じぶんの 城へ 兵糧を うつせる（すぐ とどく・めいれいは つかわない）。はこんだ あと なん日 籠城できるかも 見られる。</li>
       <li><b>🏳 撤退</b>：合戦中、じぶんの ばんに 上の「🏳撤退」で 全軍を ひかせられる。攻めのときは 合戦を やめて もとの 城へ もどる（しんがりで 1わり ほど へり、のこった 兵糧の 一部は てきに とられる）。守りのときは 城を すてて 退き口の 国へ にげる（1.5わり ほど へる）。退き口が ない 籠城では 撤退 できない。</li>
       <li><b>🔗 合流</b>：へった 隊は おなじ 兵種の 隊に まとめられる。国取りでは 本城・支城の 画面の「🔗 隊を まとめる」（人数は そのまま、隊の かずが へる。めいれいは つかわない）。合戦では となりに いる おなじ 兵種の みかたを えらんで「🔗 合流」（その 隊の 行動は おわり。もどせない）。</li>
       <li><b>⚔ 出陣の ながれ</b>：城を えらんで（地図の 城・下の「🏯 ◯◯城の めいれい」・📜の 表）⚔出陣 → → せめる 城 → <b>ほかの 城から 応援</b>を だすか きめる（本城・支城の どこからでも、おなじ 城を せめられる 城なら）。<b>大将</b>は 出陣する 城と、へいを だした 応援の 城に いる 家臣から えらぶ。内政は 本城と 支城を まとめて できる。</li>
@@ -496,7 +497,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v8.2';
+var VERSION = 'v8.3';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -2971,6 +2972,26 @@ function castleFoodDays(S, pid, cid, units) {
   var men = menOfUnits(units || castleUnits(S, pid, cid)); return men ? Math.floor(castleFood(S, pid, cid) / (men * RICE_PER_MAN)) : 999;
 }
 function menOfUnits(list) { var n = 0; list.forEach(function (u) { n += Math.round(UNIT_TYPES[u.type].men * u.hp / 10); }); return n; }
+// ---- 兵糧を はこぶ：じぶんの 城どうし（おなじ 国か となりの 国）----
+function locPC(S, loc) { return S.castles && S.castles[loc] ? [S.castles[loc].prov, loc] : [loc, null]; }
+function riceDests(S, loc) {
+  var a = locPC(S, loc), own = locOwner(S, loc), out = [];
+  locsOf(S, own).forEach(function (d) {
+    if (d === loc) return; var b = locPC(S, d);
+    if (b[0] === a[0] || (ADJ[a[0]] || []).indexOf(b[0]) >= 0) out.push(d);
+  });
+  return out;
+}
+function moveRice(S, from, to, koku) {
+  var a = locPC(S, from), b = locPC(S, to), own = locOwner(S, from);
+  if (!own || locOwner(S, to) !== own) return { ok: false, msg: 'じぶんの 城どうしで ないと はこべない' };
+  if (riceDests(S, from).indexOf(to) < 0) return { ok: false, msg: 'とおすぎて はこべない' };
+  var have = castleFood(S, a[0], a[1]), room = castleFoodCap(S, b[0], b[1]) - castleFood(S, b[0], b[1]);
+  koku = Math.max(0, Math.min(Math.round(koku), have, room));
+  if (!koku) return { ok: false, msg: room <= 0 ? 'むこうの 蔵が いっぱい' : 'はこぶ 兵糧が ない' };
+  setCastleFood(S, a[0], a[1], have - koku); setCastleFood(S, b[0], b[1], castleFood(S, b[0], b[1]) + koku);
+  return { ok: true, koku: koku };
+}
 // お金で 兵糧を かいいれる（石）
 function buyRice(S, pid, cid, koku) {
   var own = cid ? S.castles[cid].owner : S.provs[pid].owner, cap = castleFoodCap(S, pid, cid), have = castleFood(S, pid, cid);
@@ -6354,6 +6375,29 @@ function riceHtml(pid, cid) {
   return '<div class="kodds">🍙 兵糧 <b>' + f.toLocaleString('ja-JP') + '石</b>／蔵 ' + cap.toLocaleString('ja-JP') + '石　<span class="kfbar"><i style="width:' + Math.min(100, f / cap * 100) + '%;background:#d9b44a"></i></span><br>' +
     'いまの 守備兵で <b class="' + (d < 15 ? 'r' : d < 30 ? 'y' : 'g') + '">約' + (d > 365 ? '365日いじょう' : d + '日') + '</b> 籠城できる（1人 1日 5合）。秋に 米が はいる。</div>';
 }
+// 兵糧を はこぶ（じぶんの 城どうし。めいれいは つかわない）
+function kRiceMoveBox(loc, back) {
+  var a = locPC(KS, loc), nm = locName(KS, loc), have = castleFood(KS, a[0], a[1]), ds = riceDests(KS, loc), pick = null;
+  function row(d) { var b = locPC(KS, d), f = castleFood(KS, b[0], b[1]), cap = castleFoodCap(KS, b[0], b[1]), dd = castleFoodDays(KS, b[0], b[1]);
+    return '<button class="koff" data-d="' + d + '"' + (f >= cap ? ' disabled style="opacity:.5"' : '') + '><b>' + (b[1] ? '🏰 ' : '🏯 ') + locName(KS, d) + '</b><small>' + PROV_BY[b[0]].name + (b[1] ? 'の 支城' : 'の 本城') + '　🍙' + f.toLocaleString('ja-JP') + '／' + cap.toLocaleString('ja-JP') + '石（' + (dd > 365 ? '1年いじょう' : dd + '日') + '）' + (f >= cap ? '・蔵いっぱい' : '') + '</small></button>'; }
+  var h = '<p class="small"><b>' + nm + '</b>の 蔵 🍙' + have.toLocaleString('ja-JP') + '石 から、おなじ 国か となりの 国の じぶんの 城へ はこぶ。すぐ とどく（めいれいは つかわない）。</p>' +
+    (ds.length ? '<div class="koffs">' + ds.map(row).join('') + '</div>' : '<p class="small r">はこべる 城が ない（おなじ 国・となりの 国に じぶんの 城が ない）</p>');
+  kModal('🍙 ' + nm + 'から 兵糧を はこぶ', h, [{ label: 'もどる', cls: 'act sub', fn: back }]);
+  [].forEach.call($('kBody').querySelectorAll('[data-d]'), function (e) { e.onclick = function () {
+    SFX.tap(); var d = e.dataset.d, b = locPC(KS, d), room = castleFoodCap(KS, b[0], b[1]) - castleFood(KS, b[0], b[1]), mx = Math.max(0, Math.min(have, room));
+    if (mx < 1) return;
+    var st = Math.max(1, Math.round(mx / 50)), def = Math.min(mx, Math.max(st, Math.round(mx / 2)));
+    kModal('🍙 ' + nm + ' → ' + locName(KS, d), '<p class="small">はこぶ 石を えらぶ（さいだい ' + mx.toLocaleString('ja-JP') + '石）。</p><div class="kamt"><input type="range" id="kRm" min="1" max="' + mx + '" step="1" value="' + def + '"><b id="kRmV"></b></div><p class="small" id="kRmW"></p>', [
+      { label: '🍙 はこぶ', cls: 'act', fn: function () { kSnap('兵糧を はこぶ'); var r = moveRice(KS, loc, d, +$('kRm').value); if (!r.ok) { kUndoStack.pop(); banner(r.msg, 1200); return; }
+          logC(KS, nm + 'から ' + locName(KS, d) + 'へ 兵糧 ' + r.koku.toLocaleString('ja-JP') + '石を はこんだ', 'good'); kSave(); kUpdate(); back(); } },
+      { label: 'もどる', cls: 'act sub', fn: function () { kRiceMoveBox(loc, back); } }]);
+    var upd = function () { var k = +$('kRm').value, fa = have - k, fb = castleFood(KS, b[0], b[1]) + k;
+      $('kRmV').textContent = k.toLocaleString('ja-JP') + '石';
+      $('kRmW').innerHTML = nm + ' ' + have.toLocaleString('ja-JP') + ' → <b>' + fa.toLocaleString('ja-JP') + '石</b>（' + castleDaysAt(a, fa) + '）<br>' + locName(KS, d) + ' ' + castleFood(KS, b[0], b[1]).toLocaleString('ja-JP') + ' → <b>' + fb.toLocaleString('ja-JP') + '石</b>（' + castleDaysAt(b, fb) + '）'; };
+    $('kRm').oninput = upd; upd();
+  }; });
+}
+function castleDaysAt(pc, food) { var men = menOfUnits(castleUnits(KS, pc[0], pc[1])); var d = men ? Math.floor(food / (men * RICE_PER_MAN)) : 999; return d > 365 ? '1年いじょう もつ' : d + '日 もつ'; }
 // 兵糧を かう
 function kRiceBox(pid, cid, back) {
   var f = castleFood(KS, pid, cid), cap = castleFoodCap(KS, pid, cid), room = cap - f, gold = KS.clans[KS.player].gold;
@@ -6384,6 +6428,7 @@ function kMainCastleBox(pid) {
     btns.push({ label: '🚶 移動' + (didCmd(P, 'move') ? '✓' : ''), cls: 'act sub', disabled: full0 || didCmd(P, 'move') || !P.units.length || !ADJ[pid].some(function (q) { return KS.provs[q].owner === KS.player; }), fn: go0('move') });
     btns.push({ label: '🎖 城主', cls: 'act sub', fn: function () { kAssignBox(pid, function () { kMainCastleBox(pid); }); } });
     btns.push({ label: '🍙 兵糧を かう', cls: 'act', fn: function () { kRiceBox(pid, null, function () { kMainCastleBox(pid); }); } });
+    btns.push({ label: '🍙 兵糧を はこぶ', cls: 'act sub', fn: function () { kRiceMoveBox(pid, function () { kMainCastleBox(pid); }); } });
   }
   btns.push({ label: 'とじる', cls: 'act sub', fn: kCloseModal });
   kModal('🏯 本城' + (mine ? '（めいれい ' + cmdCount(P) + '/' + MAX_CMDS + '）' : ''), body, btns);
@@ -6411,6 +6456,7 @@ function kCastleBox(id) {
     btns.push({ label: '🦊 調略' + (C0.sch === KS.turn ? '✓' : ''), cls: 'act', disabled: C0.sch === KS.turn || !bst.length, fn: function () { kBranchSchemeBox(id); } });
     btns.push({ label: '🪖 徴兵' + (C0.rec === KS.turn ? '✓' : ''), cls: 'act', disabled: C0.rec === KS.turn || (C0.units.length >= 8 && !C0.units.some(function (u) { return u.hp < 10; })), fn: function () { kRecruitBox(C0.prov, id, function () { kCastleBox(id); }); } });
     btns.push({ label: '🍙 兵糧を かう', cls: 'act', fn: function () { kRiceBox(C0.prov, id, function () { kCastleBox(id); }); } });
+    btns.push({ label: '🍙 兵糧を はこぶ', cls: 'act sub', fn: function () { kRiceMoveBox(id, function () { kCastleBox(id); }); } });
   }
   if (mine) btns.push({ label: '🗾 所領を ひらく（内政・改築）' + (C0.dev === KS.turn ? '✓' : ''), cls: 'act kdev', fn: function () { kCloseModal(); openDomain(C0.prov, id); } });
   btns.push({ label: 'とじる', cls: 'act sub', fn: kCloseModal });
@@ -7444,6 +7490,7 @@ function kDomCastleBox(loc) {
   if (ph) {
     btns.push({ label: '🪖 この 城で 徴兵' + (recDone ? '✓' : ''), cls: 'act', disabled: recDone || units.length >= cap && !units.some(function (u) { return u.hp < 10; }), fn: function () { kRecruitBox(pid, isC ? loc : null, back); } });
     btns.push({ label: '👤 家臣を よぶ', cls: 'act', fn: function () { kCallOffBox(loc, back); } });
+    btns.push({ label: '🍙 兵糧を はこぶ', cls: 'act sub', fn: function () { kRiceMoveBox(loc, back); } });
     if (!isC) btns.push({ label: '🎖 城主を えらぶ', cls: 'act sub', fn: function () { kAssignBox(pid, back); } });
   }
   btns.push({ label: 'とじる', cls: 'act sub', fn: function () { kCloseModal(); domPanel(); domRender(); } });
