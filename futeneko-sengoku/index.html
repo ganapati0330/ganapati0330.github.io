@@ -505,7 +505,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v9.3';
+var VERSION = 'v9.4';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -7348,7 +7348,7 @@ function openDomain(pid, branchId) {
   if (DS.canBuild) { var fr0 = freeOfficers(KS, KS.player).filter(domOffOK).sort(function (a, b) { return b.st[1] - a.st[1]; }), h0 = officerAt(KS, pid); if (h0 && !domOffOK(h0)) h0 = null; KS.curOff = h0 && !offBusy(KS, h0) && h0.clan === KS.player ? h0.id : (fr0[0] ? fr0[0].id : null); }
   show('domScreen');
   var cv = $('dcv'); DS.cv = cv; DS.ctx = cv.getContext('2d');
-  domResize(); domFit(); domPanel(); domRender();
+  domResize(); DS.wide = Object.keys(DS.myProvs || {}).length > 1; domPanel(); var bL = DS.bb; if (DS.wide) DS.bb = DS.bbAll; domFit(); DS.bb = bL; domRender();   // はじめから 領地 ぜんぶを 見せる
 }
 // 内政の 奉行に なれる 家臣：この 国の 城か、いっしょに 内政する 支城に いる
 function domOffOK(o) { return !!(o && o.clan === KS.player); }   // 内政の 奉行は どの 城の 家臣でも
@@ -7605,14 +7605,24 @@ function domPanel() {
     ub.onclick = function () { SFX.tap(); if (!DS.snapped) { kSnap('内政'); DS.snapped = true; } DS.stack = DS.stack || []; DS.stack.push(serialize(KS)); var r = upgradeCastle(KS, pid, upC, KS.player); if (!r.ok) { DS.stack.pop(); banner(r.msg, 1400); return; } if (upC) DS.devBr[upC] = 1; DS.built++; SFX.repair && SFX.repair(); logC(KS, (upC ? brName(upC) : castleNameOf(KS, pid)) + 'を 改築した（Lv' + r.lv + '）', 'good'); kSave(); domPanel(); domRender(); };
     acts.appendChild(ub);
   }
+  // ボタンは 領地 ぜんぶで かぞえる（どこかで たてられれば えらべる）
+  var myP = Object.keys(DS.myProvs || {}); if (!myP.length) myP = [pid];
+  function mineIn(q, h) { return regionOwner(KS, h[0], h[1]) === who; }
   ['field', 'town', 'mine', 'meibutsu', 'salt', 'saku', 'hori', 'toride'].forEach(function (type) {
-    var B0 = BLD[type], cnt = bldCountIn(KS, pid, who, type);
-    var any = type === 'mine' ? Object.keys(d[pid].dep).length > 0 : type === 'salt' ? d[pid].hexes.some(function (h) { return nearAny(h[0], h[1], 1, function (c, r) { return w.at(c, r) === 's'; }); }) : true;
+    var B0 = BLD[type], cnt = 0, deps = 0, sea = false, townLeft = 0, meis = [];
+    myP.forEach(function (q) {
+      cnt += bldCountIn(KS, q, who, type);
+      if (type === 'mine') Object.keys(d[q].dep).forEach(function (dk) { var h = dk.split(',').map(Number); if (mineIn(q, h) && !(KS.provs[q].bld && KS.provs[q].bld[dk])) deps++; });
+      if (type === 'salt' && !sea) sea = d[q].hexes.some(function (h) { return mineIn(q, h) && nearAny(h[0], h[1], 1, function (c, r) { return w.at(c, r) === 's'; }); });
+      if (type === 'town') townLeft += Math.max(0, Math.floor(bldCountIn(KS, q, who, 'field') / FIELDS_PER_TOWN) - bldCountIn(KS, q, who, 'town'));
+      if (type === 'meibutsu' && MEIBUTSU[q] && meis.indexOf(MEIBUTSU[q]) < 0) meis.push(MEIBUTSU[q]);
+    });
+    var any = type === 'mine' ? deps > 0 : type === 'salt' ? sea : true;
     var cost = bldCost(KS, pid, type, -1, -1, who);   // 平地の ねだん（森・丘は たかい）
     var b = document.createElement('button'); b.className = 'dbld' + (DS.mode === type ? ' on' : ''); b.disabled = !any;
-    var sub = type === 'meibutsu' ? MEIBUTSU[pid] : type === 'field' ? '石高 +0.5' : type === 'town' ? '+' + kan(B0.inc) + '・あと ' + Math.max(0, Math.floor(bldCountIn(KS, pid, who, 'field') / FIELDS_PER_TOWN) - bldCountIn(KS, pid, who, 'town')) : type === 'mine' ? (any ? '鉱脈 ' + Object.keys(d[pid].dep).length + 'か所' : '鉱脈なし') : type === 'salt' ? (any ? '+' + kan(B0.inc) : '海が ない') : B0.war ? (type === 'toride' ? '合戦で 小さな 城に' : type === 'saku' ? '合戦で てきの 足どめ' : '合戦で わたりにくい') : '+' + kan(B0.inc);
+    var sub = type === 'meibutsu' ? meis.slice(0, 3).join('・') : type === 'field' ? '石高 +0.5' : type === 'town' ? '+' + kan(B0.inc) + '・あと ' + townLeft : type === 'mine' ? (any ? '鉱脈 ' + deps + 'か所' : '鉱脈なし') : type === 'salt' ? (any ? '+' + kan(B0.inc) : '海が ない') : B0.war ? (type === 'toride' ? '合戦で 小さな 城に' : type === 'saku' ? '合戦で てきの 足どめ' : '合戦で わたりにくい') : '+' + kan(B0.inc);
     b.innerHTML = B0.icon + ' ' + B0.name + (cnt ? '×' + cnt : '') + '<small>💰' + kan(cost) + '・' + sub + '</small>';
-    b.onclick = function () { SFX.tap(); DS.mode = DS.mode === type ? null : type; domPanel(); domRender(); };
+    b.onclick = function () { SFX.tap(); DS.mode = DS.mode === type ? null : type; domPanel(); if (DS.mode && !DS.wide) { DS.wide = true; var b0 = DS.bb; DS.bb = DS.bbAll; domFit(); DS.bb = b0; } domRender(); };
     acts.appendChild(b);
   });
   if (DS.built) { var u = document.createElement('button'); u.className = 'act undo'; u.textContent = '↩ もどす'; u.onclick = function () { SFX.tap(); domUndo(); }; acts.appendChild(u); }
