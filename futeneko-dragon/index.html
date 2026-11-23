@@ -684,6 +684,14 @@ button{font-family:inherit;cursor:pointer;border:none}
 #title{background:linear-gradient(#f6c98a,#e58a5a 45%,#5a3a8f);align-items:center;justify-content:safe center;overflow-y:auto;color:#fff;text-align:center;padding:20px}
 #title h1{margin:0 0 4px;font-size:clamp(28px,8vw,52px);letter-spacing:2px;text-shadow:0 4px 0 #8a3c10,0 0 20px #ffb347;color:#ffe9a8}
 #title .sub{font-size:14px;opacity:.85;margin-bottom:8px}
+#title{padding:0!important;overflow:hidden!important;justify-content:center;background:#3a2350}
+#title .tbg{position:absolute;inset:-30px;background:url(dr/menu.webp) center/cover;filter:blur(16px) brightness(.8)}
+#title .tbox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+#title .tmenu{display:block;width:100%;height:100%;user-select:none;-webkit-user-drag:none;pointer-events:none}
+#title .hz{position:absolute;background:transparent;border-radius:28px;padding:0;-webkit-tap-highlight-color:transparent;transition:transform .08s,filter .15s}
+#title .hz:active{background:rgba(255,255,255,.22);transform:scale(.97)}
+#title .hz.off{background:rgba(60,40,70,.55);cursor:default}
+#title .tver{position:absolute;left:26.5%;width:48%;top:95.05%;height:2.35%;background:#93503f;color:#ffe9b8;display:block;text-align:center;white-space:nowrap;overflow:hidden;font-weight:bold;border-radius:4px}
 #title .tvis{display:block;width:min(100%,calc((100vh - 190px)*1.777),960px);height:auto;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.45);margin:0 auto 10px;flex:0 0 auto}
 #title .sub2{font-size:clamp(18px,5vw,28px);font-weight:bold;color:#fff;text-shadow:0 3px 0 #5a2a8a,0 0 12px #ffb347;margin:0 0 6px;letter-spacing:2px}
 #titleCv{width:min(80vw,360px);height:min(52vw,230px);flex:0 0 auto}
@@ -881,10 +889,18 @@ button{font-family:inherit;cursor:pointer;border:none}
 
 <!-- タイトル -->
 <section id="title" class="screen on">
-  <img src="dr/title.webp" class="tvis" alt="フテ猫ドラゴン どらごんを そだてよう！">
+  <div class="tbg"></div>
+  <div class="tbox" id="tbox">
+    <img src="dr/menu.webp" class="tmenu" alt="フテ猫ドラゴン どらごんを そだてよう！">
+    <button class="hz" id="tContinue" style="left:14.5%;top:50.5%;width:70%;height:9.5%" aria-label="つづきから"></button>
+    <button class="hz" id="tNew" style="left:14.5%;top:61.6%;width:70%;height:9.2%" aria-label="はじめから"></button>
+    <button class="hz" id="tDex" style="left:17%;top:72.8%;width:21%;height:9.6%" aria-label="ずかん"></button>
+    <button class="hz" id="tRoom" style="left:40%;top:72.8%;width:21%;height:9.6%" aria-label="おへや"></button>
+    <button class="hz" id="tGear" style="left:63%;top:72.8%;width:21%;height:9.6%" aria-label="せってい"></button>
+    <div class="tver" id="tver">ver <span id="verT"></span> © 泉正道 / フテ猫実行委員会</div>
+  </div>
   <canvas id="titleCv" style="display:none"></canvas>
-  <div id="titleMain"></div>
-  <div class="ver">ver <span id="verT"></span> © 泉正道 / フテ猫実行委員会</div>
+  <div id="titleMain" style="display:none"></div>
 </section>
 
 <!-- ホーム（ドラゴンこや） -->
@@ -928,7 +944,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.17';
+const VER='1.18';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1321,20 +1337,34 @@ function toast(t,s){const e=document.createElement('div');e.className='toast';e.
 function barHtml(v,max,col,label){const p=clamp(max?v/max:0,0,1)*100;return '<div class="bar"><i style="width:'+p+'%;background:'+col+'"></i><b>'+(label||'')+'</b></div>';}
 
 /* ===================== タイトル ===================== */
-function renderTitle(){
-  $('verT').textContent=VER;
-  const s=load();
-  const m=$('titleMain');
-  if(s){
-    m.innerHTML='<button class="bigbtn" id="tContinue">つづきから</button><button class="bigbtn gray" id="tNew">はじめから</button>';
-    $('tContinue').onclick=()=>{audioInit();G=s;setMute(G.muted);preloadSprites(G.dragons.map(d=>d.sp));goHome();if(!G.dragons.length&&!G.story)startStory();};
-    $('tNew').onclick=()=>{modal('<h2>はじめから？</h2><p>いまの ドラゴンたちは いなくなっちゃうよ。<br>ほんとうに いい？</p>',[{t:'やめる',c:'sub'},{t:'はじめから',f:()=>{renderNew();}}]);};
-  } else renderNew();
+/* タイトル（メニューの え）：たてのスマホは よこを すこし きって がめんいっぱい、よこむきは え ぜんたいを まんなかに */
+const MENU_AR=941/1672;
+function fitTitle(){
+  const b=$('tbox');if(!b)return;const W=window.innerWidth,H=window.innerHeight,ar=W/H;
+  let w,h;
+  if(ar>=0.40&&ar<MENU_AR){h=H;w=H*MENU_AR;}           // たかさに あわせる（よこを すこし きる）
+  else if(ar<0.40){w=W/0.74;h=w/MENU_AR;}               // ほそながい がめん：ボタンが きれない ところまで
+  else{h=H;w=H*MENU_AR;}                                 // よこひろ：ぜんたいを みせる
+  if(w>W/0.72){w=W/0.72;h=w/MENU_AR;}
+  b.style.width=w+'px';b.style.height=h+'px';
+  const fs=Math.max(9,w*0.024);$('tver').style.fontSize=fs+'px';$('tver').style.lineHeight=(h*0.0235)+'px';
 }
-function renderNew(){
-  const m=$('titleMain');
-  m.innerHTML='<button class="bigbtn" id="tStart">はじめる</button>';
-  $('tStart').onclick=()=>{audioInit();G=blankGame('akari');save();goHome();startStory();};
+window.addEventListener('resize',fitTitle);
+function renderTitle(){
+  $('verT').textContent=VER;fitTitle();
+  const s=load();
+  const cont=()=>{audioInit();G=s;setMute(G.muted);preloadSprites(G.dragons.map(d=>d.sp));goHome();if(!G.dragons.length&&!G.story)startStory();};
+  const startNew=()=>{audioInit();G=blankGame('akari');save();goHome();startStory();};
+  const noSave=()=>{sfx.tap();toast('まだ セーブが ないよ。「はじめから」で スタート！');};
+  $('tContinue').classList.toggle('off',!s);
+  $('tContinue').onclick=()=>{if(!s)return noSave();sfx.tap();cont();};
+  $('tRoom').onclick=()=>{if(!s)return noSave();sfx.tap();cont();};
+  $('tNew').onclick=()=>{sfx.tap();if(!s)return startNew();
+    modal('<h2>はじめから？</h2><p>いまの ドラゴンたちは いなくなっちゃうよ。<br>ほんとうに いい？</p>',[{t:'やめる',c:'sub'},{t:'はじめから',f:startNew}]);};
+  $('tDex').onclick=()=>{if(!s)return noSave();sfx.tap();G=s;openDex();};
+  $('tGear').onclick=()=>{sfx.tap();
+    if(s){G=s;openGear();return;}
+    modal('<h2>⚙ せってい</h2><p style="font-size:13px">ver '+VER+'<br>「はじめから」で スタートすると、おとや セーブの せっていが できるよ。</p>',[{t:'とじる',c:'sub'}]);};
 }
 /* ===== フテ猫ワールドから もってきた しくみ（かぐ・はたけの え）===== */
 const TS=32;
