@@ -482,7 +482,7 @@ const SPR={"fute_inf": "data:image/webp;base64,UklGRphLAABXRUJQVlA4WAoAAAAQAAAAz
 
 /* ===== フテ猫 戦国合戦 : ゲームロジック（DOM非依存） ===== */
 
-var VERSION = 'v7.2';
+var VERSION = 'v7.3';
 var TURN_LIMIT = 15; // 既定（サイズごとに SIZES[].turns）
 
 // ---- 兵種 ----
@@ -5650,7 +5650,24 @@ function kRegionLayer() {
   kMap.reg = cv; kMap.regKey = key; return cv;
 }
 // 国ざかい：ヘックスの へり。pid を わたすと その 国の まわり（海岸も）だけ
-function kDrawHexBorders(c, lw, pid, col, wd) {
+function kDrawMyLand(c, lw) {
+  var w = worldMap(); if (!w || !kMap.HX || !KS || typeof regionOwner !== 'function') return;
+  var sig = KS.player + '|' + PROVS.map(function (p) { return KS.provs[p.id].owner; }).join(',') + '|' + Object.keys(KS.castles || {}).map(function (k) { return KS.castles[k].owner; }).join(',');
+  if (kMap.myLandSig !== sig) {
+    var hw = kMap.hexW / 2, hr = kMap.hexRow / 1.5, CX = [0, hw, hw, 0, -hw, -hw], CY = [-hr, -hr / 2, hr / 2, hr, hr / 2, -hr / 2], EDGE = { 0: [1, 2], 1: [4, 5], 2: [5, 0], 3: [0, 1], 4: [3, 4], 5: [2, 3] };
+    var me = KS.player, own = new Uint8Array(w.w * w.h);
+    for (var r = 0; r < w.h; r++) for (var cc = 0; cc < w.w; cc++) if (w.provAt(cc, r) && regionOwner(KS, cc, r) === me) own[r * w.w + cc] = 1;
+    var pp = new Path2D();
+    for (r = 0; r < w.h; r++) for (cc = 0; cc < w.w; cc++) {
+      var i = r * w.w + cc; if (!own[i]) continue; var nb = hexNbs(cc, r);
+      for (var j = 0; j < 6; j++) { var n = nb[j]; if (n[0] >= 0 && n[1] >= 0 && n[0] < w.w && n[1] < w.h && own[n[1] * w.w + n[0]]) continue; var e = EDGE[j]; pp.moveTo(kMap.HX[i] + CX[e[0]], kMap.HY[i] + CY[e[0]]); pp.lineTo(kMap.HX[i] + CX[e[1]], kMap.HY[i] + CY[e[1]]); }
+    }
+    kMap.myLand = pp; kMap.myLandSig = sig;
+  }
+  c.lineCap = 'round'; c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = 5.2 * lw; c.stroke(kMap.myLand);
+  c.strokeStyle = '#ffe24a'; c.lineWidth = 3.2 * lw; c.stroke(kMap.myLand);
+}
+function kDrawHexBorders(c, lw, pid, col, wd, plain) {
   var w = worldMap(); if (!w || !kMap.HX) return;
   var hw = kMap.hexW / 2, hr = kMap.hexRow / 1.5;
   // かど： 0=上 1=右上 2=右下 3=下 4=左下 5=左上 ／ となり（hexNbs の じゅん）： 0=右 1=左 2=左上 3=右上 4=左下 5=右下
@@ -5674,7 +5691,7 @@ function kDrawHexBorders(c, lw, pid, col, wd) {
     return;
   }
   kMap.provEdge = kMap.provEdge || {};
-  var dm = kDomainSet(pid), key = pid + (dm ? '#' + dm.sig : '');
+  var dm = plain ? null : kDomainSet(pid), key = pid + (dm ? '#' + dm.sig : '');
   if (!kMap.provEdge[key]) {
     var pp = new Path2D(), inS = dm ? function (cc, rr) { return dm.has(cc, rr); } : function (cc, rr) { return w.provAt(cc, rr) === pid; };
     for (var r2 = 0; r2 < w.h; r2++) for (var c2 = 0; c2 < w.w; c2++) {
@@ -5841,8 +5858,9 @@ function kRender() {
   kDrawHexBorders(c, lw);
   kDrawRoutes(c, lw);
   kDrawFocus(c, lw);
-  // えらんだ 国の ふち
-  if (kSel) kDrawHexBorders(c, lw, kSel, '#ffe24a', 3.2);
+  // じぶんの 領地ぜんぶ（本城・支城の 所領）を 黄色い 線で、えらんだ 国は 白い 点線で
+  if (kSel) { c.save(); c.setLineDash([7 * lw, 5 * lw]); kDrawHexBorders(c, lw, kSel, '#ffffff', 2.2, true); c.restore(); }
+  kDrawMyLand(c, lw);   // 黄色が うえ（国ざかいが かさなる ところは 黄色）
   tg.forEach(function (q) { kDrawHexBorders(c, lw, q, kMode === 'attack' ? '#ff5a3a' : kMode === 'scheme' ? '#c48aff' : '#5aa8ff', 2.6); });
   // 隠岐の 枠
   if (kMap.okiBox) { var ob = kMap.okiBox; c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 1.5 * lw; c.setLineDash([6 * lw, 4 * lw]); c.strokeRect(ob[0], ob[1], ob[2], ob[3]); c.setLineDash([]);
