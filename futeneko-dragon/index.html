@@ -713,6 +713,17 @@ button{font-family:inherit;cursor:pointer;border:none}
 .wrap{max-width:620px;margin:0 auto;padding:10px;width:100%}
 .card{background:#fffaf0;border-radius:20px;box-shadow:0 4px 0 #d69a4a;padding:10px;margin-bottom:10px;position:relative}
 #homeCv{display:none}
+.ywrap{position:relative;flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.ywrap #yard{flex:1 1 0;min-height:0;width:100%}
+.ypad{position:absolute;left:8px;bottom:8px;width:120px;height:120px;touch-action:none;opacity:.85}
+.ypad button{position:absolute;width:42px;height:42px;border-radius:12px;background:rgba(30,20,60,.6);color:#fff;font-size:18px;border:2px solid #fff8;touch-action:none;-webkit-user-select:none;user-select:none;padding:0}
+.ypad button.on{background:#e8812a}
+.ypad .du{left:39px;top:0}.ypad .dd{left:39px;bottom:0}.ypad .dl{left:0;top:39px}.ypad .dr{right:0;top:39px}
+.yact{position:absolute;right:10px;bottom:14px;width:66px;height:66px;border-radius:50%;background:rgba(232,129,42,.9);color:#fff;font-size:24px;border:3px solid #fff;box-shadow:0 3px 0 rgba(0,0,0,.3);line-height:1;padding:0;touch-action:manipulation}
+.yact small{display:block;font-size:10px;font-weight:bold}
+.yact.hot{animation:pulseb 1s infinite}
+body.yedit .ypad,body.yedit .yact{display:none}
+@media (max-height:620px){.ypad{transform:scale(.8);transform-origin:left bottom}.yact{transform:scale(.85);transform-origin:right bottom}}
 @keyframes pulseb{0%,100%{transform:scale(1)}50%{transform:scale(1.12);box-shadow:0 0 0 4px #ffe35a}}
 .hbtn.pulse{animation:pulseb 1s infinite}
 .frrow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
@@ -738,7 +749,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 #homeWrap .eggnote{font-size:10px}
 #homeWrap .card>div:first-child{font-size:12px!important;margin-bottom:2px!important}
 #home .yardbar{position:relative}
-#home .yardbar .yhint{position:absolute;left:6px;right:6px;bottom:calc(100% + 4px);background:rgba(40,25,70,.72);border-radius:10px;padding:3px 8px;font-size:10px;line-height:1.35;pointer-events:none;min-width:0;flex:none}
+#home .yardbar .yhint{position:absolute;left:136px;right:84px;bottom:calc(100% + 4px);background:rgba(40,25,70,.72);border-radius:10px;padding:3px 8px;font-size:10px;line-height:1.35;pointer-events:none;min-width:0;flex:none}
 .bars3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 #homeWrap .blbl{font-size:10px;margin-top:2px}
 #homeWrap .bar{height:9px;margin:1px 0}
@@ -917,7 +928,7 @@ button{font-family:inherit;cursor:pointer;border:none}
     <div class="pill">👣 <span id="hPow">0</span></div>
     <button class="gear" id="btnFull" title="ぜんがめん">⛶</button><button class="gear" id="btnGear">⚙</button>
   </div>
-  <div class="yardbox"><canvas id="yard"></canvas><div id="yardBar" class="yardbar"></div></div>
+  <div class="yardbox"><div class="ywrap"><canvas id="yard"></canvas><div class="ypad" id="ypad"><button data-k="up" class="du">▲</button><button data-k="left" class="dl">◀</button><button data-k="right" class="dr">▶</button><button data-k="down" class="dd">▼</button></div><button class="yact" id="yact">👆<small>しらべる</small></button></div><div id="yardBar" class="yardbar"></div></div>
   <div class="wrap" id="homeWrap"></div>
 </section>
 
@@ -950,7 +961,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.28';
+const VER='1.29';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1677,7 +1688,7 @@ function yardInit(){
   YARD.par=[{k:'dad',x:3*TS,y:8*TS},{k:'mom',x:6*TS,y:5*TS}].map(o=>Object.assign(o,{path:[],face:1,dir:'F',mv:false,idle:rnd(2,6),act:null,pose:null,poseT:0}));
   YARD.ball=(G.toys&&G.toys.ball>0)?{x:15.5*TS,y:9.6*TS,vx:0,vy:0}:null;
   YARD.cam=Math.max(0,YW*TS-yardViewW())*0.6;
-  YARD.inited=true;
+  YARD.inited=true;initYardPad();
 }
 function yardSync(){ // ドラゴンの かずが かわったら
   const ids=G.dragons.map(d=>d.id).join(','),cur2=YARD.ents.map(e=>e.d.id).join(',');
@@ -1751,11 +1762,21 @@ function yardUpdate(dt){
   if(moveEnt(a,dt,70)&&a.act){const f=a.act;a.act=null;f();}
   {const dx=a.x-ox,dy=a.y-oy;if(dx||dy)a.dir=Math.abs(dx)>=Math.abs(dy)*0.8?(dx>0?'R':'L'):(dy>0?'F':'B');}
   if(night&&a.pose&&a.pose!=='sleep'&&!a.mv&&sideOf(a.x)===sideOf(0)&&a.poseT>0.5)a.poseT=0.5;
-  if(!a.mv&&!a.act&&!a.pose){a.idle-=dt;if(a.idle<=0){a.idle=rnd(2,5);
-    if(night){const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+fsize(bed).w+0.6)*TS,y:(bed.y+fsize(bed).h+0.4)*TS}:randSpot(true);routeTo(a,s.x,s.y);a.act=()=>{a.dir='R';a.pose='sleep';a.poseT=rnd(20,40);};}
-    else if(Math.random()<0.3&&YARD.ents.length){const e=pick(YARD.ents);routeTo(a,e.x-24,e.y+4);a.act=()=>{a.face=e.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose=Math.random()<0.5?'pet':'joy';a.poseT=1.6;e.heart=1.6;e.hop=0.6;};}
-    else{const room=Math.random()<0.4,s=randSpot(room);routeTo(a,s.x,s.y);
-      a.act=()=>{a.pose=pick(room?['read','chair','toys','drink','stretch','sweep','throw']:['butterfly','basket','sitknee','look','stretch','dig']);a.poseT=rnd(3,7);};}}}
+  // じぶんで そうさ：キー・やじるし
+  const K=YARD.keys||{};let kx=(K.right?1:0)-(K.left?1:0),ky=(K.down?1:0)-(K.up?1:0);
+  if(kx||ky){a.path=[];a.act=null;a.pose=null;a.idle=25;const l=Math.hypot(kx,ky),sp=85*dt;
+    let nx=a.x+kx/l*sp,ny=a.y+ky/l*sp;
+    if(akOk(nx,ny)){a.x=nx;a.y=ny;}else if(akOk(nx,a.y))a.x=nx;else if(akOk(a.x,ny))a.y=ny;
+    a.mv=true;if(kx)a.face=kx>0?1:-1;a.dir=Math.abs(kx)>=Math.abs(ky)*0.8?(kx>0?'R':'L'):(ky>0?'F':'B');YARD.follow=1.5;}
+  else if(YARD._wasKey){a.mv=false;}
+  YARD._wasKey=!!(kx||ky);
+  if(YARD.follow>0){YARD.follow-=dt;const vw=(YARD.W||400)/(YARD.s||1);YARD.cam+=(a.x-vw/2-YARD.cam)*Math.min(1,dt*5);}
+  YARD.near=akNear();const ab=$('yact');if(ab)ab.classList.toggle('hot',!!YARD.near);
+  // あかりちゃんは じぶんでは あるきまわらない（しばらく そうさが ないと その ばで あそぶ。よるは ベッドへ）
+  if(!a.mv&&!a.act&&!a.pose){a.idle-=dt;if(a.idle<=0){a.idle=rnd(8,14);
+    if(!night){a.pose=pick(sideOf(a.x)===sideOf(0)?['read','stretch','drink','toys']:['look','stretch','butterfly','sitknee']);a.poseT=rnd(3,5);}
+    else if(night){const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+fsize(bed).w+0.6)*TS,y:(bed.y+fsize(bed).h+0.4)*TS}:randSpot(true);routeTo(a,s.x,s.y);a.act=()=>{a.dir='R';a.pose='sleep';a.poseT=rnd(20,40);};}
+  }}
   if(!night)(YARD.par||[]).forEach(q=>parentAI(q,dt));
   YARD.ents.forEach((e,i)=>{
     e.hop=Math.max(0,e.hop-dt);e.heart=Math.max(0,e.heart-dt);
@@ -1832,6 +1853,8 @@ function yardDraw(){
     if(d===cur()){c.fillStyle='#ffd000';c.beginPath();c.moveTo(e.x-5,e.y-sz*1.25-12);c.lineTo(e.x+5,e.y-sz*1.25-12);c.lineTo(e.x,e.y-sz*1.25-5);c.fill();}
   }}));
   if(!night)(YARD.par||[]).forEach(q=>list.push({y:q.y,f:()=>drawParent(c,q)}));
+  if(YARD.near&&!YARD.edit){const n=YARD.near,px=n.k==='plot'?n.p.x:n.k==='ball'?n.p.x:n.o.x,py=n.k==='plot'?n.p.y-14:n.k==='ball'?n.p.y-14:n.o.y-(n.k==='parent'?100:58);
+    list.push({y:9999,f:()=>{c.font='bold 13px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('👆',px,py+Math.sin(T*5)*2);c.globalAlpha=1;}});}
   if(YARD.ball){const b=YARD.ball;list.push({y:b.y,f:()=>{c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(b.x,b.y+1,7,2.5,0,0,7);c.fill();c.save();c.translate(b.x,b.y-6);c.rotate(b.rot||0);c.font='13px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('⚽',0,0);c.restore();c.textBaseline='alphabetic';}});}
   const a=YARD.akari;
   list.push({y:a.y,f:()=>{
@@ -1868,6 +1891,44 @@ function yardBind(){
 }
 function plotAt(p){return ALLPLOTS.findIndex(P=>p.x>=P.c*TS&&p.x<(P.c+1)*TS&&p.y>=P.r*TS-6&&p.y<(P.r+1)*TS);}
 function furnAt(p){const c=Math.floor(p.x/TS),r=Math.floor(p.y/TS);const L=G.home.room.slice().reverse();return L.find(it=>{const sz=fsize(it);return c>=it.x&&c<it.x+sz.w&&r>=it.y&&r<it.y+sz.h&&!FURN[it.id].rug})||L.find(it=>{const sz=fsize(it);return c>=it.x&&c<it.x+sz.w&&r>=it.y&&r<it.y+sz.h;});}
+function akOk(x,y){
+  if(x<0.4*TS||x>(YW-0.4)*TS||y<1.9*TS||y>(YH-0.2)*TS)return false;
+  const c=Math.floor(x/TS),r=Math.floor(y/TS);
+  if(POND.has(c+','+r))return false;
+  if(c===WALL_C)return y>=DOOR_R[0]*TS+4&&y<(DOOR_R[1]+1)*TS-2;
+  if(x<WALL_C*TS&&y<2.6*TS)return false;
+  return true;
+}
+/* あかりちゃんの ちかくで しらべられる もの */
+function akNear(){
+  const a=YARD.akari;let best=null,bd=46;
+  const cand=(d,k,o,p)=>{if(d<bd){bd=d;best={k,o,p};}};
+  YARD.ents.forEach(e=>cand(Math.hypot(e.x-a.x,e.y-a.y),'dragon',e,{x:e.x,y:e.y-20}));
+  if(!isNight())(YARD.par||[]).forEach(q=>cand(Math.hypot(q.x-a.x,q.y-a.y),'parent',q,{x:q.x,y:q.y-40}));
+  if(YARD.ball){const b=YARD.ball;cand(Math.hypot(b.x-a.x,b.y-a.y),'ball',b,{x:b.x,y:b.y-6});}
+  ALLPLOTS.forEach((P,i)=>{const cx=(P.c+0.5)*TS,cy=(P.r+0.5)*TS;cand(Math.hypot(cx-a.x,cy-a.y)*1.1,'plot',i,{x:cx,y:cy});});
+  return best;
+}
+function yardAction(){
+  if(YARD.edit||$('modal').classList.contains('on'))return;
+  const n=akNear(),a=YARD.akari;
+  if(!n){a.pose='joy';a.poseT=0.7;sfx.tap();yardSay('ちかくに なにも ないよ。ドラゴンや はたけの そばで おしてね');return;}
+  yardTap(n.p);
+}
+function initYardPad(){
+  if(YARD._pad)return;YARD._pad=1;YARD.keys=YARD.keys||{};
+  const pad=$('ypad');
+  const set=(k,v,b)=>{YARD.keys[k]=v;if(b)b.classList.toggle('on',v);};
+  pad.querySelectorAll('button').forEach(b=>{const k=b.dataset.k;
+    b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{b.setPointerCapture(e.pointerId);}catch(_){}set(k,true,b);audioInit();});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>set(k,false,b)));});
+  $('yact').addEventListener('click',e=>{e.stopPropagation();yardAction();});
+  const KM={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+  const active=()=>homeOn&&$('home').classList.contains('on')&&!$('modal').classList.contains('on')&&!YARD.edit;
+  document.addEventListener('keydown',e=>{if(!active())return;if(KM[e.code]){YARD.keys[KM[e.code]]=true;e.preventDefault();}else if((e.code==='Space'||e.code==='Enter')&&!e.repeat){e.preventDefault();yardAction();}});
+  document.addEventListener('keyup',e=>{if(KM[e.code])YARD.keys[KM[e.code]]=false;});
+  window.addEventListener('blur',()=>{for(const k in YARD.keys)YARD.keys[k]=false;pad.querySelectorAll('button').forEach(b=>b.classList.remove('on'));});
+}
 function yardTap(p){
   const a=YARD.akari;
   if(YARD.edit)return editTap(p);
@@ -2120,7 +2181,7 @@ function openSeedPick(i,flower){
     save();closeModal();sfx.pick();YARD.akari.pose='seed';YARD.akari.poseT=1.2;yardSay((S.crop?CROPS[S.crop].n:FLOWERS[S.flower].n)+'を うえた！ みずを あげてね');};});
 }
 /* --- もようがえ（フテ猫ワールドの へやと おなじ：マスに おく・まわす・しまう）--- */
-function setEdit(on){YARD.edit=on;YARD.pick=null;YARD.place=null;if(on)YARD.cam=0;renderYardBar();}
+function setEdit(on){YARD.edit=on;document.body.classList.toggle('yedit',!!on);YARD.pick=null;YARD.place=null;if(on)YARD.cam=0;renderYardBar();}
 function canPut(it,x,y,ign){
   const sz=fsize(it);if(x<0||y<2||x+sz.w>WALL_C||y+sz.h>YH)return false;
   const rug=!!FURN[it.id].rug;
@@ -2135,7 +2196,7 @@ function editTap(p){
 }
 function renderYardBar(){
   const bar=$('yardBar');if(!bar)return;
-  if(!YARD.edit){bar.innerHTML='<button id="ybEdit">🛋️ もようがえ</button><button id="ybSeed">🌱 タネ・やさい</button><span class="yhint">👆 タッチで あかりちゃんが いくよ。はたけを タッチで うえる・みず・しゅうかく</span>';
+  if(!YARD.edit){bar.innerHTML='<button id="ybEdit">🛋️ もようがえ</button><button id="ybSeed">🌱 タネ・やさい</button><span class="yhint">やじるしで うごく・👆で しらべる</span>';
     $('ybEdit').onclick=()=>{sfx.tap();setEdit(true);};$('ybSeed').onclick=()=>{sfx.tap();openBag();};return;}
   let h='<button id="ybDone" class="go">✅ おわる</button><button id="ybBag">📦 かぐを おく</button><button id="ybShop">🏪 かぐや</button>';
   if(YARD.place)h+='<span class="yhint">おきたい ばしょを タッチ（'+FURN[YARD.place].n+'）</span>';
