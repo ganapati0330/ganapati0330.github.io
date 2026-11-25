@@ -950,7 +950,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.25';
+const VER='1.26';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1005,7 +1005,7 @@ const KEEPERS={akari:'あかりちゃん'};
 const SKEY='futeneko-dragon-save';
 let G=null;
 function blankGame(keeper){
-  return {v:1,keeper:'akari',coins:30,power:POW_MAX,powerT:Date.now(),food:{apple:2,fish:0,meat:0,potato:0,candy:0},dragons:[],sel:0,dex:{},race:{},tower:0,steps:0,found:0,uid:1,muted:false,tut:{},eggBox:[],walk:null,motionOn:false,ptDay:'',ptGot:{},expAcc:0,hunAcc:0};
+  return {v:1,keeper:'akari',coins:30,power:POW_MAX,powerT:Date.now(),food:{apple:2,fish:0,meat:0,potato:0,candy:0},dragons:[],sel:0,dex:{},race:{},tower:0,steps:0,found:0,uid:1,muted:false,tut:{},eggBox:[],walk:null,motionOn:false,ptDay:'',ptGot:{},expAcc:0,hunAcc:0,toys:{ball:1}};
 }
 function fixGame(s){
   const b=blankGame(s.keeper);
@@ -1223,9 +1223,20 @@ function dsheet(sp,st){
 let _sprT=0;
 function onSpriteLoad(){clearTimeout(_sprT);_sprT=setTimeout(()=>{if(homeOn&&G)renderHome();if(MAPV&&MAPV.on){MAPV.meKey='';drawMe();}if($('modal').classList.contains('on')&&$('mbox').querySelector('canvas[data-k]'))drawDexCanvases();},150);}
 function preloadSprites(sps){(sps||[]).forEach(sp=>{['baby','kid','adult','race'].forEach(st=>dsheet(sp,st));if(HAS_FLY[sp])dsheet(sp,'fly');});}
+/* ふれあいの え（4×2：0あくび 1なでられる 2だっこ（あかりちゃんつき）3みあげる 4くんくん 5ボールに てを 6ボールに とびつく 7ボールを だいて うっとり） */
+const FR_SP={fire:1,water:1,wind:1};
+const FR_BOT={"fire_baby":[0.9,0.897,0.956,0.882,0.848,0.884,0.888,0.848],"fire_kid":[0.936,0.936,0.956,0.936,0.798,0.864,0.918,0.823],"fire_adult":[0.94,0.913,0.938,0.929,0.816,0.866,0.902,0.828],"water_baby":[0.897,0.902,0.965,0.902,0.805,0.859,0.904,0.897],"water_kid":[0.938,0.933,0.961,0.922,0.832,0.823,0.879,0.832],"water_adult":[0.909,0.911,0.909,0.909,0.823,0.909,0.918,0.906],"wind_baby":[0.902,0.913,0.931,0.902,0.814,0.832,0.884,0.873],"wind_kid":[0.909,0.918,0.947,0.913,0.837,0.85,0.884,0.839],"wind_adult":[0.897,0.911,0.913,0.911,0.798,0.834,0.866,0.859]};
+function hasFr(sp){return !!FR_SP[sp];}
 function drawDragon(c,x,y,size,spId,lv,t,face,o){
   o=o||{};
   const st=stageOf(lv),sheet=st===0?'baby':st===1?'kid':'adult';
+  if(o.fr!==undefined&&FR_SP[spId]){const fim=dsheet(spId,'fr_'+sheet);if(fim){
+    const cw=fim.naturalWidth/4,ch=fim.naturalHeight/2,f=o.fr,w=size*(sheet==='baby'?1.3:sheet==='kid'?1.5:(st===3?1.85:1.7)),h=w*ch/cw,bot=(FR_BOT[spId+'_'+sheet]||[])[f]||0.9;
+    c.save();c.translate(x,y);
+    if(o.shadow!==false&&f!==2){c.fillStyle='rgba(0,0,0,.16)';c.beginPath();c.ellipse(0,0,w*0.28,w*0.045,0,0,7);c.fill();}
+    if(o.flip)c.scale(-1,1);
+    if(spId==='light'){c.shadowColor='rgba(255,230,120,.9)';c.shadowBlur=size*0.18;}
+    c.drawImage(fim,(f%4)*cw,Math.floor(f/4)*ch,cw,ch,-w/2,-h*bot,w,h);c.restore();return;}}
   if(o.rf!==undefined){const rim=dsheet(spId,'race');if(rim){
     const cw=rim.naturalWidth/4,ch=rim.naturalHeight/2,f=o.rf,w=size*(st===0?1.15:st===1?1.35:1.6),h=w*ch/cw;
     c.save();c.translate(x,y);if(face<0)c.scale(-1,1);
@@ -1810,7 +1821,8 @@ function yardDraw(){
   YARD.ents.forEach(e=>list.push({y:e.y,f:()=>{
     const d=e.d,st=stageOf(d.lv),sz=st===0?38:st===1?44:52,lift=e.hop>0?Math.abs(Math.sin(e.hop*10))*8:0;
     const an=e.anim&&e.anim.k,face=an==='spin'?(Math.floor(T*7)%2?1:-1):e.face,st2=stageOf(d.lv);
-    drawDragon(c,e.x,e.y-lift-(an==='flap'&&st2<2?Math.abs(Math.sin(T*8))*6:0),sz,d.sp,d.lv,T*(e.fast?1.8:1)+d.id,face,{walk:e.mv,happy:e.hop>0||e.heart>0||an==='spin',sleep:e.st==='sleep'||e.st==='nap'||an==='yawn'&&st2>0,low:an==='eat'&&st2>0,eat:an==='eat'&&st2===0||an==='yawn'&&st2===0,surprise:an==='surprise',fly:an==='flap'&&st2>=1,alt:0.18,shadow:true});
+    const frf=hasFr(d.sp)&&!e.mv?(an==='yawn'?0:an==='surprise'?3:an==='eat'?4:an==='spin'?1:an==='play'?(e.anim.t>0.6?5:6):undefined):undefined;
+    drawDragon(c,e.x,e.y-lift-(an==='flap'&&st2<2?Math.abs(Math.sin(T*8))*6:0),sz,d.sp,d.lv,T*(e.fast?1.8:1)+d.id,face,{fr:frf,flip:face<0&&(frf===4||frf===6)?false:face>0&&(frf===4||frf===6),walk:e.mv,happy:e.hop>0||e.heart>0||an==='spin',sleep:e.st==='sleep'||e.st==='nap'||an==='yawn'&&st2>0,low:an==='eat'&&st2>0,eat:an==='eat'&&st2===0||an==='yawn'&&st2===0,surprise:an==='surprise',fly:an==='flap'&&st2>=1,alt:0.18,shadow:true});
     drawEmo(c,e.x,e.y-sz*1.32,e);
     if(e.heart>0){c.font='14px sans-serif';c.textAlign='center';c.fillText('💗',e.x,e.y-sz*1.3-(1.2-e.heart)*14);}
     if(d===cur()){c.fillStyle='#ffd000';c.beginPath();c.moveTo(e.x-5,e.y-sz*1.25-12);c.lineTo(e.x+5,e.y-sz*1.25-12);c.lineTo(e.x,e.y-sz*1.25-5);c.fill();}
@@ -2007,21 +2019,23 @@ function frDraw(cv,dt){
   const A=FR.anim;if(A){A.t+=dt;if(A.t>A.dur)FR.anim=null;}
   const k=FR.anim?FR.anim.k:null,sz=frSize(d);
   let y=FR_Y,x=FR_X,o={shadow:true},face=1;
-  if(k==='happy'){o.happy=true;}
-  else if(k==='surprise'){o.surprise=true;x+=Math.sin(A.t*40)*3;}
-  else if(k==='eat'){o.eat=stageOf(d.lv)===0;o.low=stageOf(d.lv)>0;}
-  else if(k==='hug'){y-=Math.sin(Math.min(1,A.t/0.4)*Math.PI/2)*40-Math.sin(A.t*6)*3;o.happy=true;}
-  else if(k==='play'){o.happy=true;x+=Math.sin(A.t*4)*40;face=Math.cos(A.t*4)>0?1:-1;}
+  const F=hasFr(d.sp);let hugImg=false;
+  if(k==='happy'){if(F)o.fr=1;else o.happy=true;}
+  else if(k==='surprise'){if(F)o.fr=3;else o.surprise=true;x+=Math.sin(A.t*40)*3;}
+  else if(k==='eat'){if(F)o.fr=A.t<0.5?4:1;else{o.eat=stageOf(d.lv)===0;o.low=stageOf(d.lv)>0;}}
+  else if(k==='hug'){if(F){o.fr=2;hugImg=true;x=FR_X-40;}else{y-=Math.sin(Math.min(1,A.t/0.4)*Math.PI/2)*40-Math.sin(A.t*6)*3;o.happy=true;}}
+  else if(k==='play'){if(F){o.fr=A.t<0.7?5:A.t<1.5?6:7;if(FR.toy&&FR.toy.k==='ball')FR.toy.hide=true;x+=A.t<0.7?0:A.t<1.5?(A.t-0.7)*60:48;}else{o.happy=true;x+=Math.sin(A.t*4)*40;face=Math.cos(A.t*4)>0?1:-1;}}
   else{ // ふだん：せいかくで すこし ちがう
-    if(d.per==='ottori'&&Math.sin(T*0.5)>0.7)o.sleep=true;
-    if(d.per==='yancha')x+=Math.sin(T*1.5)*14,face=Math.cos(T*1.5)>0?1:-1;
+    if(d.per==='ottori'&&Math.sin(T*0.5)>0.7){if(F)o.fr=Math.sin(T*0.5)>0.9?0:undefined;else o.sleep=true;}
+    else if(F&&Math.sin(T*0.37+d.id)>0.93)o.fr=Math.sin(T*0.29)>0?0:3;
+    if(d.per==='yancha'&&o.fr===undefined)x+=Math.sin(T*1.5)*14,face=Math.cos(T*1.5)>0?1:-1;
   }
   // あかりちゃん（だっこ・なでる ときは よこに）
-  drawAkari(c,92,FR_Y+4,150,k==='hug'?'joy':k==='eat'?'give':k==='play'?'joy':(FR.hand&&FR.hand.t>0)?'pet':'standS','R');
-  drawDragon(c,x,y,sz,d.sp,d.lv,T*1.6,face,o);
+  if(!hugImg)drawAkari(c,92,FR_Y+4,150,k==='hug'?'joy':k==='eat'?'give':k==='play'?'joy':(FR.hand&&FR.hand.t>0)?'pet':'standS','R');
+  drawDragon(c,x,y,hugImg?sz*1.35:sz,d.sp,d.lv,T*1.6,face,o);
   // たべもの・おもちゃ
   if(FR.food){FR.food.t+=dt;const f=FR.food,s=Math.max(0,1-f.t/1.2);c.font=Math.round(46*s+4)+'px sans-serif';c.textAlign='center';c.fillText(f.e,FR_X+sz*0.55,FR_Y-sz*0.55);if(f.t>1.3)FR.food=null;}
-  if(FR.toy){FR.toy.t+=dt;const t=FR.toy.t;c.font='42px sans-serif';c.textAlign='center';c.fillText(FR.toy.e,FR_X+Math.sin(t*4+1)*90,FR_Y-30-Math.abs(Math.sin(t*6))*60);if(t>2.4)FR.toy=null;}
+  if(FR.toy){FR.toy.t+=dt;const t=FR.toy.t;if(FR.toy.hide){if(t>2.4)FR.toy=null;}else{c.font='42px sans-serif';c.textAlign='center';c.fillText(FR.toy.e,FR_X+Math.sin(t*4+1)*90,FR_Y-30-Math.abs(Math.sin(t*6))*60);if(t>2.4)FR.toy=null;}}
   if(FR.hand){FR.hand.t-=dt;if(FR.hand.t>0){c.font='30px sans-serif';c.textAlign='center';c.fillText('✋',FR.hand.x,FR.hand.y);}}
   // ハート
   FR.parts=FR.parts.filter(p=>(p.life-=dt)>0);FR.parts.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;c.globalAlpha=Math.min(1,p.life);if(p.txt){c.font='bold 15px sans-serif';c.fillStyle='#e8325a';c.textAlign='center';c.fillText(p.e,p.x,p.y);}else{c.font='22px sans-serif';c.textAlign='center';c.fillText(p.e,p.x,p.y);}c.globalAlpha=1;});
@@ -2049,7 +2063,7 @@ function dragonIdle(e){
   else if(act==='yawn'){e.anim={k:'yawn',t:1.6};emo(e,'ふぁ〜',1.6);}
   else if(act==='flap'){e.anim={k:'flap',t:2.2};emo(e,d.per==='ganbari'?'とっくん！':'ぱたぱた',1.6);}
   else if(act==='sniff'){const i2=G.home.plots.findIndex(p=>p);const P2=i2>=0?ALLPLOTS[i2]:null;const s=P2?{x:(P2.c+0.5)*TS,y:(P2.r+1)*TS+4}:{x:5*TS,y:6.6*TS};routeTo(e,s.x,s.y);e.job=()=>{e.anim={k:'eat',t:1.4};emo(e,pick(['くんくん','🍎？','おなか すいた']),1.8);};}
-  else if(act==='play'&&YARD.ball){const b=YARD.ball;routeTo(e,b.x-(b.x>15*TS?-14:14),b.y+2);e.fast=d.per==='yancha';e.job=()=>{kickBall(e);emo(e,'♪',1.4);e.hop=0.6;};}
+  else if(act==='play'&&YARD.ball){const b=YARD.ball;routeTo(e,b.x-(b.x>15*TS?-14:14),b.y+2);e.fast=d.per==='yancha';e.job=()=>{kickBall(e);emo(e,'♪',1.4);e.hop=0.6;e.anim={k:'play',t:1.2};};}
   else if(act==='friend'){const o=pick(YARD.ents.filter(x=>x!==e));if(o){routeTo(e,o.x+(o.x>e.x?-34:34),o.y+rnd(-6,6));e.job=()=>{e.face=o.x>e.x?1:-1;if(!o.mv&&o.st==='idle'){o.face=-e.face;emo(o,'♪',1.6);o.hop=0.6;}emo(e,'♪',1.6);e.hop=0.6;};}}
   else if(act==='akari'){routeTo(e,a.x+(a.x>e.x?-30:30),a.y+3);e.fast=d.per==='amae'||d.per==='itazura';
     e.job=()=>{e.face=a.x>e.x?1:-1;
