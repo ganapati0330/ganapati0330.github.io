@@ -713,6 +713,8 @@ button{font-family:inherit;cursor:pointer;border:none}
 .wrap{max-width:620px;margin:0 auto;padding:10px;width:100%}
 .card{background:#fffaf0;border-radius:20px;box-shadow:0 4px 0 #d69a4a;padding:10px;margin-bottom:10px;position:relative}
 #homeCv{display:none}
+@keyframes pulseb{0%,100%{transform:scale(1)}50%{transform:scale(1.12);box-shadow:0 0 0 4px #ffe35a}}
+.hbtn.pulse{animation:pulseb 1s infinite}
 .frrow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
 .frrow button{border:2px solid #e8b070;background:#fff8ec;border-radius:12px;padding:4px 8px;font-size:22px;line-height:1.1;min-width:62px}
 .frrow button small{display:block;font-size:10px;color:#6a4a2a}
@@ -776,6 +778,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 .dsub{font-size:13px;color:#8a6f52}
 .bar{height:14px;background:#e9dcc8;border-radius:8px;overflow:hidden;position:relative;margin:3px 0}
 .bar i{display:block;height:100%;border-radius:8px;transition:width .3s}
+#bMe,#bEn{transition:none!important}
 .bar b{position:absolute;inset:0;font-size:10px;line-height:14px;text-align:center;color:#3a2a1a}
 .blbl{display:flex;justify-content:space-between;font-size:12px;font-weight:bold;margin-top:4px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
@@ -947,7 +950,7 @@ button{font-family:inherit;cursor:pointer;border:none}
 </script>
 <script>
 'use strict';
-const VER='1.23';
+const VER='1.24';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -993,7 +996,7 @@ const FOOD={
  fish:{n:'おさかな',e:'🐟',h:30,love:2,price:25,d:'おなか +30'},
  meat:{n:'おにく',e:'🍖',h:45,love:3,price:40,d:'おなか +45'},
  potato:{n:'やきいも',e:'🍠',h:70,love:6,price:90,d:'おなか +70・なかよし アップ'},
- candy:{n:'ほしのあめ',e:'🌟',h:5,love:2,price:150,d:'けいけんち たくさん！'}
+ candy:{n:'ほしのあめ',e:'🌟',h:5,love:2,price:150,d:'けいけんち 30＋Lv×6（レベルが たかいほど ふえる）'}
 };
 const FOOD_ORDER=['apple','fish','meat','potato','candy'];
 const KEEPERS={akari:'あかりちゃん'};
@@ -1920,8 +1923,8 @@ function frRender(){
   let h='<h2>💗 '+esc(d.name)+'と ふれあい</h2>';
   h+='<div style="font-size:12px;margin:-4px 0 4px">せいかく：<b>'+P.e+' '+P.n+'</b>（'+P.d+'）</div>';
   h+='<canvas id="frCv" width="440" height="300" style="width:100%;max-width:440px;touch-action:none;border-radius:16px;background:linear-gradient(#fff6e0,#ffe2b8)"></canvas>';
-  h+='<div style="display:flex;justify-content:space-between;font-size:12px;margin:4px 2px"><span>なかよし <b>'+Math.round(d.love)+'</b>（'+loveStep(d.love)+'）</span><span>おなか <b>'+Math.round(d.hunger)+'</b></span></div>';
-  h+='<div style="font-size:11px;color:#8a6f52;text-align:left">👆 あたま・せなか・おなかを なでてみよう（ゆびで なぞる）　きょう なでた '+day.pet+'/5</div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:12px;margin:4px 2px"><span>なかよし <b id="frLove">'+Math.round(d.love)+'</b>（<span id="frStep">'+loveStep(d.love)+'</span>）</span><span>おなか <b>'+Math.round(d.hunger)+'</b></span></div>';
+  h+='<div style="font-size:11px;color:#8a6f52;text-align:left">👆 あたま・せなか・おなかを なでてみよう（ゆびで なぞる）　きょう なでた <b id="frPetN">'+day.pet+'</b>/5・だっこ <b id="frHugN">'+day.hug+'</b>/1</div>';
   h+='<div style="font-size:12px;margin-top:4px;text-align:left">すきな たべもの：<b>'+(d.know.fav?fav.e+' '+fav.n:'？？？')+'</b>　すきな おもちゃ：<b>'+(d.know.toy?toy.e+' '+toy.n:'？？？')+'</b></div>';
   if(FR.tab==='food'){h+='<div class="frrow">';const ks=FOOD_ORDER.concat(Object.keys(CROPS)).filter(k=>G.food[k]>0);
     if(!ks.length)h+='<span style="font-size:12px">たべものが ないよ。おみせ や はたけで てに いれよう</span>';
@@ -1991,7 +1994,8 @@ function frToy(k){
   if(day.toy<2){day.toy++;loveUp(d,isFav?4:2);}
   sfx.ring();save();frRender();
 }
-function frInfo(){} // かずの ひょうじは つぎに ひらいた とき
+function frInfo(){const d=FR.d;if(!d)return;const day=frDay(d),set=(id,v)=>{const e=$(id);if(e&&e.textContent!==String(v)){e.textContent=v;e.style.color='#e8325a';setTimeout(()=>{if(e)e.style.color='';},500);}};
+  set('frLove',Math.round(d.love));set('frStep',loveStep(d.love));set('frPetN',day.pet);set('frHugN',day.hug);if(typeof renderHomeInfo==='function')renderHomeInfo();}
 function frDraw(cv,dt){
   const c=cv.getContext('2d'),d=FR.d;if(!d)return;
   c.clearRect(0,0,cv.width,cv.height);
@@ -2075,7 +2079,7 @@ function plotAction(i){
   const H=G.home,p=H.plots[i],P=ALLPLOTS[i],flower=i>=PLOTS.length;
   const st=plotState(p),x=(P.c+0.5)*TS,y=P.r*TS;
   if(st==='empty')return openSeedPick(i,flower);
-  if(st==='dry'){p.w=true;p.gt=0;growTick();save();sfx.tap();burst(x,y+10,['#6cc6ff','#bfe8ff'],10,90);YARD.akari.pose='water';YARD.akari.poseT=1.2;yardSay('みずを あげた！ '+GROW_H+'じかんで そだつよ');return;}
+  if(st==='dry'){p.w=true;p.gt=0;growTick();save();sfx.tap();burst(x,y+10,['#6cc6ff','#bfe8ff'],10,90);YARD.akari.pose='water';YARD.akari.poseT=1.2;{const left=Math.max(1,(p.k==='veg'?CROPS[p.id].days:3)-(p.st||0));yardSay('みずを あげた！ '+GROW_H+'じかんで 1だん そだつよ（'+(p.k==='veg'?'しゅうかく':'さく')+'まで あと '+left+'だん）');}return;}
   if(st==='grow'){yardSay('そだっているよ… あと やく '+Math.ceil(hrsLeft(p))+'じかん');return;}
   if(st==='ripe'){const cr=CROPS[p.id];const n=cr.yld+(Math.random()<0.3?1:0);G.food[p.id]=(G.food[p.id]||0)+n;
     if(cr.regrow){p.st=cr.days-cr.regrow;p.w=false;p.gt=0;}else H.plots[i]=null;
@@ -2086,7 +2090,7 @@ function openSeedPick(i,flower){
   const H=G.home;const keys=Object.keys(SEED_ITEMS).filter(k=>(H.seeds[k]||0)>0&&(flower?SEED_ITEMS[k].flower:true));
   let h='<h2>🌱 なにを うえる？</h2><p style="font-size:13px">'+(flower?'かだんには はなの タネを うえよう':'やさいは しゅうかくすると ドラゴンの ごはんに なるよ')+'</p><div class="list">';
   if(!keys.length)h+='<p>うえられる タネが ないよ。<br>おみせで かってね！</p>';
-  keys.forEach(k=>{const S=SEED_ITEMS[k];const info=S.crop?'みずを あげて '+(CROPS[S.crop].days*GROW_H)+'じかんで しゅうかく':'みずを あげて '+(3*GROW_H)+'じかんで さく';h+='<div class="row"><span class="e">'+(S.crop?CROPS[S.crop].ic:FLOWERS[S.flower].ic)+'</span><span class="n">'+S.n+' ×'+H.seeds[k]+'<small>'+info+'</small></span><button data-k="'+k+'">うえる</button></div>';});
+  keys.forEach(k=>{const S=SEED_ITEMS[k];const info=S.crop?'みずを あげるたびに '+GROW_H+'じかんで 1だん そだつ。'+CROPS[S.crop].days+'だんで しゅうかく（ぜんぶで '+(CROPS[S.crop].days*GROW_H)+'じかん）':'みずを あげるたびに '+GROW_H+'じかんで 1だん。3だんで さく（ぜんぶで '+(3*GROW_H)+'じかん）';h+='<div class="row"><span class="e">'+(S.crop?CROPS[S.crop].ic:FLOWERS[S.flower].ic)+'</span><span class="n">'+S.n+' ×'+H.seeds[k]+'<small>'+info+'</small></span><button data-k="'+k+'">うえる</button></div>';});
   h+='</div>';
   modal(h,[{t:'おみせへ',f:()=>openShop(()=>{if(homeOn)renderHome();},'seed')},{t:'やめる',c:'sub'}]);
   $('mbox').querySelectorAll('button[data-k]').forEach(b=>{b.onclick=()=>{const k=b.dataset.k,S=SEED_ITEMS[k];H.seeds[k]--;
@@ -2279,7 +2283,8 @@ function townOpen(){return !!(G&&(G.townOpen||!G.dragons.length&&!(G.eggBox||[])
 function townLocked(){const best=G.dragons.reduce((m,x)=>Math.max(m,x.lv),0);
   modal('<h2>🔒 さがす</h2><p>ドラゴンが <b>Lv'+TOWN_LV+'</b>に なったら、<br>つぎの たまごを さがしに いけるよ。</p><p>いまの いちばん たかい レベル：<b>Lv'+best+'</b><br>あと <b>'+Math.max(0,TOWN_LV-best)+'</b> レベル！</p><p style="font-size:13px">👣 おさんぽで いっぱい あるいて そだてよう</p>',[{t:'わかった',c:'go'}]);}
 function noDragon(){modal('<h2>ドラゴンが いないよ</h2><p>まずは まちを あるいて ドラゴンを さがそう！</p>',[{t:'さがしに いく',c:'go',f:()=>openMap()},{t:'あとで',c:'sub'}]);}
-function hungry(d){modal('<h2>おなか ぺこぺこ…</h2><p>'+esc(d.name)+'は おなかが すいて うごけない。<br>ごはんを あげよう！</p>',[{t:'ごはんを あげる',c:'go',f:()=>openFood(()=>{if(homeOn)renderHome();})},{t:'とじる',c:'sub'}]);}
+const NEED_RACE=15,NEED_BATTLE=20;
+function hungry(d,need,what){modal('<h2>おなか ぺこぺこ…</h2><p>'+esc(d.name)+'は おなかが すいて うごけない。<br>'+(need?what+'には おなかが <b>'+need+' いじょう</b> いるよ（いま '+Math.round(d.hunger)+'）。<br>':'')+'ごはんを あげよう！</p>',[{t:'ごはんを あげる',c:'go',f:()=>openFood(()=>{if(homeOn)renderHome();})},{t:'とじる',c:'sub'}]);}
 function locked(what,lv,d){modal('<h2>🔒 '+what+'は Lv'+lv+'から</h2><p>'+esc(d.name)+'は いま Lv'+d.lv+'。<br>おさんぽで そだてよう！</p>',[{t:'おさんぽへ',c:'go',f:()=>{if(d.hunger<5)hungry(d);else startScene(WALK);}},{t:'とじる',c:'sub'}]);}
 
 /* ごはん */
@@ -2425,8 +2430,10 @@ function drawFx(c,ox){
   FLOATS.forEach(f=>{c.globalAlpha=1-Math.max(0,f.a-0.6)/0.5;c.strokeText(f.t,f.x-ox,f.y);c.fillStyle=f.col;c.fillText(f.t,f.x-ox,f.y);});
   c.globalAlpha=1;
 }
-function isNight(){const h=new Date().getHours();return h>=19||h<5;}
-function isEvening(){const h=new Date().getHours();return h>=16&&h<19;}
+function nowJ(){const d=new Date();if(d.getTimezoneOffset()===0)return new Date(d.getTime()+9*3600000);return d;}
+function hourJ(){const d=nowJ();return new Date().getTimezoneOffset()===0?d.getUTCHours():d.getHours();}
+function isNight(){const h=hourJ();return h>=19||h<5;}
+function isEvening(){const h=hourJ();return h>=16&&h<19;}
 function skyGrad(c,y1){
   const g=c.createLinearGradient(0,0,0,y1);
   if(isNight()){g.addColorStop(0,'#0e0b2e');g.addColorStop(1,'#3a3270');}
@@ -2465,7 +2472,7 @@ const KIND_TXT={dragon:'ドラゴンの けはい！',food:'ごはんが おち�
 function distM(a,b){const R=6371000,r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lng-a.lng)*r;const x=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
 function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function seeded(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
-function dayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function dayKey(){const z=new Date().getTimezoneOffset()===0,d=nowJ();const Y=z?d.getUTCFullYear():d.getFullYear(),M=z?d.getUTCMonth():d.getMonth(),D=z?d.getUTCDate():d.getDate();return Y+'-'+String(M+1).padStart(2,'0')+'-'+String(D).padStart(2,'0');}
 function fmtM(m){m=Math.max(0,m);return m>=1000?(m/1000).toFixed(1)+'km':Math.round(m/10)*10+'m';}
 function catOf(t){
   if(t.natural==='water'||t.amenity==='fountain'||t.waterway)return 'water';
@@ -2646,7 +2653,7 @@ function setMoving(m){
 const FLK={id:null,x:0,y:0,t:0,n:0};
 function mapPointer(){
   const el=$('dmap');
-  el.addEventListener('pointerdown',e=>{FLK.n++;if(FLK.n>1){FLK.id=null;return;}FLK.id=e.pointerId;FLK.x=e.clientX;FLK.y=e.clientY;FLK.t=performance.now();audioInit();});
+  el.addEventListener('pointerdown',e=>{if(performance.now()-(FLK.t||0)>2500)FLK.n=0;FLK.n++;if(FLK.n>1){FLK.id=null;return;}FLK.id=e.pointerId;FLK.x=e.clientX;FLK.y=e.clientY;FLK.t=performance.now();audioInit();});
   const up=e=>{FLK.n=Math.max(0,FLK.n-1);if(FLK.id!==e.pointerId)return;FLK.id=null;
     if(e.target.closest&&e.target.closest('.leaflet-control'))return;
     if(!GEO.me||!MAPV.map)return;
@@ -2655,8 +2662,11 @@ function mapPointer(){
       const z=MAPV.map.getZoom(),mpp=156543.03*Math.cos(GEO.me.lat*Math.PI/180)/Math.pow(2,z);
       const dist=clamp(L2*mpp*2.5,40,450);
       MOVE.target=offsetLL(GEO.me,dx/L2*dist,-dy/L2*dist);sfx.tap();
-    } else if(L2<12){
-      const r=el.getBoundingClientRect();const ll=MAPV.map.containerPointToLatLng([e.clientX-r.left,e.clientY-r.top]);
+    } else if(L2<=28){
+      const r=el.getBoundingClientRect(),cpx=e.clientX-r.left,cpy=e.clientY-r.top;
+      let hit=null,hd=34;(GEO.pts||[]).forEach(pt=>{const q=MAPV.map.latLngToContainerPoint([pt.lat,pt.lng]);const dd=Math.hypot(q.x-cpx,q.y-(cpy+14));if(dd<hd){hd=dd;hit=pt;}});
+      if(hit){ptClick(hit);return;}
+      const ll=MAPV.map.containerPointToLatLng([cpx,cpy]);
       if(MOVE.moving&&MOVE.target&&distM(MOVE.target,{lat:ll.lat,lng:ll.lng})<15){MOVE.target=null;return;}
       MOVE.target={lat:ll.lat,lng:ll.lng};
     }
@@ -2747,7 +2757,7 @@ function ptIcon(pt){
 function drawPts(){
   if(!MAPV.map)return;
   (GEO.pts||[]).forEach(pt=>{
-    if(!MAPV.ptMs[pt.id]){MAPV.ptMs[pt.id]=L.marker([pt.lat,pt.lng],{icon:ptIcon(pt),zIndexOffset:200}).addTo(MAPV.map);MAPV.ptMs[pt.id].on('click',()=>ptClick(pt));}
+    if(!MAPV.ptMs[pt.id]){MAPV.ptMs[pt.id]=L.marker([pt.lat,pt.lng],{icon:ptIcon(pt),zIndexOffset:200,interactive:false}).addTo(MAPV.map);}
     else MAPV.ptMs[pt.id].setIcon(ptIcon(pt));
   });
 }
@@ -2798,9 +2808,11 @@ function showPick(){
     if(G.found>0&&rr2<0.008)sp='rainbow';
     else if(G.found>0&&rr2<0.05)sp=night?'dark':'light';
     else sp=wpick(night&&c.night?c.night:c.pref);
+    if(G.found>0&&(G.dex[sp]||0)>=2&&Math.random()<0.65){const fresh=Object.keys(night&&c.night?c.night:c.pref).filter(k=>(G.dex[k]||0)<2);const fr2=fresh.length?fresh:SP_ORDER.filter(k=>SP[k].r===1&&(G.dex[k]||0)<2);if(fr2.length)sp=pick(fr2);}
     if(G.found===0&&SP[sp].r>1)sp='fire';
+    const dup=(G.dex[sp]||0)>=2;let bonus='';if(dup){G.coins+=20;bonus='<br><small>（もう いる しゅるいだね。おまけ 🪙20）</small>';}
     const d=makeDragon(sp,1);G.found++;seeDex(sp,false);save();
-    foundDragon(d,'<b>'+c.i+' '+esc(pt.name)+'</b>の '+c.msg,next);
+    foundDragon(d,'<b>'+c.i+' '+esc(pt.name)+'</b>の '+c.msg+bonus,next);
   } else if(pt.kind==='food'){
     const k=wpick({apple:50,fish:25,meat:15,potato:6,candy:2});const n=k==='apple'?ri(1,3):1;G.food[k]+=n;save();sfx.pick();
     modal('<h2>'+FOOD[k].e+' みつけた！</h2><p>'+c.i+' '+esc(pt.name)+'で<br>'+FOOD[k].n+'を '+n+'こ ひろったよ。</p>',[{t:'やったー',c:'go',f:next}]);
@@ -2847,13 +2859,14 @@ function renderMapCard(){
     if(!GEO.pts)h+='<div class="mrow">🔎 まわりの ばしょを しらべているよ…</div>';
     else if(n){const c=CAT[n.pt.cat]||CAT.spot;h+='<div class="mrow"><b>'+c.i+' '+esc(n.pt.name)+'</b> まで あと <b>'+fmtM(n.d-PT_RADIUS)+'</b><br><small>'+(n.pt.kind==='dragon'?'🥚 ':'')+KIND_TXT[n.pt.kind]+'</small></div>';}
     else h+='<div class="mrow">この あたりの ポイントは ぜんぶ しらべたよ！ とおくへ いくか、またあした</div>';
-    if(GEO.src==='grid'&&!GEO.loading)h+='<div class="mrow" style="font-size:11px">（ちずの データが よめないので「ひみつの ばしょ」を だしているよ）</div>';
+    if(GEO.src==='grid'&&!GEO.loading)h+='<div class="mrow" style="font-size:11px">（いまは まちの おみせや こうえんの じょうほうが とれないので、「ひみつの ばしょ」に たまごを かくしたよ）<button class="hbtn" id="ptRetry" style="font-size:11px;padding:3px 8px;margin-left:4px">🔄 もういちど</button></div>';
   }
   h+='<div class="mrow"><small>👆 ちずの そうさだけで あそべるよ（ほんとうに あるかなくて OK）。やじるしボタン・フリック・タッチで あかりちゃんが あるくよ'+(MOVE.moving?'（タッチで とまる）':'')+'</small></div>';
   if(d)h+='<div class="mrow"><b>🐉 '+esc(d.name)+' Lv'+d.lv+'</b>　<small>そだてるのは 👣おさんぽで</small></div>';
   else h+='<div class="mrow"><small>まだ ドラゴンが いないよ。🥚 の ばしょへ いってみよう！</small></div>';
   h+='<div class="mbtn2"><button id="mFood">🍎 ごはん</button><button id="mCenter"'+(GEO.realPos?' class="on"':'')+'>📍 ほんとうの いまの ばしょ'+(GEO.realPos?' ✨':'')+'</button></div>';
   $('mCard').innerHTML=h;
+  const rt=$('ptRetry');if(rt)rt.onclick=()=>{sfx.tap();if(!GEO.me)return;try{Object.keys(sessionStorage).filter(k=>k.startsWith('fd-pts|')).forEach(k=>sessionStorage.removeItem(k));}catch(e){}GEO.loading=true;renderMapCard();loadPts(GEO.me);};
   const dp=$('dpad');if(dp&&!(window.innerHeight<=500&&window.innerWidth>window.innerHeight))dp.style.bottom=($('mCard').offsetHeight+12)+'px';
   $('mFood').onclick=()=>{sfx.tap();if(!cur())return noDragon();openFood(()=>renderMapCard());};
   $('mCenter').onclick=()=>{sfx.tap();MOVE.target=null;if(GEO.realPos){const r=GEO.realPos;GEO.realPos=null;setMe(r,true);toast('📍 いまの ばしょへ いどうしたよ');renderMapCard();}else startGeo(true);};
@@ -2947,6 +2960,7 @@ const WALK={
     if(this.waitPuddle)this.setHint('💧 みずたまり！ タッチで ジャンプ（まっているよ）');
     else if(d.hunger<=0)this.setHint('おなか ぺこぺこ！ ごはんを あげないと そだたないよ');
     else if(d.hunger<25)this.setHint('🍎 おなかが すいてきた… ごはんを あげよう');
+    else if(this.idleT>8&&this.steps===0){this.setHint('👣 あるくと みちに りんごや コインが でてくるよ。あるけない ときは「🏠 へやあそび」！');const b=$('wPlay');if(b)b.classList.add('pulse');}
     else if(this.idleT>4)this.setHint('スマホを もって あるいてね 👣 あるいた ぶんだけ すすむよ');
     else this.setHint('ものを タッチ！ みずたまりは タッチで ジャンプ');
     // みずたまり
@@ -3067,16 +3081,17 @@ function trackPos(C,x,off){
 const MEDAL=['🥇','🥈','🥉','4い'];
 function openRaceMenu(){
   const d=cur(),A=APT[aptOf(d)];
-  let h='<h2>🏁 ドラゴンレース</h2><p>'+esc(d.name)+'（Lv'+d.lv+'・すばやさ '+stats(d).spd+'）<br>とくい：<b>'+A.e+' '+A.n+'</b>（'+A.d+'）<br>おなか '+Math.round(d.hunger)+'</p><div class="list">';
+  let h='<h2>🏁 ドラゴンレース</h2><p>'+esc(d.name)+'（Lv'+d.lv+'・すばやさ '+stats(d).spd+'）<br>とくい：<b>'+A.e+' '+A.n+'</b>（'+A.d+'）<br>おなか '+Math.round(d.hunger)+'（レースで −15。'+NEED_RACE+' いじょう いるよ）</p><div class="list">';
   COURSES.forEach((r,i)=>{const okk=d.lv>=r.lv;const best=G.race[r.id];
     h+='<div class="row'+(okk?'':' lockrow')+'"><span class="e">'+(best&&best<=3?MEDAL[best-1]:'🏁')+'</span><span class="n">'+r.name+'<small>'+r.desc+'<br>Lv'+r.lv+'から・ゆうしょう 🪙'+r.prize+(best?'・さいこう '+best+'い':'')+'</small></span><button data-i="'+i+'"'+(okk?'':' disabled')+'>'+(okk?'でる':'🔒')+'</button></div>';});
-  h+='</div><p style="font-size:12px;color:#8a6f52;text-align:left">レースじょうを 1しゅう する きょうそう！<br>🚧 <b>ハードル</b>：てまえで タッチ（スペースキー）して ジャンプ<br>⛰️ <b>おか</b>：のぼりは タッチ れんだで がんばれ！ くだりは はやいよ<br>🌱 しばふ と 🟤 ダートは とくいな ドラゴンが はやい</p>';
+  h+='</div><p style="font-size:12px;color:#8a6f52;text-align:left">レースじょうを 1しゅう する きょうそう！<br>🚧 <b>ハードル</b>：てまえで タッチ（スペースキー）して ジャンプ<br>⛰️ <b>おか</b>：のぼりは タッチ れんだで がんばれ！ くだりは はやいよ<br>🌱 しばふ と 🟤 ダートは とくいな ドラゴンが はやい<br>🏆 じゅんいは すばやさ（レベル）と そうさの りょうほうで きまるよ。ハードルで ころぶと おそくなる</p>';
   modal(h,[{t:'もどる',c:'sub'}]);
-  $('mbox').querySelectorAll('button[data-i]').forEach(b=>{b.onclick=()=>{const r=COURSES[+b.dataset.i];if(d.hunger<20){closeModal();return hungry(d);}closeModal();RACE.cfg=r;startScene(RACE);};});
+  $('mbox').querySelectorAll('button[data-i]').forEach(b=>{b.onclick=()=>{const r=COURSES[+b.dataset.i];if(d.hunger<NEED_RACE){closeModal();return hungry(d,NEED_RACE,'レース');}closeModal();RACE.cfg=r;startScene(RACE);};});
 }
-function cpuDragon(lv,avoid){
-  const pool=SP_ORDER.filter(k=>k!=='rainbow'&&k!==avoid);const sp=pick(pool);
-  return {sp,lv,iv:1,tb:{hp:lv*0.5,atk:lv*0.5,def:lv*0.5,spd:lv*0.5},name:pick(SP[sp].names),apt:rollApt(sp)};
+function cpuDragon(lv,avoid,used){
+  const pool=SP_ORDER.filter(k=>k!=='rainbow'&&k!==avoid);const sp=pick(pool);used=used||new Set();
+  const names=SP[sp].names.filter(n=>!used.has(n));const name=names.length?pick(names):'やせいの '+pick(SP[sp].names);used.add(name);
+  return {sp,lv,iv:1,tb:{hp:lv*0.5,atk:lv*0.5,def:lv*0.5,spd:lv*0.5},name,apt:rollApt(sp)};
 }
 const raceSpeed=spd=>260+spd*1.6;
 const GRAV=1700;
@@ -3085,11 +3100,11 @@ const RACE={
   enter(){
     const d=cur(),r=this.cfg;this.d=d;this.C=buildCourse(r.spec,r.shape);
     this.apt=aptOf(d);
-    this.px=0;this.jy=0;this.vy=0;this.air=false;this.boost=0;this.t=-3.2;this.done=false;this.rank=0;this.fin=[];this.stumble=0;this.push=0;this.hillHint=false;
+    this.px=0;this.jy=0;this.vy=0;this.air=false;this.boost=0;this.t=-3.2;this.done=false;this.rank=0;this.fin=[];this.stumble=0;this.push=0;this.hillHint=false;this.st={ok:0,nice:0,miss:0,mash:0};
     this.base=raceSpeed(stats(d).spd);
     this.C.obs.forEach(o=>{o.res={};});
     preloadSprites([d.sp]);
-    this.cpus=r.cpu.map((lv,i)=>{const c=cpuDragon(lv,d.sp);c.x=0;c.lane=i+1;c.base=raceSpeed(stats(c).spd);c.boost=0;c.ph=Math.random()*6;c.fin=0;c.jy=0;c.vy=0;c.stumble=0;dsheet(c.sp,'race');return c;});
+    const used=new Set(G.dragons.map(x=>x.name));this.cpus=r.cpu.map((lv,i)=>{const c=cpuDragon(lv,d.sp,used);c.x=0;c.lane=i+1;c.base=raceSpeed(stats(c).spd);c.boost=0;c.ph=Math.random()*6;c.fin=0;c.jy=0;c.vy=0;c.stumble=0;dsheet(c.sp,'race');return c;});
     this.cam=null;this.prep();
     PARTS=[];FLOATS=[];bgm('race');this._c=4;this._go=false;this._hh=false;
     $('hudTop').innerHTML='<div class="pill" id="rRank" style="font-size:18px">-</div><div class="mini"><div class="lbl">'+r.name+'</div><div class="lbl" style="font-size:11px">とくい：'+APT[this.apt].e+' '+APT[this.apt].n+'</div></div><button class="hbtn" id="rQuit">やめる</button>';
@@ -3114,7 +3129,7 @@ const RACE={
   down(){
     if(this.t<0||this.done)return;
     const hl=hillAt(this.C,this.px);
-    if(hl.up>0&&!this.air){this.push=Math.min(1,this.push+0.2);sfx.tap();const p=trackPos(this.C,this.px,this.laneOff(0));burst(p.x,p.y,['#ffd27a','#fff'],4,90);return;}
+    if(hl.up>0&&!this.air){this.push=Math.min(1,this.push+0.2);this.st.mash++;sfx.tap();const p=trackPos(this.C,this.px,this.laneOff(0));burst(p.x,p.y,['#ffd27a','#fff'],4,90);return;}
     if(this.air)return;
     this.vy=-this.jumpV(this.apt==='jump');this.air=true;sfx.jump();
   },
@@ -3156,8 +3171,8 @@ const RACE={
       if(o.res.me)continue;
       if(prev<o.x&&this.px>=o.x){
         const p=trackPos(C,this.px,this.laneOff(0));
-        if(-this.jy>=o.h){const perfect=Math.abs(this.vy)<260;o.res.me='ok';this.clearBonus(perfect,p);}
-        else{o.res.me='miss';this.stumble=0.9;this.air=false;this.jy=0;this.vy=0;sfx.hit();burst(p.x,p.y,['#e8432a','#fff'],12,200);floatText(p.x,p.y-80,'ドテッ！','#ffb0a0');}
+        if(-this.jy>=o.h){const perfect=Math.abs(this.vy)<400;o.res.me='ok';this.st.ok++;if(perfect)this.st.nice++;this.clearBonus(perfect,p);}
+        else{o.res.me='miss';this.st.miss++;this.stumble=0.9;this.air=false;this.jy=0;this.vy=0;sfx.hit();burst(p.x,p.y,['#e8432a','#fff'],12,200);floatText(p.x,p.y-80,'ドテッ！','#ffb0a0');}
       }
     }
     this.cpus.forEach(cp=>{
@@ -3204,8 +3219,8 @@ const RACE={
     const b=d.lv;const ups=gainExp(d,exp);
     if(rk===1)d.wins++;
     save();
-    modal('<h2>'+(rk===1?'🥇 ゆうしょう！！':rk===2?'🥈 2い！':rk===3?'🥉 3い！':'4い… ざんねん')+'</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+r.name+'<br>🪙+'+coins+'　けいけんち +'+exp+(ups?'<br><b style="color:#e8582a">Lv'+d.lv+'に なった！</b>':'')+'</p>'+(rk>1?'<p style="font-size:13px">ハードルの てまえで タイミングよく とぶと「ナイスジャンプ」で かそく！ おかの のぼりは れんだで はやく なるよ</p>':''),
-      [{t:'もういちど',f:()=>{if(d.hunger<20)hungry(d);else startScene(RACE);}},{t:'こやへ',c:'go',f:()=>goHome()}]);
+    modal('<h2>'+(rk===1?'🥇 ゆうしょう！！':rk===2?'🥈 2い！':rk===3?'🥉 3い！':'4い… ざんねん')+'</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+r.name+'<br>🪙+'+coins+'　けいけんち +'+exp+(ups?'<br><b style="color:#e8582a">Lv'+d.lv+'に なった！</b>':'')+'</p><p style="font-size:13px;background:#fff3d6;border-radius:10px;padding:6px">🚧 ハードル：クリア '+this.st.ok+' / '+this.C.obs.length+'（ナイスジャンプ '+this.st.nice+'）'+(this.C.segs.some(s=>s.t==='hill')?'<br>⛰️ おかの れんだ：'+this.st.mash+'かい':'')+'<br><small>ドテッと ころぶと 1びょう おそくなる。ナイスジャンプは かそく！<br>じゅんいは すばやさ（レベル）と そうさの りょうほうで きまるよ</small></p>',
+      [{t:'もういちど',f:()=>{if(d.hunger<NEED_RACE)hungry(d,NEED_RACE,'レース');else startScene(RACE);}},{t:'こやへ',c:'go',f:()=>goHome()}]);
     mdDragon={sp:d.sp,lv:d.lv,happy:rk<=2,sad:rk>2,akari:rk<=2?'joy':'sad'};
     if(ups)lvUpMsg(d,b);
   },
@@ -3310,7 +3325,7 @@ function towerFloor(f){
   let sp=pool[(f*5+2)%6];if(f===7)sp='light';if(f===8)sp='dark';if(f===9)sp=pool[(f*3)%6];if(f===10)sp='rainbow';
   const lv=f===1?9:6+f*4+Math.max(0,f-5);
   const tk=f===10?'kuro':tr[f%tr.length];
-  return {f,lv,sp,trainer:tk,boss:f===10,name:SP[sp].names[(f+1)%4],prize:50+f*30,exp:40+f*18};
+  return {f,lv,sp,trainer:tk,boss:f===10,name:(()=>{const own=new Set(G.dragons.map(x=>x.name));const ns=SP[sp].names;for(let k=0;k<ns.length;k++){const n=ns[(f+1+k)%ns.length];if(!own.has(n))return n;}return 'やせいの '+ns[0];})(),prize:50+f*30,exp:40+f*18};
 }
 function openTower(){
   const d=cur();
@@ -3319,7 +3334,7 @@ function openTower(){
     h+='<div class="row'+(okk?'':' lockrow')+'"><img src="img/face-'+e.trainer+'.webp" style="width:38px;height:38px;object-fit:contain" alt=""><span class="n">'+f+'かい'+(e.boss?' 👑ボス':'')+'　'+TRAINERS[e.trainer]+'<small>'+SP[e.sp].name+' Lv'+e.lv+'（'+SP[e.sp].el+'）'+(clear?' ✅クリア':'')+'</small></span><button data-f="'+f+'"'+(okk?'':' disabled')+'>'+(okk?'たたかう':'🔒')+'</button></div>';}
   h+='</div><p style="font-size:12px;color:#8a6f52;text-align:left">あいしょう：火→氷→風→土→雷→水→火（やじるしの さきに つよい）。光と闇は おたがいに つよい。</p>';
   modal(h,[{t:'もどる',c:'sub'}]);
-  $('mbox').querySelectorAll('button[data-f]').forEach(b=>{b.onclick=()=>{if(d.hunger<20){closeModal();return hungry(d);}closeModal();BATTLE.foe=towerFloor(+b.dataset.f);startScene(BATTLE);};});
+  $('mbox').querySelectorAll('button[data-f]').forEach(b=>{b.onclick=()=>{if(d.hunger<NEED_BATTLE){closeModal();return hungry(d,NEED_BATTLE,'バトル');}closeModal();BATTLE.foe=towerFloor(+b.dataset.f);startScene(BATTLE);};});
 }
 function towerTb(f){const k=f.boss?0.6:f.f===1?0:f.f===2?0.1:0.35;const v=f.lv*k;return {hp:v,atk:v,def:v,spd:v};}
 /* ダメージ ＝ いりょく × こうげき÷ぼうぎょ × (0.6＋0.02×じぶんのLv) × あいしょう × きゅうしょ1.5 × 0.88〜1.0
@@ -3392,7 +3407,7 @@ const BATTLE={
   },
   async act(a,dfn,m){
     const an=a.me?this.d.name:this.en.d.name;
-    if(m==='guard'){const again=a.lastGuard;a.guard=again?0.5:0.3;a.lastGuard=true;const h=again?0:Math.round(a.max*0.08);a.hp=Math.min(a.max,a.hp+h);this.msg(an+'は まもりの かまえ！'+(again?'（つづけて つかうと ききめが よわい）':' HPが '+h+' かいふく'));sfx.pick();burst(this.pos(a).x,this.pos(a).y-60,'#8ad8ff',14,160);await this.anim(a,'shown',a.hp,500);return;}
+    if(m==='guard'){const again=a.lastGuard;a.guard=again?0.5:0.3;a.lastGuard=true;const h=again?0:Math.round(a.max*0.08);a.hp=Math.min(a.max,a.hp+h);this.msg(an+'は まもりの かまえ！'+(again?' つづけて つかったので ダメージ 50%・かいふくは なし':' つぎの ダメージ 30%・HP +'+h));floatText(this.pos(a).x,this.pos(a).y-120,h?'+'+h:'かいふく なし',h?'#8aff8a':'#ccc');sfx.pick();burst(this.pos(a).x,this.pos(a).y-60,'#8ad8ff',14,160);await this.anim(a,'shown',a.hp,500);return;}
     a.lastGuard=false;
     const S=SP[a.d.sp];
     let power=40,mult=1,name='たいあたり';
@@ -3413,13 +3428,14 @@ const BATTLE={
     if(crit)note+='きゅうしょに あたった！ ';
     if(m==='breath'&&mult>1)note+='こうかは ばつぐんだ！';
     else if(m==='breath'&&mult<1)note+='こうかは いまひとつ…';
-    if(dfn.guard)note+=' まもりで ふせいだ！';
+    if(dfn.guard)note+=' まもりで ダメージ '+Math.round(dfn.guard*100)+'%に へらした！';
     if(note){this.msg(note);await sleep(650);}
     this.updHud();
   },
   anim(f,key,to,ms){
-    return new Promise(res=>{const from=f[key],t0=performance.now();
-      const step=()=>{const p=Math.min(1,(performance.now()-t0)/ms);f[key]=from+(to-from)*p;this.updHud();if(p<1)requestAnimationFrame(step);else res();};step();});
+    return new Promise(res=>{const from=f[key],t0=performance.now();let done=false;
+      const fin=()=>{if(done)return;done=true;f[key]=to;this.updHud();res();};
+      const step=()=>{if(done)return;const p=Math.min(1,(performance.now()-t0)/ms);f[key]=from+(to-from)*p;this.updHud();if(p<1)requestAnimationFrame(step);else fin();};step();setTimeout(fin,ms+80);});
   },
   pos(f){const pb=$('hudBot');const lim=pb?(H-pb.offsetHeight)/U-30:VH*0.56;const my=Math.min(VH*0.56,lim);return f.me?{x:VW*0.27,y:my}:{x:VW*0.73,y:Math.min(VH*0.4,my-70)};},
   end(win){
@@ -3442,7 +3458,7 @@ const BATTLE={
       sfx.lose();this.msg(d.name+'は たおれてしまった…');
       setTimeout(()=>{
         modal('<h2>まけちゃった…</h2><canvas id="mdCv" width="440" height="340"></canvas><p>けいけんち +'+Math.round(f.exp*0.2)+'<br>おさんぽで とっくんして また ちょうせん！</p><p style="font-size:12px">ヒント：あいしょうの いい ブレスを つかおう。あぶない ときは まもる！</p>',
-          [{t:'もういちど',f:()=>{if(d.hunger<20)hungry(d);else startScene(BATTLE);}},{t:'こやへ',c:'go',f:()=>goHome()}]);
+          [{t:'もういちど',f:()=>{if(d.hunger<NEED_BATTLE)hungry(d,NEED_BATTLE,'バトル');else startScene(BATTLE);}},{t:'こやへ',c:'go',f:()=>goHome()}]);
         mdDragon={sp:d.sp,lv:d.lv,sad:true,akari:'sad'};if(ups)lvUpMsg(d,b);
       },900);
     }
