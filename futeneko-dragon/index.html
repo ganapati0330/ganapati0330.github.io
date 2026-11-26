@@ -961,7 +961,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.29';
+const VER='1.30';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1764,7 +1764,7 @@ function yardUpdate(dt){
   if(night&&a.pose&&a.pose!=='sleep'&&!a.mv&&sideOf(a.x)===sideOf(0)&&a.poseT>0.5)a.poseT=0.5;
   // じぶんで そうさ：キー・やじるし
   const K=YARD.keys||{};let kx=(K.right?1:0)-(K.left?1:0),ky=(K.down?1:0)-(K.up?1:0);
-  if(kx||ky){a.path=[];a.act=null;a.pose=null;a.idle=25;const l=Math.hypot(kx,ky),sp=85*dt;
+  if(kx||ky){a.path=[];a.act=null;a.pose=null;a.idle=10;const l=Math.hypot(kx,ky),sp=85*dt;
     let nx=a.x+kx/l*sp,ny=a.y+ky/l*sp;
     if(akOk(nx,ny)){a.x=nx;a.y=ny;}else if(akOk(nx,a.y))a.x=nx;else if(akOk(a.x,ny))a.y=ny;
     a.mv=true;if(kx)a.face=kx>0?1:-1;a.dir=Math.abs(kx)>=Math.abs(ky)*0.8?(kx>0?'R':'L'):(ky>0?'F':'B');YARD.follow=1.5;}
@@ -1772,10 +1772,14 @@ function yardUpdate(dt){
   YARD._wasKey=!!(kx||ky);
   if(YARD.follow>0){YARD.follow-=dt;const vw=(YARD.W||400)/(YARD.s||1);YARD.cam+=(a.x-vw/2-YARD.cam)*Math.min(1,dt*5);}
   YARD.near=akNear();const ab=$('yact');if(ab)ab.classList.toggle('hot',!!YARD.near);
-  // あかりちゃんは じぶんでは あるきまわらない（しばらく そうさが ないと その ばで あそぶ。よるは ベッドへ）
-  if(!a.mv&&!a.act&&!a.pose){a.idle-=dt;if(a.idle<=0){a.idle=rnd(8,14);
-    if(!night){a.pose=pick(sideOf(a.x)===sideOf(0)?['read','stretch','drink','toys']:['look','stretch','butterfly','sitknee']);a.poseT=rnd(3,5);}
-    else if(night){const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+fsize(bed).w+0.6)*TS,y:(bed.y+fsize(bed).h+0.4)*TS}:randSpot(true);routeTo(a,s.x,s.y);a.act=()=>{a.dir='R';a.pose='sleep';a.poseT=rnd(20,40);};}
+  // しばらく そうさが ないと（10びょう）、あかりちゃんは じぶんで あるいて あそぶ。よるは ベッドへ
+  if(!a.mv&&!a.act&&!a.pose){a.idle-=dt;if(a.idle<=0){a.idle=rnd(2,5);
+    if(!night){
+      if(Math.random()<0.3&&YARD.ents.length){const e=pick(YARD.ents);routeTo(a,e.x-24,e.y+4);a.act=()=>{a.face=e.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose=Math.random()<0.5?'pet':'joy';a.poseT=1.6;e.heart=1.6;e.hop=0.6;};}
+      else if(YARD.ball&&Math.random()<0.15){const b=YARD.ball;routeTo(a,b.x+(b.x>a.x?-14:14),b.y+2);a.act=()=>{a.pose='throw';a.poseT=0.8;kickBall(a);};}
+      else{const room=Math.random()<0.4,sp2=randSpot(room);routeTo(a,sp2.x,sp2.y);
+        a.act=()=>{a.pose=pick(room?['read','chair','toys','drink','stretch','sweep','throw']:['butterfly','basket','sitknee','look','stretch','dig']);a.poseT=rnd(3,7);};}}
+    else{const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+fsize(bed).w+0.6)*TS,y:(bed.y+fsize(bed).h+0.4)*TS}:randSpot(true);routeTo(a,s.x,s.y);a.act=()=>{a.dir='R';a.pose='sleep';a.poseT=rnd(20,40);};}
   }}
   if(!night)(YARD.par||[]).forEach(q=>parentAI(q,dt));
   YARD.ents.forEach((e,i)=>{
@@ -1932,6 +1936,7 @@ function initYardPad(){
 function yardTap(p){
   const a=YARD.akari;
   if(YARD.edit)return editTap(p);
+  a.idle=10;
   // ドラゴン
   let best=null,bd=34;YARD.ents.forEach(e=>{const dd=Math.hypot(e.x-p.x,e.y-20-p.y);if(dd<bd){bd=dd;best=e;}});
   if(best){const i=G.dragons.indexOf(best.d);if(i>=0&&G.sel!==i){G.sel=i;save();renderHome();}
