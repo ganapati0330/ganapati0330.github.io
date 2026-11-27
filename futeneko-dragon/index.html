@@ -966,7 +966,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.31';
+const VER='1.32';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1041,7 +1041,9 @@ function fixGame(s){
   if(!s.toys||typeof s.toys!=='object')s.toys={ball:1};
   return s;
 }
-function save(){try{localStorage.setItem(SKEY,JSON.stringify(G));}catch(e){}}
+let _rhT=0,_inRH=false;
+function save(){try{localStorage.setItem(SKEY,JSON.stringify(G));}catch(e){}
+  if(typeof homeOn!=='undefined'&&homeOn&&!_inRH&&!_rhT)_rhT=setTimeout(()=>{_rhT=0;if(homeOn&&$('home').classList.contains('on')){_inRH=true;try{renderHome();}finally{_inRH=false;}}},60);}
 function load(){try{const s=JSON.parse(localStorage.getItem(SKEY)||'null');if(s&&typeof s==='object'&&Array.isArray(s.dragons))return fixGame(s);}catch(e){}return null;}
 function cur(){return G&&G.dragons[G.sel]||null;}
 function makeDragon(sp,lv){
@@ -3317,6 +3319,8 @@ const RACE={
     save();
     modal('<h2>'+(rk===1?'🥇 ゆうしょう！！':rk===2?'🥈 2い！':rk===3?'🥉 3い！':'4い… ざんねん')+'</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+r.name+'<br>🪙+'+coins+'　けいけんち +'+exp+(ups?'<br><b style="color:#e8582a">Lv'+d.lv+'に なった！</b>':'')+'</p><p style="font-size:13px;background:#fff3d6;border-radius:10px;padding:6px">🚧 ハードル：クリア '+this.st.ok+' / '+this.C.obs.length+'（ナイスジャンプ '+this.st.nice+'）'+(this.C.segs.some(s=>s.t==='hill')?'<br>⛰️ おかの れんだ：'+this.st.mash+'かい':'')+'<br><small>ドテッと ころぶと 1びょう おそくなる。ナイスジャンプは かそく！<br>じゅんいは すばやさ（レベル）と そうさの りょうほうで きまるよ</small></p>',
       [{t:'もういちど',f:()=>{if(d.hunger<NEED_RACE)hungry(d,NEED_RACE,'レース');else startRace(this.cfg);}},{t:'こやへ',c:'go',f:()=>goHome()}]);
+    {const ord=this.fin.map(x=>x==='me'?'▶ '+esc(d.name):esc(x.name)+' '+APT[x.apt].e);this.cpus.filter(c=>!c.fin).sort((a,b)=>b.x-a.x).forEach(c=>ord.push(esc(c.name)+' '+APT[c.apt].e));
+      const el=$('mbox').querySelector('p');if(el)el.insertAdjacentHTML('afterend','<p style="font-size:12px;margin:2px 0">'+ord.slice(0,4).map((n,i)=>MEDAL[i]+' '+n).join('　')+'</p>');}
     mdDragon={sp:d.sp,lv:d.lv,happy:rk<=2,sad:rk>2,akari:rk<=2?'joy':'sad'};
     if(ups)lvUpMsg(d,b);
   },
@@ -3376,7 +3380,7 @@ const RACE={
       c.fillStyle='#fff';[a,b].forEach(q=>{c.fillRect(q.x-3,q.y-hh,6,hh+4);});
       if(o.t==='big'){c.fillStyle='#3f8a3a';[a,b].forEach(q=>{c.beginPath();c.arc(q.x,q.y-hh,7,0,7);c.fill();});}});
     // ドラゴン（したに いる ほど てまえ）
-    const list=this.cpus.map(cp=>({y:trackPos(C,cp.x,this.laneOff(cp.lane)).y,f:()=>this.drawRacer(c,cp.x,this.laneOff(cp.lane),cp.jy,cp.vy,cp.stumble,cp.ph,cp.sp,cp.lv,44,cp.name+' '+APT[cp.apt].e,false)}));
+    const list=this.cpus.map(cp=>({y:trackPos(C,cp.x,this.laneOff(cp.lane)).y,f:()=>this.drawRacer(c,cp.x,this.laneOff(cp.lane),cp.jy,cp.vy,cp.stumble,cp.ph,cp.sp,cp.lv,44,cp.name,false)}));
     list.push({y:me.y,f:()=>{
       if(this.boost>0.3){c.strokeStyle='rgba(255,230,100,'+this.boost*0.8+')';c.lineWidth=3;for(let i=0;i<3;i++){const q=trackPos(C,this.px-30-i*14,this.laneOff(0)+(i-1)*8),q2=trackPos(C,this.px-56-i*14,this.laneOff(0)+(i-1)*8);c.beginPath();c.moveTo(q.x,q.y-14);c.lineTo(q2.x,q2.y-14);c.stroke();}}
       this.drawRacer(c,this.px,this.laneOff(0),this.jy,this.vy,this.stumble,0,d.sp,d.lv,54,'▼ '+d.name,true);}});
@@ -3582,7 +3586,7 @@ const RACE3D={
         const bh=Math.max(3,sc*(o.t==='big'?110:80));for(let q=0;q<10;q++){c.fillStyle=q%2?'#e8432a':'#fff';c.fillRect(p.x-w+q*w*0.2,p.y-hh,w*0.2+1,bh);}
         if(o.t==='big'){c.fillStyle='#3f8a3a';c.fillRect(p.x-w,p.y-hh*0.55,w*2,hh*0.55);}}
       else if(it.kind==='cpu'){const cp=it.cp,size=Math.min(sc*1500,Math.min(VW*0.34,VH*0.3)*0.95),cxp=p.x+p.w*cp.lx;dragonBack(c,cxp,p.y,size,cp.sp,T*1.6+cp.ph,{lift:-cp.jy*sc*9,fast:true});
-        if(size>14){c.font='bold '+Math.max(9,Math.min(14,size*0.14))+'px sans-serif';c.textAlign='center';c.lineWidth=3;c.strokeStyle='#000a';c.fillStyle='#fff';c.strokeText(cp.name,cxp,p.y-size*1.25-cp.jy*sc*9);c.fillText(cp.name,cxp,p.y-size*1.25-cp.jy*sc*9);}}
+        if(size>5){c.font='bold '+Math.max(10,Math.min(14,size*0.14))+'px sans-serif';c.textAlign='center';c.lineWidth=3;c.strokeStyle='#000a';c.fillStyle='#fff';c.strokeText(cp.name,cxp,p.y-size*1.25-cp.jy*sc*9);c.fillText(cp.name,cxp,p.y-size*1.25-cp.jy*sc*9);}}
       c.restore();});
     // つぎの ハードル の あいず
     const nx=C.obs.find(o=>o.x>this.px-10&&!o.res.me);let inW=false;
@@ -3702,7 +3706,7 @@ const BATTLE={
   },
   async act(a,dfn,m){
     const an=a.me?this.d.name:this.en.d.name;
-    if(m==='guard'){const again=a.lastGuard;a.guard=again?0.5:0.3;a.lastGuard=true;const h=again?0:Math.round(a.max*0.08);a.hp=Math.min(a.max,a.hp+h);this.msg(an+'は まもりの かまえ！'+(again?' つづけて つかったので ダメージ 50%・かいふくは なし':' つぎの ダメージ 30%・HP +'+h));floatText(this.pos(a).x,this.pos(a).y-120,h?'+'+h:'かいふく なし',h?'#8aff8a':'#ccc');sfx.pick();burst(this.pos(a).x,this.pos(a).y-60,'#8ad8ff',14,160);await this.anim(a,'shown',a.hp,500);return;}
+    if(m==='guard'){const again=a.lastGuard;a.guard=again?0.5:0.3;a.lastGuard=true;const h=again?0:Math.round(a.max*0.08);a.hp=Math.min(a.max,a.hp+h);a.shown=a.hp;this.updHud();this.msg(an+'は まもりの かまえ！'+(again?' つづけて つかったので ダメージ 50%・かいふくは なし':' つぎの ダメージ 30%・HP +'+h));floatText(this.pos(a).x,this.pos(a).y-120,h?'+'+h:'かいふく なし',h?'#8aff8a':'#ccc');sfx.pick();burst(this.pos(a).x,this.pos(a).y-60,'#8ad8ff',14,160);await this.anim(a,'shown',a.hp,500);return;}
     a.lastGuard=false;
     const S=SP[a.d.sp];
     let power=40,mult=1,name='たいあたり';
