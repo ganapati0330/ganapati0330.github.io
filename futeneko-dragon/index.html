@@ -719,11 +719,24 @@ button{font-family:inherit;cursor:pointer;border:none}
 #stage.hudoff .hudtog{top:max(6px,env(safe-area-inset-top))}
 #stage.hudoff .hudTop,#stage.hudoff .hint{display:none!important}
 #home .hudtog{display:block;top:auto}
-#home.nomenu .topbar,#home.nomenu #homeWrap,#home.nomenu .yardbar{display:none!important}
+/* フィールドだけ：メニューは ☰ で ひらく */
 #home.nomenu.on{display:flex!important;flex-direction:column}
-#home.nomenu .yardbox{flex:1 1 auto;grid-column:1/-1;grid-row:1/-1}
-#home.nomenu .hudtog{bottom:max(10px,env(safe-area-inset-bottom));left:max(10px,env(safe-area-inset-left))}
+#home.nomenu .yardbox{flex:1 1 auto;grid-column:1/-1;grid-row:1/-1;min-height:0}
+#home.nomenu:not(.mopen) .topbar,#home.nomenu:not(.mopen) #homeWrap{display:none!important}
+body:not(.yedit) #home.nomenu:not(.mopen) .yardbar{display:none!important}
+#home.nomenu .hudtog{display:flex;align-items:center;gap:6px;width:auto;padding:0 12px;height:44px;top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));bottom:auto;font-size:20px;background:rgba(60,35,110,.82)}
+#home.nomenu .hudtog small{font-size:14px;font-weight:bold}
+#home.nomenu.mopen .hudtog,body.yedit #home .hudtog{display:none}
 #home:not(.nomenu) .hudtog{display:none}
+#home.nomenu.mopen .topbar{position:absolute;left:0;right:0;top:0;z-index:55}
+#home.nomenu.mopen #homeWrap{position:absolute;right:0;top:56px;bottom:0;width:min(440px,100%);max-height:none;z-index:54;background:#fff3dc;box-shadow:-4px 0 14px rgba(0,0,0,.3);border-left:3px solid #d69a4a;display:flex!important;flex-direction:column;overflow:hidden;height:auto!important}
+#home.nomenu.mopen #homeWrap .hinfo{flex:1 1 auto;min-height:0;overflow-y:auto}
+#home.nomenu.mopen #homeWrap .mclosebtn{flex:0 0 auto;position:static;margin:0 0 4px auto}
+#home.nomenu.mopen .yardbar{position:absolute;left:0;bottom:0;right:min(440px,100%);z-index:54}
+#home.nomenu.mopen .ywrap::after{content:'';position:absolute;inset:0;background:rgba(20,10,40,.35);z-index:5}
+@media (orientation:portrait){#home.nomenu.mopen #homeWrap{top:auto;height:68%!important;width:100%;border-left:0;border-top:3px solid #d69a4a;border-radius:18px 18px 0 0}#home.nomenu.mopen .yardbar{right:0;bottom:68%}}
+.mclosebtn{display:none}
+#home.nomenu.mopen .mclosebtn{display:block;position:sticky;top:0;margin:0 0 6px auto;z-index:3;background:#e8812a;color:#fff;border:3px solid #fff;border-radius:20px;padding:6px 14px;font-weight:bold;font-size:14px;box-shadow:0 2px 0 rgba(0,0,0,.2)}
 #rotTip{position:fixed;inset:0;z-index:2500;background:rgba(30,20,60,.92);color:#fff;display:none;align-items:center;justify-content:center;text-align:center}
 #rotTip p{font-size:18px;line-height:1.6}
 #rotTip button{margin-top:14px;padding:10px 18px;border-radius:14px;border:2px solid #fff8;background:rgba(255,255,255,.15);color:#fff;font-size:15px}
@@ -949,8 +962,8 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </section>
 
 <!-- ホーム（ドラゴンこや） -->
-<section id="home" class="screen">
-  <button class="hudtog" id="hmTog" aria-label="メニュー">☰</button>
+<section id="home" class="screen nomenu">
+  <button class="hudtog" id="hmTog" aria-label="メニュー">☰ <small>メニュー</small> <small>🪙<span id="fCoin">0</span></small></button>
   <div class="topbar">
     <div class="ttl">🐉 ドラゴンこや</div>
     <div class="pill">🪙 <span id="hCoin">0</span></div>
@@ -992,7 +1005,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.37';
+const VER='1.38';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1924,7 +1937,7 @@ function yardPoint(ev){const el=$('yard'),r=el.getBoundingClientRect();return {x
 function yardBind(){
   const el=$('yard');if(!el||el._b)return;el._b=1;
   // もようがえ中は よこに ずらして みわたす。ふだんは スライドした ほうへ あかりちゃんが あるく
-  el.addEventListener('pointerdown',ev=>{audioInit();YARD.drag={x0:ev.clientX,y0:ev.clientY,cam0:YARD.cam,moved:false,t0:performance.now()};try{el.setPointerCapture(ev.pointerId);}catch(_){}});
+  el.addEventListener('pointerdown',ev=>{audioInit();if($('home').classList.contains('mopen')){homeMenu(false);return;}YARD.drag={x0:ev.clientX,y0:ev.clientY,cam0:YARD.cam,moved:false,t0:performance.now()};try{el.setPointerCapture(ev.pointerId);}catch(_){}});
   el.addEventListener('pointermove',ev=>{const d=YARD.drag;if(!d)return;const dx=ev.clientX-d.x0,dy=ev.clientY-d.y0;if(Math.hypot(dx,dy)>12)d.moved=true;if(!d.moved)return;
     if(YARD.edit){YARD.cam=d.cam0-dx/YARD.s;return;}
     const l=Math.hypot(dx,dy);YARD.stick={x:dx/l,y:dy/l,ox:d.x0,oy:d.y0,cx:ev.clientX,cy:ev.clientY};});
@@ -2236,8 +2249,8 @@ function editTap(p){
 }
 function renderYardBar(){
   const bar=$('yardBar');if(!bar)return;
-  if(!YARD.edit){bar.innerHTML='<button id="ybWide">⤢ ひろく</button><button id="ybEdit">🛋️ もようがえ</button><button id="ybSeed">🌱 タネ・やさい</button><span class="yhint">スライドで あるく・タッチで いく・👆で しらべる</span>';
-    $('ybWide').onclick=()=>{sfx.tap();$('home').classList.add('nomenu');wantLand(true);setTimeout(()=>window.dispatchEvent(new Event('resize')),50);};
+  if(!YARD.edit){bar.innerHTML='<button id="ybWide">✕ とじる</button><button id="ybEdit">🛋️ もようがえ</button><button id="ybSeed">🌱 タネ・やさい</button><span class="yhint">スライドで あるく・タッチで いく・👆で しらべる</span>';
+    $('ybWide').onclick=()=>{sfx.tap();homeMenu(false);};
     $('ybEdit').onclick=()=>{sfx.tap();setEdit(true);};$('ybSeed').onclick=()=>{sfx.tap();openBag();};return;}
   let h='<button id="ybDone" class="go">✅ おわる</button><button id="ybBag">📦 かぐを おく</button><button id="ybShop">🏪 かぐや</button>';
   if(YARD.place)h+='<span class="yhint">おきたい ばしょを タッチ（'+FURN[YARD.place].n+'）</span>';
@@ -2332,12 +2345,13 @@ function drawStory(c,W2,H2){
 
 /* ===================== ホーム ===================== */
 let homeOn=false;
-function goHome(){wantLand($('home')&&$('home').classList.contains('nomenu'));
+function homeMenu(on){$('home').classList.toggle('mopen',!!on);}
+function goHome(){if($('home')){$('home').classList.add('nomenu');homeMenu(false);}wantLand(true);
   if(MAPV.on)leaveMap();
   if(scene&&scene.leave)scene.leave();
   scene=null;homeOn=true;showScreen('home');bgm('home');homeData();renderHome();yardBind();renderYardBar();growTick();save();
 }
-function updTop(){$('hCoin').textContent=G.coins;$('hPow').textContent=walkToday().steps.toLocaleString('ja-JP');}
+function updTop(){$('hCoin').textContent=G.coins;if($('fCoin'))$('fCoin').textContent=G.coins;$('hPow').textContent=walkToday().steps.toLocaleString('ja-JP');}
 function renderHome(){
   updTop();
   const w=$('homeWrap');const d=cur();
@@ -2377,7 +2391,7 @@ function renderHome(){
   const tOpen=townOpen();
   h+='<button class="act a1'+(tOpen?'':' lock')+'" id="aTown"><span>'+(tOpen?'🗺️':'🔒')+'</span>さがす<small>'+(tOpen?'つぎの たまご':'Lv20で ひらく')+'</small></button>';
   h+='</div>';
-  w.innerHTML=h;
+  w.innerHTML='<button class="mclosebtn" onclick="homeMenu(false)">✕ メニューを とじる</button>'+h;
   if(G.dragons.length){
     const ch=$('chips');
     G.dragons.forEach((x,i)=>{const b=document.createElement('button');if(i===G.sel)b.className='sel';
@@ -2527,7 +2541,9 @@ $('rotKeep').onclick=()=>{document.body.classList.add('keepport');try{sessionSto
 try{if(sessionStorage.getItem('fd-keepport'))document.body.classList.add('keepport');}catch(e){}
 /* メニューを かくす：レースは うえの じょうほうと ヒント、おうちは メニューと じょうほう */
 $('stTog').onclick=e=>{e.stopPropagation();$('stage').classList.toggle('hudoff');try{localStorage.setItem('fd-hudoff',$('stage').classList.contains('hudoff')?'1':'');}catch(_){}};
-$('hmTog').onclick=e=>{e.stopPropagation();sfx.tap();$('home').classList.remove('nomenu');wantLand(false);setTimeout(()=>window.dispatchEvent(new Event('resize')),50);};
+document.querySelector('#home .ywrap').addEventListener('pointerdown',e=>{if($('home').classList.contains('mopen')&&e.target.id!=='yact'){e.stopPropagation();homeMenu(false);}},true);
+$('homeWrap').addEventListener('click',e=>{if(e.target.closest('.act'))homeMenu(false);});
+$('hmTog').onclick=e=>{e.stopPropagation();sfx.tap();$('home').classList.add('mopen');setTimeout(()=>window.dispatchEvent(new Event('resize')),50);};
 try{if(localStorage.getItem('fd-hudoff'))$('stage').classList.add('hudoff');}catch(e){}
 document.addEventListener('fullscreenchange',updFullBtn);document.addEventListener('webkitfullscreenchange',updFullBtn);updFullBtn();
 
