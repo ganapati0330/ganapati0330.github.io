@@ -840,7 +840,8 @@ body.yedit .ypad,body.yedit .yact{display:none}
 .mbox{background:#fffaf0;border-radius:22px;max-width:440px;width:100%;max-height:88vh;overflow-y:auto;padding:16px;text-align:center;box-shadow:0 6px 0 #c58a3a;color:#3a2a1a}
 .mbox h2{margin:0 0 8px;font-size:21px}
 .mbox p{margin:6px 0;font-size:15px;line-height:1.5}
-.mbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.mbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px;position:sticky;bottom:-16px;margin-bottom:-16px;padding:10px 0 14px;background:linear-gradient(rgba(255,250,240,0),#fffaf0 30%);z-index:2}
+.mclose{position:sticky;top:-16px;float:right;margin:-8px -8px 0 0;width:40px;height:40px;border-radius:50%;background:#e8812a;color:#fff;font-size:22px;font-weight:bold;border:3px solid #fff;box-shadow:0 2px 0 rgba(0,0,0,.25);z-index:3;line-height:1}
 .mbtns button{flex:1 1 40%;padding:12px 8px;border-radius:14px;font-size:16px;font-weight:bold;color:#fff;background:#e8812a;box-shadow:0 4px 0 #9a5010}
 .mbtns button.sub{background:#9b93ad;box-shadow:0 4px 0 #5a5070}
 .mbtns button.go{background:#3fa858;box-shadow:0 4px 0 #1f6a30}
@@ -966,7 +967,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.32';
+const VER='1.33';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -2413,6 +2414,7 @@ function openShop(after,tab){
     ck.forEach(k=>{const C=CROPS[k];h+='<div class="row"><span class="e">'+C.ic+'</span><span class="n">'+C.n+' ×'+G.food[k]+'<small>1こ 🪙'+C.sell+'</small></span><button data-b="sell:'+k+'">うる</button></div>';});}
   h+='</div>';
   modal(h,[{t:'おみせを でる',c:'sub',f:after}]);
+  $('mbox').insertAdjacentHTML('afterbegin','<button class="mclose" id="shopX" aria-label="でる">✕</button>');$('shopX').onclick=()=>{sfx.tap();closeModal();if(after)after();};
   $('mbox').querySelectorAll('button[data-tab]').forEach(b=>{b.onclick=()=>{sfx.tap();openShop(after,b.dataset.tab);};});
   $('mbox').querySelectorAll('button[data-b]').forEach(b=>{b.onclick=()=>{const [t,k]=b.dataset.b.split(':');
     if(t==='food'){const F=FOOD[k];if(G.coins<F.price)return;G.coins-=F.price;G.food[k]=(G.food[k]||0)+1;}
