@@ -1005,7 +1005,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.45';
+const VER='1.46';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1832,11 +1832,11 @@ const TWM={"elf":[0,0,300,312],"stadium":[302,0,360,307],"castle":[664,0,220,301
 const TWIMG=new Image();TWIMG.src='dr/town.webp?v=144';
 function twOk(){return TWIMG.complete&&TWIMG.naturalWidth>0;}
 function twDraw(c,k,x,y){const m=TWM[k];if(!m||!twOk())return;const w=m[2]/2,h=m[3]/2;c.drawImage(TWIMG,m[0],m[1],m[2],m[3],x-w/2,y-h,w,h);}
-const SHP=k=>()=>openShop(()=>renderHome(),k);
+const SHP=(k,t)=>()=>openShop(()=>renderHome(),k,[k],t);
 const TB={
- '1,1':{name:'しょうてんがい',bld:[{cx:4.5,img:'cottage',n:'ごはんや',e:'🍎',act:SHP('food')},{cx:15,img:'seedshop',n:'たねや',e:'🌱',act:SHP('seed')}]},
- '2,1':{name:'しょうてんがい',bld:[{cx:4.5,img:'tent',n:'おもちゃや',e:'🧸',act:SHP('toy')},{cx:15,img:'furnshop',n:'かぐや',e:'🛋️',act:SHP('furn')}]},
- '3,1':{name:'しょうてんがい',bld:[{cx:4.5,img:'carp',n:'レースようひん',e:'🏁',act:SHP('race')},{cx:15,img:'market',n:'かいとりや',e:'💰',act:SHP('sell')}]},
+ '1,1':{name:'しょうてんがい',bld:[{cx:4.5,img:'cottage',n:'ごはんや',e:'🍎',act:SHP('food','🍎 ごはんや')},{cx:15,img:'seedshop',n:'たねや',e:'🌱',act:SHP('seed','🌱 たねや')}]},
+ '2,1':{name:'しょうてんがい',bld:[{cx:4.5,img:'tent',n:'おもちゃや',e:'🧸',act:SHP('toy','🧸 おもちゃや')},{cx:15,img:'furnshop',n:'かぐや',e:'🛋️',act:SHP('furn','🛋️ かぐや')}]},
+ '3,1':{name:'しょうてんがい',bld:[{cx:4.5,img:'carp',n:'レースようひん',e:'🏁',act:SHP('race','🏁 レースようひん')},{cx:15,img:'market',n:'かいとりや',e:'💰',act:SHP('sell','💰 かいとりや')}]},
  '3,2':{name:'レースじょう',bld:[{cx:15,img:'stadium',n:'ドラゴン レースじょう',e:'🏁',act:()=>$('aRace').click()}]},
  '1,2':{name:'バトルタワー',bld:[{cx:4.5,img:'castle',n:'バトルタワー',e:'⚔️',act:()=>$('aBattle').click(),lock:()=>(cur()&&cur().lv>=10)?'':'えらんでいる ドラゴンが Lv10に なったら はいれるよ'}]},
  '2,3':{name:'こうえん',bld:[{cx:15,img:'arch',n:'おさんぽ コース',e:'👣',gate:1,act:()=>$('aWalk').click()}],park:true},
@@ -2758,10 +2758,13 @@ function openFood(after){
 }
 /* おみせ */
 let shopTab='food';
-function openShop(after,tab){
+let shopOnly=null,shopTitle='';
+function openShop(after,tab,only,title){
+  shopOnly=only||null;shopTitle=only?(title||''):'';
+  if(shopOnly&&!shopOnly.includes(tab||shopTab))tab=shopOnly[0];
   if(tab)shopTab=tab;homeData();
   const H=G.home;
-  let h='<h2>🏪 おみせ</h2><p>もっている おかね：🪙 <b>'+G.coins+'</b></p><div class="tabs">'+[['food','🍎 ごはん'],['race','🏁 レース'],['toy','🧸 おもちゃ'],['seed','🌱 タネ'],['furn','🛋️ かぐ'],['sell','💰 うる']].map(t=>'<button data-tab="'+t[0]+'" class="'+(shopTab===t[0]?'on':'')+'">'+t[1]+'</button>').join('')+'</div><div class="list">';
+  let h='<h2>'+(shopTitle||'🏪 おみせ')+'</h2><p>もっている おかね：🪙 <b>'+G.coins+'</b></p><div class="tabs"'+(shopOnly&&shopOnly.length<2?' style="display:none"':'')+'>'+[['food','🍎 ごはん'],['race','🏁 レース'],['toy','🧸 おもちゃ'],['seed','🌱 タネ'],['furn','🛋️ かぐ'],['sell','💰 うる']].filter(t=>!shopOnly||shopOnly.includes(t[0])).map(t=>'<button data-tab="'+t[0]+'" class="'+(shopTab===t[0]?'on':'')+'">'+t[1]+'</button>').join('')+'</div><div class="list">';
   if(shopTab==='food')FOOD_ORDER.forEach(k=>{const F=FOOD[k];if(!F.price)return;h+='<div class="row"><span class="e">'+F.e+'</span><span class="n">'+F.n+'（もってる '+(G.food[k]||0)+'）<small>'+F.d+'</small></span><button data-b="food:'+k+'"'+(G.coins>=F.price?'':' disabled')+'>🪙'+F.price+'</button></div>';});
   if(shopTab==='race'){G.gear=G.gear||{own:{},eq:null};G.ritem=G.ritem||{};
     h+='<div style="font-size:12px;text-align:left;margin:2px 0">🎒 そうび（レースの まえに 1つ つける）</div>';
@@ -2776,7 +2779,7 @@ function openShop(after,tab){
   h+='</div>';
   modal(h,[{t:'おみせを でる',c:'sub',f:after}]);
   $('mbox').insertAdjacentHTML('afterbegin','<button class="mclose" id="shopX" aria-label="でる">✕</button>');$('shopX').onclick=()=>{sfx.tap();closeModal();if(after)after();};
-  $('mbox').querySelectorAll('button[data-tab]').forEach(b=>{b.onclick=()=>{sfx.tap();openShop(after,b.dataset.tab);};});
+  $('mbox').querySelectorAll('button[data-tab]').forEach(b=>{b.onclick=()=>{sfx.tap();openShop(after,b.dataset.tab,shopOnly,shopTitle);};});
   $('mbox').querySelectorAll('button[data-b]').forEach(b=>{b.onclick=()=>{const [t,k]=b.dataset.b.split(':');
     if(t==='food'){const F=FOOD[k];if(G.coins<F.price)return;G.coins-=F.price;G.food[k]=(G.food[k]||0)+1;}
     else if(t==='seed'){const S=SEED_ITEMS[k];if(G.coins<S.price)return;G.coins-=S.price;H.seeds[k]=(H.seeds[k]||0)+1;}
@@ -2785,7 +2788,7 @@ function openShop(after,tab){
     else if(t==='ritem'){const it=RITEM[k];if(G.coins<it.price)return;G.coins-=it.price;G.ritem[k]=(G.ritem[k]||0)+1;toast(it.e+' '+it.n+'を かった！');}
     else if(t==='toy'){const Tt=TOYS[k];if(G.coins<Tt.price||G.toys[k])return;G.coins-=Tt.price;G.toys[k]=1;toast(Tt.e+' '+Tt.n+'を かった！','「おせわ」で あそべるよ');if(k==='ball'&&YARD.inited&&!YARD.ball)YARD.ball={x:15.5*TS,y:9.6*TS,vx:0,vy:0};}
     else if(t==='sell'){if(!G.food[k])return;G.food[k]--;G.coins+=CROPS[k].sell;}
-    sfx.coin();save();if(homeOn)updTop();openShop(after);};});
+    sfx.coin();save();if(homeOn)updTop();openShop(after,null,shopOnly,shopTitle);};});
 }
 function renderHomeInfo(){if(homeOn)renderHome();}
 /* ずかん */
