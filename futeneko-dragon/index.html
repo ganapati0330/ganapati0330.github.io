@@ -1005,7 +1005,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.43';
+const VER='1.44';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1829,7 +1829,7 @@ const TOWN_N=5,HOME_A=[2,2];
 /* たてもの：x,y,w,h はマス。ドアは まえ（した）の まんなか。act＝はいったら ひらく もの */
 /* フテ猫ワールドの たてものの え（dr/town.webp。ひょうじ はばの 2ばいで ほぞん） */
 const TWM={"elf":[0,0,300,312],"stadium":[302,0,360,307],"castle":[664,0,220,301],"library":[0,314,320,297],"gate":[322,314,384,297],"seedshop":[708,314,264,294],"light":[0,613,128,291],"market":[130,613,332,289],"furnshop":[464,613,280,287],"cottage":[0,906,280,286],"carp":[282,906,308,284],"tent":[592,906,320,281],"arch":[0,1194,380,214],"lamp":[382,1194,36,141],"lampoff":[420,1194,36,141],"fount":[458,1194,220,120],"board":[680,1194,80,88],"sign2":[762,1194,72,87],"fbed":[836,1194,112,72],"bench2":[0,1410,88,68],"fence2":[90,1410,120,66]};
-const TWIMG=new Image();TWIMG.src='dr/town.webp';
+const TWIMG=new Image();TWIMG.src='dr/town.webp?v=144';
 function twOk(){return TWIMG.complete&&TWIMG.naturalWidth>0;}
 function twDraw(c,k,x,y){const m=TWM[k];if(!m||!twOk())return;const w=m[2]/2,h=m[3]/2;c.drawImage(TWIMG,m[0],m[1],m[2],m[3],x-w/2,y-h,w,h);}
 const SHP=k=>()=>openShop(()=>renderHome(),k);
@@ -1973,6 +1973,7 @@ function townTap(pt){
   a.idle=10;sfx.tap();
 }
 function drawBld(c,b,night){
+  if(b.img&&!twOk()){const cx=b.cx*TS,bot=(b.y+b.h)*TS;c.fillStyle='rgba(0,0,0,.12)';c.beginPath();c.ellipse(cx,bot-2,b.dw*0.44,8,0,0,7);c.fill();return;}
   if(b.img&&twOk()){const cx=b.cx*TS,bot=(b.y+b.h)*TS;
     c.fillStyle='rgba(0,0,0,.16)';c.beginPath();c.ellipse(cx,bot-2,b.dw*0.44,8,0,0,7);c.fill();
     if(b.flip){c.save();c.translate(cx,0);c.scale(-1,1);twDraw(c,b.img,0,bot);c.restore();}else twDraw(c,b.img,cx,bot);
