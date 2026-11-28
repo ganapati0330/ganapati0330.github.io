@@ -1005,7 +1005,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.44';
+const VER='1.45';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1838,11 +1838,11 @@ const TB={
  '2,1':{name:'しょうてんがい',bld:[{cx:4.5,img:'tent',n:'おもちゃや',e:'🧸',act:SHP('toy')},{cx:15,img:'furnshop',n:'かぐや',e:'🛋️',act:SHP('furn')}]},
  '3,1':{name:'しょうてんがい',bld:[{cx:4.5,img:'carp',n:'レースようひん',e:'🏁',act:SHP('race')},{cx:15,img:'market',n:'かいとりや',e:'💰',act:SHP('sell')}]},
  '3,2':{name:'レースじょう',bld:[{cx:15,img:'stadium',n:'ドラゴン レースじょう',e:'🏁',act:()=>$('aRace').click()}]},
- '1,2':{name:'バトルタワー',bld:[{cx:4.5,img:'castle',n:'バトルタワー',e:'⚔️',act:()=>$('aBattle').click()}]},
+ '1,2':{name:'バトルタワー',bld:[{cx:4.5,img:'castle',n:'バトルタワー',e:'⚔️',act:()=>$('aBattle').click(),lock:()=>(cur()&&cur().lv>=10)?'':'えらんでいる ドラゴンが Lv10に なったら はいれるよ'}]},
  '2,3':{name:'こうえん',bld:[{cx:15,img:'arch',n:'おさんぽ コース',e:'👣',gate:1,act:()=>$('aWalk').click()}],park:true},
  '1,3':{name:'としょかん',bld:[{cx:4.5,img:'library',n:'ドラゴン としょかん',e:'📖',act:()=>$('aDex').click()}]},
  '3,3':{name:'あんないじょ',bld:[{cx:4.5,img:'light',n:'あんないじょ',e:'❔',act:()=>$('aHelp').click()}]},
- '0,2':{name:'まちの でぐち',bld:[{cx:4.5,img:'gate',n:'まちの でぐち（さがす）',e:'🗺️',gate:1,act:()=>$('aTown').click()}]},
+ '0,2':{name:'まちの でぐち',bld:[{cx:4.5,img:'gate',n:'まちの でぐち（さがす）',e:'🗺️',gate:1,act:()=>$('aTown').click(),lock:()=>townOpen()?'':'ドラゴンが Lv20に なったら そとへ たまごを さがしに いけるよ'}]},
 };
 /* え の おおきさから マスの いち（あしもと＝4.85マス） */
 function bldGeo(b){const m=TWM[b.img];const dw=m[2]/2,dh=m[3]/2,bot=4.85*TS;
@@ -1920,8 +1920,11 @@ function townDoorNear(){
 function enterBld(b){
   const a=YARD.akari;a.tgt=null;a.mv=false;
   if(b.house){a.pose='look';a.poseT=1;yardSay(b.n+'：おるす みたい');sfx.tap();return;}
-  sfx.ring();a.dir='B';
-  if(b.act)b.act();
+  sfx.tap();a.dir='B';
+  const lock=b.lock&&b.lock();
+  modal('<h2>'+b.e+' '+esc(b.n)+'</h2><p>'+(lock?lock:'はいりますか？')+'</p>',
+    lock?[{t:'もどる',c:'sub',f:stepBack}]:[{t:'はいる',c:'go',f:()=>{sfx.ring();if(b.act)b.act();}},{t:'やめる',c:'sub',f:stepBack}]);
+  function stepBack(){const a2=YARD.akari;let ny=a2.y+18;if(townOk(a2.x,ny))a2.y=ny;a2.dir='F';}
 }
 /* カメラ：あかりちゃんが がめんの はしに ちかづいたら スクロール */
 function camFollow(dt){
@@ -1932,15 +1935,36 @@ function camFollow(dt){
   if(ay<ty+my)ty=ay-my;else if(ay>ty+vh-my)ty=ay-vh+my;
   const k=Math.min(1,dt*7);YARD.cam+=(tx-YARD.cam)*k;YARD.camY=(YARD.camY||0)+(ty-(YARD.camY||0))*k;
 }
-/* まちさんぽ：まちを ドラゴンと あるくと なかよしが ふえる（640＝1エリアぶんで +1、1日 10まで） */
-const TSAN_STEP=640,TSAN_MAX=10;
+/* まちさんぽ：まちを ドラゴンと あるくと なかよしが ふえる（1600＝エリア 2.5こぶんで +1、1日 3まで） */
+const TSAN_STEP=1600,TSAN_MAX=3;
 function tsan(){const k=dayKey();if(!G.tsan||G.tsan.day!==k)G.tsan={day:k,dist:0,got:0};return G.tsan;}
 function townWalk(d){
   const t=tsan(),dd=cur();if(!dd||t.got>=TSAN_MAX||d<=0||d>40)return;
   t.dist+=d;if(t.dist<TSAN_STEP)return;
   t.dist-=TSAN_STEP;t.got++;loveUp(dd,1);
   const p=YARD.pet;if(p){p.heart=1.6;p.hop=0.6;}
-  sfx.pick();yardSay('👣 まちさんぽ '+dd.name+'の なかよし +1'+(t.got>=TSAN_MAX?'（きょうは おしまい）':''));save();
+  sfx.pick();yardSay('👣 まちさんぽ '+dd.name+'の なかよし +1（'+Math.round(dd.love)+'）'+(t.got>=TSAN_MAX?' きょうは ここまで':''));save();
+}
+/* まちで ついてくる ドラゴン：なかよしで うごきが かわる */
+function petLove(p,a,pd,dt){
+  const d=cur(),L=d?d.love:0;
+  const fd=L<20?84:L<40?60:L<60?42:L<80?32:26, spd=L<20?105:L<40?125:150;
+  p.emo&&(p.emo.life-=dt)<=0&&(p.emo=null);
+  p.spin=Math.max(0,(p.spin||0)-dt);
+  if(p.circle>0){p.circle-=dt;const ang=T*3.2;const tx=a.x+Math.cos(ang)*34,ty=a.y+4+Math.sin(ang)*14;const dx=tx-p.x,dy=ty-p.y,l=Math.hypot(dx,dy)||1;const m=Math.min(l,170*dt);p.x+=dx/l*m;p.y+=dy/l*m;p.mv=true;p.face=dx>0?1:-1;return;}
+  if(pd>fd+4){const sp=Math.min(pd-fd,spd*dt);p.x+=(a.x-p.x)/pd*sp;p.y+=(a.y-p.y)/pd*sp;p.mv=true;p.face=a.x>p.x?1:-1;}
+  else{p.mv=false;
+    if(L<20&&!a.mv){p.face=a.x>p.x?-1:1;}           // まだ きんちょう：すこし そっぽを むく
+    else p.face=a.x>p.x?1:-1;}
+  if(p.spin>0)p.face=Math.floor(T*8)%2?1:-1;
+  p.reT=(p.reT==null?3:p.reT)-dt;
+  if(p.reT<=0){p.reT=rnd(5,9);const r=Math.random(),E=(t,l)=>{p.emo={t,life:l||1.8};};
+    if(L<20){E(r<0.5?'…':'？');}
+    else if(L<40){E(r<0.6?'♪':'😊');}
+    else if(L<60){E(r<0.5?'😊':'♪');p.hop=0.5;}
+    else if(L<80){E('💗');p.spin=0.9;p.hop=0.6;}
+    else if(L<100){if(r<0.5&&!a.mv){p.circle=2.2;E('♪');}else{E('💗');p.hop=0.8;}}
+    else{E(r<0.5?'✨':'💖');p.hop=0.8;if(r<0.4&&!a.mv)p.circle=2.4;}}
 }
 function townUpdate(dt){
   const a=YARD.akari;
@@ -1962,7 +1986,7 @@ function townUpdate(dt){
   camFollow(dt);
   // いま えらんでいる ドラゴンが ついてくる
   const p=YARD.pet||(YARD.pet={x:a.x-24,y:a.y,face:1});p.heart=Math.max(0,(p.heart||0)-dt);p.hop=Math.max(0,(p.hop||0)-dt);const pd=Math.hypot(a.x-p.x,a.y-p.y);
-  if(pd>34){const sp=Math.min(pd-30,140*dt);p.x+=(a.x-p.x)/pd*sp;p.y+=(a.y-p.y)/pd*sp;p.mv=true;p.face=a.x>p.x?1:-1;}else p.mv=false;
+  petLove(p,a,pd,dt);
   const b=townDoorNear();YARD.near=b?{k:'door',o:b}:null;const ab=$('yact');if(ab)ab.classList.toggle('hot',!!b);
   YARD.msgT=Math.max(0,YARD.msgT-dt);
 }
@@ -2033,16 +2057,16 @@ function townDraw(c,night,AR,isCur){
   A.bld.forEach(b=>list.push({y:(b.y+b.h)*TS,f:()=>drawBld(c,b,night)}));
   A.deco.forEach(d=>list.push({y:d.y*TS,f:()=>{if(d.t){twDraw(c,d.lamp?(night?'lamp':'lampoff'):d.t,d.x*TS,d.y*TS);if(d.lamp&&night){c.fillStyle='rgba(255,220,120,.25)';c.beginPath();c.arc(d.x*TS,d.y*TS-60,22,0,7);c.fill();}}else gd(c,d.k,d.x*TS,d.y*TS,d.s);}}));
   const a=YARD.akari,p=YARD.pet,dd=cur();
-  if(isCur&&p&&dd){list.push({y:p.y,f:()=>{const st=stageOf(dd.lv),sz=st===0?36:st===1?42:50;const lift=p.hop>0?Math.abs(Math.sin(p.hop*10))*8:0;drawDragon(c,p.x,p.y-lift,sz,dd.sp,dd.lv,T*(p.mv?1.6:1),p.face,{walk:p.mv,shadow:true,happy:p.heart>0});if(p.heart>0){c.font='14px sans-serif';c.textAlign='center';c.fillText('💗',p.x,p.y-sz*1.3-(1.6-p.heart)*14);}}});}
+  if(isCur&&p&&dd){list.push({y:p.y,f:()=>{const st=stageOf(dd.lv),sz=st===0?36:st===1?42:50;const lift=p.hop>0?Math.abs(Math.sin(p.hop*10))*8:0;drawDragon(c,p.x,p.y-lift,sz,dd.sp,dd.lv,T*(p.mv?1.6:1),p.face,{walk:p.mv,shadow:true,happy:p.heart>0});if(p.heart>0){c.font='14px sans-serif';c.textAlign='center';c.fillText('💗',p.x,p.y-sz*1.3-(1.6-p.heart)*14);}if(p.emo&&!(p.heart>0)){const by=p.y-sz*1.3-lift;c.fillStyle='rgba(255,255,255,.92)';c.beginPath();c.ellipse(p.x,by-6,13,10,0,0,7);c.fill();c.font='12px sans-serif';c.textAlign='center';c.fillStyle='#5a3a1a';c.fillText(p.emo.t,p.x,by-2);}}});}
   if(isCur)list.push({y:a.y,f:()=>drawAkFrame(c,akFrame(a.pose||'standF',a.mv?(a.dir||'R'):(a.pose?(a.dir==='L'?'L':'R'):'F'),T,a.mv&&!a.pose),a.x,a.y,62,true)});
   const nb=isCur&&townDoorNear();if(nb)list.push({y:9999,f:()=>{c.font='bold 14px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('👆',(nb.x+nb.w/2)*TS,(nb.y+nb.h)*TS-34+Math.sin(T*5)*2);c.globalAlpha=1;}});
   list.sort((p,q)=>p.y-q.y).forEach(o=>o.f());
 }
 /* まちの ちず（みぎうえ） */
 function tsanGauge(c,w){
-  const t=tsan(),cs=13,x0=w-cs*TOWN_N-15,y0=8+cs*TOWN_N+12,W2=cs*TOWN_N+10;
+  const t=tsan(),cs=13,W2=128,x0=w-W2-4,y0=8+cs*TOWN_N+12,dd=cur();
   c.fillStyle='rgba(30,20,60,.6)';rr(c,x0,y0,W2,30,8);c.fill();
-  c.font='bold 9px sans-serif';c.textAlign='center';c.fillStyle='#fff';c.fillText('👣さんぽ 💗'+t.got+'/'+TSAN_MAX,x0+W2/2,y0+11);
+  c.font='bold 9px sans-serif';c.textAlign='center';c.fillStyle='#fff';c.fillText('💗なかよし '+(dd?Math.round(dd.love):0)+'　👣きょう '+t.got+'/'+TSAN_MAX,x0+W2/2,y0+11);
   const bw=W2-12,f=t.got>=TSAN_MAX?1:t.dist/TSAN_STEP;c.fillStyle='rgba(255,255,255,.25)';rr(c,x0+6,y0+17,bw,7,3);c.fill();
   c.fillStyle=t.got>=TSAN_MAX?'#ffd000':'#ff7aa8';rr(c,x0+6,y0+17,Math.max(3,bw*f),7,3);c.fill();
 }
