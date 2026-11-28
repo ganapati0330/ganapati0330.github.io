@@ -1005,7 +1005,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.40';
+const VER='1.41';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1655,8 +1655,8 @@ const LAKE_KEY={LLWW:'00',WLWL:'01',WWLL:'02',LWLW:'03',LWWW:'10',WLWW:'11',WWWL
 function pondKey(x,y){const land=(X,Y)=>!POND.has(X+','+Y);const v=(vx,vy)=>(land(vx-1,vy-1)||land(vx,vy-1)||land(vx-1,vy)||land(vx,vy))?'L':'W';const k=v(x,y)+v(x+1,y)+v(x,y+1)+v(x+1,y+1);return k==='WWWW'?'3'+((x*7+y*3)&3):LAKE_KEY[k];}
 function drawGardenGround(c){
   // しばふ（フテ猫ワールドの g タイル：2×2マスで 1まい、むきを かえて くりかえす）
-  const xEnd=Math.max(YW,Math.ceil((YARD.cam+YARD.W/YARD.s)/TS)+1);
-  for(let y=0;y<YH+1;y++)for(let x=WALL_C;x<xEnd;x++){const px=x*TS,py=y*TS;let qx=x&1,qy=y&1;const fx=(x>>1)&1,fy=(y>>1)&1;
+  const xEnd=YW;
+  for(let y=0;y<YH;y++)for(let x=WALL_C;x<xEnd;x++){const px=x*TS,py=y*TS;let qx=x&1,qy=y&1;const fx=(x>>1)&1,fy=(y>>1)&1;
     if(fx)qx=1-qx;if(fy)qy=1-qy;const nm=GA._grass[0];
     if(fx||fy){c.save();c.translate(px+(fx?TS:0),py+(fy?TS:0));c.scale(fx?-1:1,fy?-1:1);if(!gtile(c,nm,0,0,qx*32,qy*32,32,32)){c.fillStyle='#8cc860';c.fillRect(0,0,TS,TS);}c.restore();}
     else if(!gtile(c,nm,px,py,qx*32,qy*32,32,32)){c.fillStyle='#8cc860';c.fillRect(px,py,TS,TS);}}
@@ -1676,7 +1676,7 @@ const GDECO=[ // [なまえ, x, y(あしもと), おおきさ]
 ];
 function gardenDecoList(list,c){
   // さく（うしろ）
-  list.push({y:1.2*TS,f:()=>{const m=GA.fence;if(m&&GIMG.complete&&GIMG.naturalWidth){const w=TS*2.6,h=w*m[3]/m[2];const xe=Math.max(YW,(YARD.cam+YARD.W/YARD.s)/TS+3);for(let x=WALL_C+1;x<xe;x+=2.5)c.drawImage(GIMG,m[0],m[1],m[2],m[3],x*TS,1.25*TS-h,w,h);}}});
+  list.push({y:1.2*TS,f:()=>{const m=GA.fence;if(m&&GIMG.complete&&GIMG.naturalWidth){const w=TS*2.6,h=w*m[3]/m[2];const xe=YW;for(let x=WALL_C+1;x<xe;x+=2.5)c.drawImage(GIMG,m[0],m[1],m[2],m[3],x*TS,1.25*TS-h,w,h);}}});
   // りんごの き
   list.push({y:4.4*TS,f:()=>{gd(c,'apple',18.4*TS,4.4*TS,1.25);}});
   list.push({y:7.5*TS,f:()=>{gd(c,'tree',19.1*TS,7.6*TS,0.9);}});
@@ -1733,7 +1733,7 @@ function yardInit(){
   YARD.ents=G.dragons.map((d,i)=>({d,x:(11+i*1.4)*TS,y:(6.5+(i%2))*TS,path:[],face:i%2?-1:1,mv:false,idle:rnd(0.5,3),st:'idle',hop:0,heart:0,job:null}));
   YARD.par=[{k:'dad',x:3*TS,y:8*TS},{k:'mom',x:6*TS,y:5*TS}].map(o=>Object.assign(o,{path:[],face:1,dir:'F',mv:false,idle:rnd(2,6),act:null,pose:null,poseT:0}));
   YARD.ball=(G.toys&&G.toys.ball>0)?{x:15.5*TS,y:9.6*TS,vx:0,vy:0}:null;
-  YARD.cam=Math.max(0,YW*TS-yardViewW())*0.6;
+  YARD.cam=Math.max(0,YW*TS-yardViewW())*0.6;YARD.camY=0;
   YARD.inited=true;initYardPad();
 }
 function yardSync(){ // ドラゴンの かずが かわったら
@@ -1870,7 +1870,7 @@ function goArea(dx,dy){
     let t=0;while(!townOk(a.x,a.y)&&t<40){if(dx)a.y+=((t%2)?-1:1)*t*6;else a.x+=((t%2)?-1:1)*t*6;t++;}
   }
   YARD.pet={x:a.x-dx*24,y:a.y-dy*24+4,face:dx>=0?1:-1};
-  const vw=(YARD.W||400)/(YARD.s||1);YARD.cam=clamp(a.x-vw/2,0,Math.max(0,YW*TS-vw));YARD.follow=0.5;
+  YARD.cam-=dx*YW*TS;YARD.camY=(YARD.camY||0)-dy*YH*TS;
   a.idle=10;sfx.tap();
   const nm=atHome()?'おうち':areaInfo(YARD.area).name;yardSay('📍 '+nm);
   return true;
@@ -1885,6 +1885,15 @@ function enterBld(b){
   if(b.house){a.pose='look';a.poseT=1;yardSay(b.n+'：おるす みたい');sfx.tap();return;}
   sfx.ring();a.dir='B';
   if(b.act)b.act();
+}
+/* カメラ：あかりちゃんが がめんの はしに ちかづいたら スクロール */
+function camFollow(dt){
+  const a=YARD.akari,vw=(YARD.W||400)/(YARD.s||1),vh=(YARD.H||300)/(YARD.s||1);
+  const mx=Math.min(vw*0.3,5*TS),my=Math.min(vh*0.28,3*TS),ax=a.x,ay=a.y-26;
+  let tx=YARD.cam,ty=YARD.camY||0;
+  if(ax<tx+mx)tx=ax-mx;else if(ax>tx+vw-mx)tx=ax-vw+mx;
+  if(ay<ty+my)ty=ay-my;else if(ay>ty+vh-my)ty=ay-vh+my;
+  const k=Math.min(1,dt*7);YARD.cam+=(tx-YARD.cam)*k;YARD.camY=(YARD.camY||0)+(ty-(YARD.camY||0))*k;
 }
 function townUpdate(dt){
   const a=YARD.akari;
@@ -1902,7 +1911,7 @@ function townUpdate(dt){
     if(townOk(nx,ny)){a.x=nx;a.y=ny;}else if(townOk(nx,a.y))a.x=nx;else if(townOk(a.x,ny))a.y=ny;else if(a.tgt){a.tgt=null;}
     moving=true;if(kx)a.face=kx>0?1:-1;a.dir=Math.abs(kx)>=Math.abs(ky)*0.8?(kx>0?'R':'L'):(ky>0?'F':'B');a.pose=null;}
   a.mv=moving;
-  const vw=(YARD.W||400)/(YARD.s||1);YARD.cam+=(a.x-vw/2-YARD.cam)*Math.min(1,dt*5);YARD.cam=clamp(YARD.cam,0,Math.max(0,YW*TS-vw));
+  camFollow(dt);
   // いま えらんでいる ドラゴンが ついてくる
   const p=YARD.pet||(YARD.pet={x:a.x-24,y:a.y,face:1});const pd=Math.hypot(a.x-p.x,a.y-p.y);
   if(pd>34){const sp=Math.min(pd-30,140*dt);p.x+=(a.x-p.x)/pd*sp;p.y+=(a.y-p.y)/pd*sp;p.mv=true;p.face=a.x>p.x?1:-1;}else p.mv=false;
@@ -1948,13 +1957,14 @@ function drawBld(c,b,night){
   c.fillStyle=b.house?'rgba(255,255,255,.75)':'#fff8e0';rr(c,dx-tw/2,sy-8,tw,17,6);c.fill();c.strokeStyle=b.house?'rgba(0,0,0,.2)':'#c08040';c.lineWidth=1.5;c.stroke();
   c.fillStyle='#5a3a1a';c.fillText(b.e+' '+b.n,dx,sy+4);
 }
-function townDraw(c,vw,night){
-  const A=areaInfo(YARD.area),ax=YARD.area[0],ay=YARD.area[1];
+function townDraw(c,night,AR,isCur){
+  AR=AR||YARD.area;const A=areaInfo(AR);
   // しばふ
-  for(let y=0;y<YH+1;y++)for(let x=0;x<YW;x++){const px=x*TS,py=y*TS;let qx=x&1,qy=y&1;if(!gtile(c,GA._grass[0],px,py,qx*32,qy*32,32,32)){c.fillStyle='#8cc860';c.fillRect(px,py,TS,TS);}}
+  const V=YARD._view||{x0:-1e9,y0:-1e9,x1:1e9,y1:1e9};
+  for(let y=0;y<YH;y++)for(let x=0;x<YW;x++){const px=x*TS,py=y*TS;if(px+TS<V.x0||px>V.x1||py+TS<V.y0||py>V.y1)continue;let qx=x&1,qy=y&1;if(!gtile(c,GA._grass[0],px,py,qx*32,qy*32,32,32)){c.fillStyle='#8cc860';c.fillRect(px,py,TS,TS);}}
   // みち（まんなか よこ 5〜6ぎょう、たて 9〜10れつ）
   const road=new Set();
-  const E=canGo(YARD.area,1,0),W=canGo(YARD.area,-1,0),N=canGo(YARD.area,0,-1),S=canGo(YARD.area,0,1);
+  const E=canGo(AR,1,0),W=canGo(AR,-1,0),N=canGo(AR,0,-1),S=canGo(AR,0,1);
   for(let x=W?0:9;x<=(E?YW-1:10);x++){road.add(x+',5');road.add(x+',6');}
   for(let y=N?0:5;y<=(S?YH-1:6);y++){road.add('9,'+y);road.add('10,'+y);}
   A.bld.forEach(b=>{const dc=Math.floor(b.x+b.w/2);for(let y=b.y+b.h;y<5;y++)road.add(dc+','+y);});
@@ -1966,7 +1976,7 @@ function townDraw(c,vw,night){
   if(!W){c.fillStyle='#4e9a40';for(let y=0;y<YH;y++){c.beginPath();c.arc(4,y*TS+16,14,0,7);c.fill();}}
   if(!E){c.fillStyle='#4e9a40';for(let y=0;y<YH;y++){c.beginPath();c.arc(YW*TS-4,y*TS+16,14,0,7);c.fill();}}
   // おうちへの やじるし
-  const toHome=(dx,dy)=>canGo(YARD.area,dx,dy)&&YARD.area[0]+dx===HOME_A[0]&&YARD.area[1]+dy===HOME_A[1];
+  const toHome=(dx,dy)=>canGo(AR,dx,dy)&&AR[0]+dx===HOME_A[0]&&AR[1]+dy===HOME_A[1];
   c.font='bold 12px sans-serif';c.textAlign='center';c.fillStyle='#fff';c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=3;
   if(toHome(-1,0)){c.strokeText('← 🏠 おうち',1.6*TS,4.6*TS);c.fillText('← 🏠 おうち',1.6*TS,4.6*TS);}
   if(toHome(0,-1)){c.strokeText('↑ 🏠 おうち',7.6*TS,1.6*TS);c.fillText('↑ 🏠 おうち',7.6*TS,1.6*TS);}
@@ -1975,12 +1985,10 @@ function townDraw(c,vw,night){
   A.bld.forEach(b=>list.push({y:(b.y+b.h)*TS,f:()=>drawBld(c,b,night)}));
   A.deco.forEach(d=>list.push({y:d.y*TS,f:()=>{if(d.t){twDraw(c,d.lamp?(night?'lamp':'lampoff'):d.t,d.x*TS,d.y*TS);if(d.lamp&&night){c.fillStyle='rgba(255,220,120,.25)';c.beginPath();c.arc(d.x*TS,d.y*TS-60,22,0,7);c.fill();}}else gd(c,d.k,d.x*TS,d.y*TS,d.s);}}));
   const a=YARD.akari,p=YARD.pet,dd=cur();
-  if(p&&dd){list.push({y:p.y,f:()=>{const st=stageOf(dd.lv),sz=st===0?36:st===1?42:50;drawDragon(c,p.x,p.y,sz,dd.sp,dd.lv,T*(p.mv?1.6:1),p.face,{walk:p.mv,shadow:true});}});}
-  list.push({y:a.y,f:()=>drawAkFrame(c,akFrame(a.pose||'standF',a.mv?(a.dir||'R'):(a.pose?(a.dir==='L'?'L':'R'):'F'),T,a.mv&&!a.pose),a.x,a.y,62,true)});
-  const nb=townDoorNear();if(nb)list.push({y:9999,f:()=>{c.font='bold 14px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('👆',(nb.x+nb.w/2)*TS,(nb.y+nb.h)*TS-34+Math.sin(T*5)*2);c.globalAlpha=1;}});
+  if(isCur&&p&&dd){list.push({y:p.y,f:()=>{const st=stageOf(dd.lv),sz=st===0?36:st===1?42:50;drawDragon(c,p.x,p.y,sz,dd.sp,dd.lv,T*(p.mv?1.6:1),p.face,{walk:p.mv,shadow:true});}});}
+  if(isCur)list.push({y:a.y,f:()=>drawAkFrame(c,akFrame(a.pose||'standF',a.mv?(a.dir||'R'):(a.pose?(a.dir==='L'?'L':'R'):'F'),T,a.mv&&!a.pose),a.x,a.y,62,true)});
+  const nb=isCur&&townDoorNear();if(nb)list.push({y:9999,f:()=>{c.font='bold 14px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('👆',(nb.x+nb.w/2)*TS,(nb.y+nb.h)*TS-34+Math.sin(T*5)*2);c.globalAlpha=1;}});
   list.sort((p,q)=>p.y-q.y).forEach(o=>o.f());
-  drawFx(c,0);
-  if(night){c.fillStyle='rgba(20,20,70,.32)';c.fillRect(YARD.cam,0,vw,YH*TS+8);}
 }
 /* まちの ちず（みぎうえ） */
 function townMini(c,w){
@@ -2015,7 +2023,7 @@ function yardUpdate(dt){
     a.mv=true;if(kx)a.face=kx>0?1:-1;a.dir=Math.abs(kx)>=Math.abs(ky)*0.8?(kx>0?'R':'L'):(ky>0?'F':'B');YARD.follow=1.5;}
   else if(YARD._wasKey){a.mv=false;}
   YARD._wasKey=!!(kx||ky);
-  if(YARD.follow>0){YARD.follow-=dt;const vw=(YARD.W||400)/(YARD.s||1);YARD.cam+=(a.x-vw/2-YARD.cam)*Math.min(1,dt*5);}
+  if(!YARD.edit)camFollow(dt);
   YARD.near=akNear();const ab=$('yact');if(ab)ab.classList.toggle('hot',!!YARD.near);
   // しばらく そうさが ないと（10びょう）、あかりちゃんは じぶんで あるいて あそぶ。よるは ベッドへ
   if(!a.mv&&!a.act&&!a.pose){a.idle-=dt;if(a.idle<=0){a.idle=rnd(2,5);
@@ -2051,18 +2059,7 @@ function yardUpdate(dt){
 }
 function yardViewW(){const el=$('yard');return el?el.offsetWidth/(el.offsetHeight/(YH*TS+8)):YW*TS;}
 /* --- えがく --- */
-function yardDraw(){
-  const el=$('yard');if(!el)return;
-  const w=el.offsetWidth,h=el.offsetHeight;if(!w||!h)return;
-  const dpr=Math.min(2,window.devicePixelRatio||1);
-  if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr);}
-  const c=el.getContext('2d');
-  const s=h/(YH*TS+8);YARD.s=s;YARD.W=w;YARD.H=h;
-  const vw=w/s;YARD.cam=clamp(YARD.cam,0,Math.max(0,YW*TS-vw));
-  c.setTransform(dpr*s,0,0,dpr*s,-YARD.cam*dpr*s,0);
-  c.clearRect(YARD.cam,0,vw,YH*TS+8);
-  const night=isNight();
-  if(!atHome()){townDraw(c,vw,night);}else{
+function homeDraw(c,night,isCur){
   // おにわ（フテ猫ワールドの え）
   drawGardenGround(c);
   ALLPLOTS.forEach((P,i)=>{const p=G.home.plots[i];if(p&&p.w){c.fillStyle='rgba(40,20,5,.28)';wrr(c,P.c*TS+1,P.r*TS+1,TS-2,TS-2,6);}});
@@ -2103,24 +2100,49 @@ function yardDraw(){
     if(d===cur()){c.fillStyle='#ffd000';c.beginPath();c.moveTo(e.x-5,e.y-sz*1.25-12);c.lineTo(e.x+5,e.y-sz*1.25-12);c.lineTo(e.x,e.y-sz*1.25-5);c.fill();}
   }}));
   if(!night)(YARD.par||[]).forEach(q=>list.push({y:q.y,f:()=>drawParent(c,q)}));
-  if(YARD.near&&!YARD.edit){const n=YARD.near,px=n.k==='plot'?n.p.x:n.k==='ball'?n.p.x:n.o.x,py=n.k==='plot'?n.p.y-14:n.k==='ball'?n.p.y-14:n.o.y-(n.k==='parent'?100:58);
+  if(isCur&&YARD.near&&!YARD.edit){const n=YARD.near,px=n.k==='plot'?n.p.x:n.k==='ball'?n.p.x:n.o.x,py=n.k==='plot'?n.p.y-14:n.k==='ball'?n.p.y-14:n.o.y-(n.k==='parent'?100:58);
     list.push({y:9999,f:()=>{c.font='bold 13px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('👆',px,py+Math.sin(T*5)*2);c.globalAlpha=1;}});}
   if(YARD.ball){const b=YARD.ball;list.push({y:b.y,f:()=>{c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(b.x,b.y+1,7,2.5,0,0,7);c.fill();c.save();c.translate(b.x,b.y-6);c.rotate(b.rot||0);c.font='13px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('⚽',0,0);c.restore();c.textBaseline='alphabetic';}});}
   const a=YARD.akari;
-  list.push({y:a.y,f:()=>{
+  if(isCur)list.push({y:a.y,f:()=>{
     drawAkFrame(c,akFrame(a.pose||'standF',a.mv?(a.dir||'R'):(a.pose?(a.dir==='L'?'L':'R'):'F'),T,a.mv&&!a.pose),a.x,a.y,62,a.pose!=='sleep');
     if(a.pose==='sleep'){c.font='bold 13px sans-serif';c.fillStyle='#fff';c.textAlign='center';c.fillText('z',a.x+18+Math.sin(T*2)*3,a.y-40-(T*12)%16);}
   }});
   list.sort((p,q)=>p.y-q.y).forEach(o=>o.f());
-  drawFx(c,0);
   // よる
-  if(night){c.fillStyle='rgba(20,20,70,.32)';c.fillRect(YARD.cam,0,vw,YH*TS+8);}
   // もようがえ
-  if(YARD.edit){c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=1;for(let x=0;x<=WALL_C;x++){c.beginPath();c.moveTo(x*TS,2*TS);c.lineTo(x*TS,YH*TS);c.stroke();}for(let y=2;y<=YH;y++){c.beginPath();c.moveTo(0,y*TS);c.lineTo(WALL_C*TS,y*TS);c.stroke();}
+  if(isCur&&YARD.edit){c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=1;for(let x=0;x<=WALL_C;x++){c.beginPath();c.moveTo(x*TS,2*TS);c.lineTo(x*TS,YH*TS);c.stroke();}for(let y=2;y<=YH;y++){c.beginPath();c.moveTo(0,y*TS);c.lineTo(WALL_C*TS,y*TS);c.stroke();}
     if(YARD.pick){const it=YARD.pick,sz=fsize(it);c.strokeStyle='#ffd000';c.lineWidth=3;c.strokeRect(it.x*TS,it.y*TS,sz.w*TS,sz.h*TS);}}
   {c.font='bold 12px sans-serif';c.textAlign='center';c.fillStyle='#fff';c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=3;c.strokeText('まちへ →',(YW-1.3)*TS,5.6*TS);c.fillText('まちへ →',(YW-1.3)*TS,5.6*TS);c.strokeText('↓ まちへ',14*TS,(YH-0.4)*TS);c.fillText('↓ まちへ',14*TS,(YH-0.4)*TS);}
-  }
-  c.setTransform(dpr,0,0,dpr,0,0);townMini(c,w);c.setTransform(dpr*s,0,0,dpr*s,-YARD.cam*dpr*s,0);
+}
+function yardDraw(){
+  const el=$('yard');if(!el)return;
+  const w=el.offsetWidth,h=el.offsetHeight;if(!w||!h)return;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr);}
+  const c=el.getContext('2d');
+  const ed=!!YARD.edit;
+  const s=ed?h/(YH*TS+8):Math.max(h/(YH*TS+8),Math.min(h/(10*TS),w/(16*TS)));YARD.s=s;YARD.W=w;YARD.H=h;
+  const vw=w/s,vh=h/s,AR=YARD.area||HOME_A;
+  if(ed){YARD.cam=clamp(YARD.cam,0,Math.max(0,YW*TS-vw));YARD.camY=clamp(YARD.camY||0,0,Math.max(0,YH*TS+8-vh));}
+  else{const x0=-AR[0]*YW*TS,x1=(TOWN_N-AR[0])*YW*TS-vw,y0=-AR[1]*YH*TS,y1=(TOWN_N-AR[1])*YH*TS+8-vh;
+    YARD.cam=clamp(YARD.cam,x0,Math.max(x0,x1));YARD.camY=clamp(YARD.camY||0,y0,Math.max(y0,y1));}
+  const cy=YARD.camY||0;
+  c.setTransform(dpr*s,0,0,dpr*s,-YARD.cam*dpr*s,-cy*dpr*s);
+  c.fillStyle='#8cc860';c.fillRect(YARD.cam,cy,vw,vh);
+  const night=isNight();
+  // となりの エリアも つづけて えがく
+  if(!ed)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const A2=[AR[0]+dx,AR[1]+dy];
+    if(A2[0]<0||A2[1]<0||A2[0]>=TOWN_N||A2[1]>=TOWN_N)continue;const ox=dx*YW*TS,oy=dy*YH*TS;
+    if(ox+YW*TS<YARD.cam||ox>YARD.cam+vw||oy+YH*TS+8<cy||oy>cy+vh)continue;
+    c.save();c.translate(ox,oy);YARD._nb=1;YARD._view={x0:YARD.cam-ox,y0:cy-oy,x1:YARD.cam-ox+vw,y1:cy-oy+vh};
+    try{if(A2[0]===HOME_A[0]&&A2[1]===HOME_A[1])homeDraw(c,night,false);else townDraw(c,night,A2,false);}finally{YARD._nb=0;YARD._view=null;c.restore();}}
+  YARD._view={x0:YARD.cam,y0:cy,x1:YARD.cam+vw,y1:cy+vh};
+  if(!atHome())townDraw(c,night,AR,true);else homeDraw(c,night,true);
+  YARD._view=null;
+  drawFx(c,0);
+  if(night){c.fillStyle='rgba(20,20,70,.32)';c.fillRect(YARD.cam,cy,vw,vh);}
+  c.setTransform(dpr,0,0,dpr,0,0);townMini(c,w);
   // メッセージ
   if(YARD.msgT>0){c.setTransform(dpr,0,0,dpr,0,0);c.font='bold 14px sans-serif';c.textAlign='center';const tw=c.measureText(YARD.msg).width+20;c.fillStyle='rgba(40,25,70,.85)';rr(c,w/2-tw/2,8,tw,26,12);c.fill();c.fillStyle='#fff';c.fillText(YARD.msg,w/2,26);}
 }
@@ -2134,7 +2156,7 @@ function plotBadge(c,P,p){
 function fsize(it){const F=FURN[it.id];return it.r%2?{w:F.h,h:F.w}:{w:F.w,h:F.h};}
 function drawRoomItem(c,it,night){const sz=fsize(it);c.save();drawFurn(c,it.id,it.r||0,it.x*TS,it.y*TS,sz.w,sz.h,night);c.restore();}
 /* --- タッチ --- */
-function yardPoint(ev){const el=$('yard'),r=el.getBoundingClientRect();return {x:(ev.clientX-r.left)/YARD.s+YARD.cam,y:(ev.clientY-r.top)/YARD.s};}
+function yardPoint(ev){const el=$('yard'),r=el.getBoundingClientRect();return {x:(ev.clientX-r.left)/YARD.s+YARD.cam,y:(ev.clientY-r.top)/YARD.s+(YARD.camY||0)};}
 function yardBind(){
   const el=$('yard');if(!el||el._b)return;el._b=1;
   // もようがえ中は よこに ずらして みわたす。ふだんは スライドした ほうへ あかりちゃんが あるく
