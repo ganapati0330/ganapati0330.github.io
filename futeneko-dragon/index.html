@@ -1005,7 +1005,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.41';
+const VER='1.42';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1125,6 +1125,12 @@ const ok=im=>im&&im.complete&&im.naturalWidth>0;
 const PAR={dad:{n:'おとうさん',col:'#6b5236'},mom:{n:'おかあさん',col:'#2f5a52'}};
 const PARS={};['dad','mom'].forEach(k=>{const im=new Image();im.src='wk/'+k+'.webp';PARS[k]=im;});
 const PARP={stand:0,side:1,back:2,walk:3,wave:4,tool:5,bowl:5,apple:6,water:6,joy:7,pet:7};
+function parentBubble(c,q){
+  if(!q.say)return;const t=q.say.t;c.save();c.font='bold 11px sans-serif';c.textAlign='center';
+  const w=c.measureText(t).width+14,x=clamp(q.x,w/2+4,YW*TS-w/2-4),y=q.y-104;c.globalAlpha=Math.min(1,q.say.life*2);
+  c.fillStyle='#fff';rr(c,x-w/2,y-16,w,22,10);c.fill();c.strokeStyle='#c08040';c.lineWidth=1.5;c.stroke();
+  c.beginPath();c.moveTo(q.x-5,y+6);c.lineTo(q.x,y+12);c.lineTo(q.x+5,y+6);c.fillStyle='#fff';c.fill();
+  c.fillStyle='#5a3a1a';c.fillText(t,x,y);c.restore();}
 function drawParent(c,e){
   const im=PARS[e.k];if(!ok(im))return;
   const cw=im.naturalWidth/4,ch=im.naturalHeight/2,size=e.k==='dad'?96:92;
@@ -1760,13 +1766,26 @@ function moveEnt(e,dt,sp){
   if(d<2){e.path.shift();if(!e.path.length){e.mv=false;return true;}return false;}
   const m=Math.min(d,sp*dt);e.x+=dx/d*m;e.y+=dy/d*m;if(Math.abs(dx)>1)e.face=dx>0?1:-1;e.mv=true;return false;
 }
+/* ぶつかる ものが あったら よける（よけられなければ とまる） */
+function moveEntOk(e,dt,sp,okf){
+  if(!e.path.length){e.mv=false;return true;}
+  const t=e.path[0],dx=t.x-e.x,dy=t.y-e.y,d=Math.hypot(dx,dy);
+  if(d<2){e.path.shift();if(!e.path.length){e.mv=false;return true;}return false;}
+  const m=Math.min(d,sp*dt),nx=e.x+dx/d*m,ny=e.y+dy/d*m;
+  if(okf(nx,ny)){e.x=nx;e.y=ny;}
+  else{const sx=Math.sign(dx)*m,sy=Math.sign(dy)*m;
+    if(Math.abs(dx)>1&&okf(e.x+sx,e.y)){e.x+=sx;}else if(Math.abs(dy)>1&&okf(e.x,e.y+sy)){e.y+=sy;}
+    else if(okf(e.x,e.y+m)&&Math.abs(dx)>Math.abs(dy)){e.y+=m;}else if(okf(e.x+m,e.y)&&Math.abs(dy)>=Math.abs(dx)){e.x+=m;}
+    else{e.path=[];e.mv=false;return true;}}
+  if(Math.abs(dx)>1)e.face=dx>0?1:-1;e.mv=true;return false;
+}
 function randSpot(room){
   if(room)return {x:rnd(0.8,8.2)*TS,y:rnd(3,11.3)*TS};
-  for(let k=0;k<10;k++){const p={x:rnd(10.6,19.3)*TS,y:rnd(2.2,11.4)*TS};if(!POND.has(Math.floor(p.x/TS)+','+Math.floor(p.y/TS)))return p;}
+  for(let k=0;k<10;k++){const p={x:rnd(10.6,19.3)*TS,y:rnd(2.2,11.4)*TS};if(!POND.has(Math.floor(p.x/TS)+','+Math.floor(p.y/TS))&&!obsHit(p.x,p.y,HOME_OBS))return p;}
   return {x:12*TS,y:7*TS};
 }
 function parentAI(q,dt){
-  q.poseT=Math.max(0,q.poseT-dt);if(q.poseT<=0)q.pose=null;
+  q.poseT=Math.max(0,q.poseT-dt);if(q.poseT<=0)q.pose=null;if(q.say&&(q.say.life-=dt)<=0)q.say=null;
   const ox=q.x,oy=q.y;
   if(moveEnt(q,dt,55)&&q.act){const f=q.act;q.act=null;f();}
   {const dx=q.x-ox,dy=q.y-oy;if(dx||dy)q.dir=Math.abs(dx)>=Math.abs(dy)*0.8?(dx>0?'R':'L'):(dy>0?'F':'B');}
@@ -1774,6 +1793,14 @@ function parentAI(q,dt){
   q.idle-=dt;if(q.idle>0)return;q.idle=rnd(4,10);
   const face=x=>{q.face=x>q.x?1:-1;};
   const r=Math.random();
+  // ときどき あかりちゃんに ちかよって はなしかける
+  {const a=YARD.akari;if(atHome()&&a.pose!=='sleep'&&Math.random()<0.22&&Math.hypot(a.x-q.x,a.y-q.y)>50){
+    routeTo(q,a.x+(a.x>q.x?-46:46),a.y+2);q.act=()=>{const a2=YARD.akari;if(Math.hypot(a2.x-q.x,a2.y-q.y)>110){q.pose='wave';q.poseT=1.5;face(a2.x);return;}
+      face(a2.x);q.pose=Math.random()<0.5?'wave':'joy';q.poseT=3;
+      if(!a2.mv&&!a2.act){a2.face=q.x>a2.x?1:-1;a2.dir=a2.face>0?'R':'L';a2.pose='joy';a2.poseT=1.2;a2.idle=Math.max(a2.idle,3);}
+      const H=G.home;const got=H.par&&H.par.day===dayKey()&&H.par[q.k];const dd=cur();const nm=dd?dd.name:'ドラゴン';
+      const L=q.k==='mom'?['あかり、おなか すいてない？',nm+'と なかよくね','てを あらってね','はたけの おせわ ありがとう','まちに いくときは きを つけてね']:['あかり、げんきか？',nm+'、つよく なったな！','レース みに いこうか','いい てんきだなあ','バトルタワー、がんばれ！'];
+      q.say={t:got?pick(L):(q.k==='mom'?'あかり、ちょっと おいで。いいもの あるよ':'あかり、こっち こっち！'),life:3.2};sfx.tap();};return;}}
   if(q.k==='mom'){
     const i2=G.home.plots.findIndex(p=>p&&!p.w&&plotState(p)==='dry');
     if(i2>=0&&r<0.5){const P=ALLPLOTS[i2];routeTo(q,(P.c-0.4)*TS,(P.r+1)*TS+4);q.act=()=>{q.face=1;q.pose='water';q.poseT=2.2;const p=G.home.plots[i2];if(p&&!p.w&&plotState(p)==='dry'){p.w=true;p.gt=0;growTick();save();burst((P.c+0.5)*TS,P.r*TS+10,['#6cc6ff','#bfe8ff'],10,90);yardSay('おかあさんが みずを あげてくれた！');}};return;}
@@ -1840,6 +1867,7 @@ function areaInfo(a){
   const inf={k,name:D.name,bld,deco};AREA_C[k]=inf;return inf;
 }
 const AREA_C={};
+function decoR(d){if(d.block)return d.block;if(d.k==='tree')return 0.45;if(d.k==='bush')return 0.35;return {lamp:0.2,board:0.4,sign2:0.3,fbed:0.85,bench2:0.65}[d.t]||0;}
 function pick2(arr,sd){return arr[Math.floor(hash(sd*13.7)*arr.length)%arr.length];}
 function canGo(from,dx,dy){
   const to=[from[0]+dx,from[1]+dy];
@@ -1853,23 +1881,32 @@ function townOk(x,y){
   if(x<0.3*TS||x>(YW-0.3)*TS||y<0.9*TS||y>(YH-0.15)*TS)return false;
   const A=areaInfo(YARD.area);
   for(const b of A.bld){if(x>b.x*TS-4&&x<(b.x+b.w)*TS+4&&y>b.y*TS&&y<(b.y+b.h)*TS+6)return false;}
-  for(const d of A.deco){if((d.k==='tree'||d.block||d.t==='board'||d.t==='sign2'||d.t==='fbed')&&Math.hypot(x-d.x*TS,(y-d.y*TS)*1.6)<(d.block||0.45)*TS)return false;}
+  for(const d of A.deco){const r=decoR(d);if(r&&Math.hypot(x-d.x*TS,(y-d.y*TS)*1.7)<r*TS)return false;}
   return true;
 }
 /* エリアを またぐ */
 function goArea(dx,dy){
   const a=YARD.akari,from=YARD.area||HOME_A.slice();
   if(!canGo(from,dx,dy))return false;
+  const fromHome=from[0]===HOME_A[0]&&from[1]===HOME_A[1];
   YARD.area=[from[0]+dx,from[1]+dy];a.path=[];a.act=null;a.pose=null;a.tgt=null;
   if(dx===1)a.x=0.7*TS;if(dx===-1)a.x=(YW-0.7)*TS;if(dy===1)a.y=1.3*TS;if(dy===-1)a.y=(YH-0.5)*TS;
   if(atHome()){ // おうちに もどる：おにわの はしへ
     if(dx===-1){a.y=clamp(a.y,3*TS,9.5*TS);a.x=(YW-0.7)*TS;}
     if(dy===-1){a.x=clamp(a.x,(WALL_C+1.5)*TS,15*TS);a.y=(YH-0.5)*TS;}
+    {let t=0;while(!akOk(a.x,a.y)&&t<40){if(dx)a.y+=((t%2)?-1:1)*t*6;else a.x+=((t%2)?-1:1)*t*6;t++;}}
     YARD.ents.forEach(e=>{e.path=[];});
   }else{
     let t=0;while(!townOk(a.x,a.y)&&t<40){if(dx)a.y+=((t%2)?-1:1)*t*6;else a.x+=((t%2)?-1:1)*t*6;t++;}
   }
-  YARD.pet={x:a.x-dx*24,y:a.y-dy*24+4,face:dx>=0?1:-1};
+  {const ce=YARD.ents.find(e=>e.d===cur());
+    let px,py;
+    if(fromHome&&ce){px=ce.x-dx*YW*TS;py=ce.y-dy*YH*TS;}
+    else if(YARD.pet){px=YARD.pet.x-dx*YW*TS;py=YARD.pet.y-dy*YH*TS;}
+    else{px=a.x-dx*24;py=a.y-dy*24+4;}
+    const dd=Math.hypot(px-a.x,py-a.y);if(dd>90){px=a.x+(px-a.x)/dd*90;py=a.y+(py-a.y)/dd*90;}
+    YARD.pet={x:px,y:py,face:dx>=0?1:-1};
+    if(atHome()&&ce){let ex=px,ey=py,t=0;while(!akOk(ex,ey)&&t<30){ex+=(a.x-ex)*0.2;ey+=(a.y-ey)*0.2;t++;}ce.x=ex;ce.y=ey;ce.path=[];ce.st='idle';ce.follow=3;ce.job=null;}}
   YARD.cam-=dx*YW*TS;YARD.camY=(YARD.camY||0)-dy*YH*TS;
   a.idle=10;sfx.tap();
   const nm=atHome()?'おうち':areaInfo(YARD.area).name;yardSay('📍 '+nm);
@@ -1978,8 +2015,7 @@ function townDraw(c,night,AR,isCur){
   // おうちへの やじるし
   const toHome=(dx,dy)=>canGo(AR,dx,dy)&&AR[0]+dx===HOME_A[0]&&AR[1]+dy===HOME_A[1];
   c.font='bold 12px sans-serif';c.textAlign='center';c.fillStyle='#fff';c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=3;
-  if(toHome(-1,0)){c.strokeText('← 🏠 おうち',1.6*TS,4.6*TS);c.fillText('← 🏠 おうち',1.6*TS,4.6*TS);}
-  if(toHome(0,-1)){c.strokeText('↑ 🏠 おうち',7.6*TS,1.6*TS);c.fillText('↑ 🏠 おうち',7.6*TS,1.6*TS);}
+  // （おうちへの やじるしは おうちがわに あるので ここでは かかない）
   // y じゅんに
   const list=[];
   A.bld.forEach(b=>list.push({y:(b.y+b.h)*TS,f:()=>drawBld(c,b,night)}));
@@ -2008,7 +2044,7 @@ function yardUpdate(dt){
   const a=YARD.akari;
   a.poseT=Math.max(0,a.poseT-dt);if(a.poseT<=0)a.pose=null;
   const ox=a.x,oy=a.y;
-  if(moveEnt(a,dt,70)&&a.act){const f=a.act;a.act=null;f();}
+  if(moveEntOk(a,dt,70,akOk)&&a.act){const f=a.act;a.act=null;f();}
   {const dx=a.x-ox,dy=a.y-oy;if(dx||dy)a.dir=Math.abs(dx)>=Math.abs(dy)*0.8?(dx>0?'R':'L'):(dy>0?'F':'B');}
   if(night&&a.pose&&a.pose!=='sleep'&&!a.mv&&sideOf(a.x)===sideOf(0)&&a.poseT>0.5)a.poseT=0.5;
   // じぶんで そうさ：キー・やじるし
@@ -2035,6 +2071,11 @@ function yardUpdate(dt){
     else{const bed=G.home.room.find(it=>FURN[it.id].k==='bed');const s=bed?{x:(bed.x+fsize(bed).w+0.6)*TS,y:(bed.y+fsize(bed).h+0.4)*TS}:randSpot(true);routeTo(a,s.x,s.y);a.act=()=>{a.dir='R';a.pose='sleep';a.poseT=rnd(20,40);};}
   }}
   if(!night)(YARD.par||[]).forEach(q=>parentAI(q,dt));
+  // でぐちに ちかづいたら えらんでいる ドラゴンが よってくる
+  {const nearExit=a.x>(WALL_C+1)*TS&&(a.x>(YW-3.5)*TS||a.y>(YH-2.2)*TS),ce=YARD.ents.find(e=>e.d===cur());
+    if(ce&&nearExit&&!night){if(ce.st==='nap'||ce.st==='sleep')ce.st='idle';ce.job=null;
+      if(Math.hypot(a.x-ce.x,a.y-ce.y)>40&&(!ce.mv||!ce._toAk)){routeTo(ce,a.x+(a.x>ce.x?-26:26),a.y+3);ce.fast=true;ce._toAk=1;if(!YARD._exitCall){YARD._exitCall=1;emo(ce,'❗',1.2);}}}
+    else{if(ce)ce._toAk=0;YARD._exitCall=0;}}
   YARD.ents.forEach((e,i)=>{
     e.hop=Math.max(0,e.hop-dt);e.heart=Math.max(0,e.heart-dt);
     if(e.emo)e.emo.life-=dt;if(e.anim&&(e.anim.t-=dt)<=0)e.anim=null;
@@ -2090,7 +2131,7 @@ function homeDraw(c,night,isCur){
   G.home.room.filter(it=>!FURN[it.id].rug).forEach(it=>{const sz=fsize(it);list.push({y:(it.y+sz.h)*TS,f:()=>drawRoomItem(c,it,night)});});
   ALLPLOTS.forEach((P,i)=>{const p=G.home.plots[i];if(p)list.push({y:(P.r+1)*TS-1,f:()=>{drawPlantW(c,P.c,P.r,p);plotBadge(c,P,p);}});else if(YARD.edit===false)list.push({y:(P.r+1)*TS-2,f:()=>{}});});
   gardenDecoList(list,c);
-  YARD.ents.forEach(e=>list.push({y:e.y,f:()=>{
+  YARD.ents.forEach(e=>{if(!atHome()&&e.d===cur())return;list.push({y:e.y,f:()=>{
     const d=e.d,st=stageOf(d.lv),sz=st===0?38:st===1?44:52,lift=e.hop>0?Math.abs(Math.sin(e.hop*10))*8:0;
     const an=e.anim&&e.anim.k,face=an==='spin'?(Math.floor(T*7)%2?1:-1):e.face,st2=stageOf(d.lv);
     const frf=hasFr(d.sp)&&!e.mv?(an==='yawn'?'yawn':an==='surprise'?'look':an==='eat'?'sniff':an==='spin'?(hasFr(d.sp,'joy')&&FR_SP[d.sp]==='B'?'joy':'pet'):an==='play'?(e.anim.t>0.6?'ball':'jump'):(e.st==='nap'||e.st==='sleep')&&hasFr(d.sp,'sleep')?'sleep':undefined):undefined;
@@ -2098,8 +2139,8 @@ function homeDraw(c,night,isCur){
     drawEmo(c,e.x,e.y-sz*1.32,e);
     if(e.heart>0){c.font='14px sans-serif';c.textAlign='center';c.fillText('💗',e.x,e.y-sz*1.3-(1.2-e.heart)*14);}
     if(d===cur()){c.fillStyle='#ffd000';c.beginPath();c.moveTo(e.x-5,e.y-sz*1.25-12);c.lineTo(e.x+5,e.y-sz*1.25-12);c.lineTo(e.x,e.y-sz*1.25-5);c.fill();}
-  }}));
-  if(!night)(YARD.par||[]).forEach(q=>list.push({y:q.y,f:()=>drawParent(c,q)}));
+  }});});
+  if(!night)(YARD.par||[]).forEach(q=>list.push({y:q.y,f:()=>{drawParent(c,q);parentBubble(c,q);}}));
   if(isCur&&YARD.near&&!YARD.edit){const n=YARD.near,px=n.k==='plot'?n.p.x:n.k==='ball'?n.p.x:n.o.x,py=n.k==='plot'?n.p.y-14:n.k==='ball'?n.p.y-14:n.o.y-(n.k==='parent'?100:58);
     list.push({y:9999,f:()=>{c.font='bold 13px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('👆',px,py+Math.sin(T*5)*2);c.globalAlpha=1;}});}
   if(YARD.ball){const b=YARD.ball;list.push({y:b.y,f:()=>{c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(b.x,b.y+1,7,2.5,0,0,7);c.fill();c.save();c.translate(b.x,b.y-6);c.rotate(b.rot||0);c.font='13px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('⚽',0,0);c.restore();c.textBaseline='alphabetic';}});}
@@ -2171,10 +2212,14 @@ function yardBind(){
 }
 function plotAt(p){return ALLPLOTS.findIndex(P=>p.x>=P.c*TS&&p.x<(P.c+1)*TS&&p.y>=P.r*TS-6&&p.y<(P.r+1)*TS);}
 function furnAt(p){const c=Math.floor(p.x/TS),r=Math.floor(p.y/TS);const L=G.home.room.slice().reverse();return L.find(it=>{const sz=fsize(it);return c>=it.x&&c<it.x+sz.w&&r>=it.y&&r<it.y+sz.h&&!FURN[it.id].rug})||L.find(it=>{const sz=fsize(it);return c>=it.x&&c<it.x+sz.w&&r>=it.y&&r<it.y+sz.h;});}
+/* おにわの とおれない もの（き・いわ・しげみ・ポスト・ベンチ）[x,y,はんけい]（マス） */
+const HOME_OBS=[[18.4,4.4,0.55],[19.1,7.6,0.45],[10.7,1.9,0.4],[15.3,1.9,0.35],[13.6,2.2,0.32],[10.5,8.2,0.25],[14.2,11.9,0.55],[19.2,6.2,0.32]];
+function obsHit(x,y,list){for(const o of list){if(Math.hypot(x-o[0]*TS,(y-o[1]*TS)*1.7)<o[2]*TS)return true;}return false;}
 function akOk(x,y){
   if(x<0.4*TS||x>(YW-0.4)*TS||y<1.9*TS||y>(YH-0.2)*TS)return false;
   const c=Math.floor(x/TS),r=Math.floor(y/TS);
   if(POND.has(c+','+r))return false;
+  if(x>WALL_C*TS&&obsHit(x,y,HOME_OBS))return false;
   if(c===WALL_C)return y>=DOOR_R[0]*TS+4&&y<(DOOR_R[1]+1)*TS-2;
   if(x<WALL_C*TS&&y<2.6*TS)return false;
   return true;
