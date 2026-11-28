@@ -1005,7 +1005,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.47';
+const VER='1.48';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -2027,7 +2027,7 @@ function townUpdate(dt){
   else if(YARD.fling&&!kx&&!ky){YARD.fling.t-=dt;if(YARD.fling.t>0){kx=YARD.fling.x;ky=YARD.fling.y;}else YARD.fling=null;}
   let moving=false;const ox0=a.x,oy0=a.y;
   if(kx||ky)a.tgt=null;
-  if(!kx&&!ky&&a.tgt){const dx=a.tgt.x-a.x,dy=a.tgt.y-a.y,l=Math.hypot(dx,dy);if(l<6){const b=a.tgt.b,pp=a.tgt.pp;a.tgt=null;if(b)enterBld(b);else if(pp)ppTalk(pp);}else{kx=dx/l;ky=dy/l;}}
+  if(!kx&&!ky&&a.tgt){const dx=a.tgt.x-a.x,dy=a.tgt.y-a.y,l=Math.hypot(dx,dy);if(l<6){const b=a.tgt.b,pp=a.tgt.pp,pe=a.tgt.pet;a.tgt=null;if(b)enterBld(b);else if(pp)ppTalk(pp);else if(pe&&YARD.pet&&cur()){const q=YARD.pet;a.face=q.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose='pet';a.poseT=1.4;petReact(cur(),q);}}else{kx=dx/l;ky=dy/l;}}
   if(kx||ky){const l=Math.hypot(kx,ky),sp=92*dt;let nx=a.x+kx/l*sp,ny=a.y+ky/l*sp;
     // はしを こえたら となりの エリアへ
     if(nx<0.4*TS&&kx<0&&goArea(-1,0))return;if(nx>(YW-0.4)*TS&&kx>0&&goArea(1,0))return;
@@ -2045,7 +2045,12 @@ function townUpdate(dt){
   YARD.msgT=Math.max(0,YARD.msgT-dt);
 }
 function townTap(pt){
-  const a=YARD.akari,A=areaInfo(YARD.area);
+  const a=YARD.akari,A=areaInfo(YARD.area),pt0=YARD.pet,dd0=cur();
+  if(pt0&&dd0&&Math.hypot(pt0.x-pt.x,pt0.y-20-pt.y)<34){
+    if(dblTap(dd0)&&Math.hypot(a.x-pt0.x,a.y-pt0.y)<80){a.tgt=null;openFureai(dd0,()=>{});return;}
+    if(Math.hypot(a.x-pt0.x,a.y-pt0.y)<46){a.tgt=null;a.face=pt0.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose='pet';a.poseT=1.4;petReact(dd0,pt0);}
+    else a.tgt={x:pt0.x+(a.x<pt0.x?-26:26),y:pt0.y+2,pet:1};
+    a.idle=10;sfx.tap();return;}
   const pp=(A.ppl||[]).find(n=>!(isNight()&&n.walk)&&Math.abs(pt.x-n.x)<18&&pt.y<n.y+6&&pt.y>n.y-52);
   if(pp){a.tgt={x:pp.x+(a.x<pp.x?-30:30),y:pp.y+2,pp};a.idle=10;sfx.tap();return;}
   const b=A.bld.find(b=>pt.x>=b.x*TS&&pt.x<=(b.x+b.w)*TS&&pt.y>=(b.top!=null?b.top:b.y)*TS-10&&pt.y<=(b.y+b.h)*TS+14);
@@ -2225,6 +2230,16 @@ function homeDraw(c,night,isCur){
   c.save();c.beginPath();c.rect(WALL_C*TS,DOOR_R[0]*TS,TS,(DOOR_R[1]-DOOR_R[0]+1)*TS);c.clip();
   if(ok(RMI.floor))c.drawImage(RMI.floor,WALL_C*TS-TS,DOOR_R[0]*TS-TS,FT,FT);else{c.fillStyle='#e8c890';c.fill();}c.restore();
   if(ok(RMI.door)){const dh=(DOOR_R[1]-DOOR_R[0]+1)*TS+10,dw=dh*RMI.door.naturalWidth/RMI.door.naturalHeight;c.drawImage(RMI.door,(WALL_C+0.5)*TS-dw/2,(DOOR_R[1]+1)*TS-dh,dw,dh);}
+  // げんかん：マット・ランプ・かんばん
+  {const y0=DOOR_R[0]*TS,y1=(DOOR_R[1]+1)*TS,gx=(WALL_C+1)*TS;
+    c.fillStyle='#b8503a';rr(c,gx+2,y0+6,TS*0.9,y1-y0-12,6);c.fill();c.strokeStyle='#f0c060';c.lineWidth=2;rr(c,gx+5,y0+9,TS*0.9-6,y1-y0-18,4);c.stroke();
+    c.fillStyle='#b8503a';rr(c,(WALL_C-1)*TS+4,y0+6,TS*0.9,y1-y0-12,6);c.fill();c.strokeStyle='#f0c060';rr(c,(WALL_C-1)*TS+7,y0+9,TS*0.9-6,y1-y0-18,4);c.stroke();
+    const lx=gx+TS*0.75,ly=y0-20;c.fillStyle='#5a3a1a';c.fillRect(lx-1,ly,2,10);c.fillStyle=night?'#ffe08a':'#fff3c0';c.beginPath();c.arc(lx,ly+14,5,0,7);c.fill();
+    if(night){c.fillStyle='rgba(255,220,120,.25)';c.beginPath();c.arc(lx,ly+14,26,0,7);c.fill();}
+    c.font='bold 11px sans-serif';c.textAlign='center';const t='🚪 げんかん',tw=c.measureText(t).width+12,sx=(WALL_C+0.5)*TS,sy=y0-30;
+    c.fillStyle='#fff8e0';rr(c,sx-tw/2,sy-9,tw,17,6);c.fill();c.strokeStyle='#c08040';c.lineWidth=1.5;c.stroke();c.fillStyle='#5a3a1a';c.fillText(t,sx,sy+3);
+    if(isCur&&!YARD.edit){const a=YARD.akari,inRoom=a.x<WALL_C*TS,far=Math.abs(a.y-(y0+y1)/2)>TS*1.5||Math.abs(a.x-(WALL_C+0.5)*TS)>TS*3;
+      if(far&&inRoom){c.globalAlpha=0.55+0.35*Math.sin(T*4);c.font='bold 16px sans-serif';c.fillStyle='#fff';c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=3;const ax=inRoom?(WALL_C-1.6)*TS+Math.sin(T*4)*3:(WALL_C+2.2)*TS-Math.sin(T*4)*3,ay=(y0+y1)/2+5,tx=inRoom?'▶':'◀';c.strokeText(tx,ax,ay);c.fillText(tx,ax,ay);c.globalAlpha=1;}}}
   c.fillStyle='#fff';c.font='bold 11px sans-serif';c.fillText('おへや',0.3*TS,(YH-0.25)*TS);
   // しきもの → かぐ・はな・キャラを y じゅんに
   const rugs=G.home.room.filter(it=>FURN[it.id].rug);
@@ -2352,6 +2367,20 @@ function initYardPad(){
   document.addEventListener('keyup',e=>{if(KM[e.code])YARD.keys[KM[e.code]]=false;});
   window.addEventListener('blur',()=>{for(const k in YARD.keys)YARD.keys[k]=false;YARD.stick=null;});
 }
+/* おなじ ドラゴンを すばやく 2かい タップ */
+function dblTap(d){const now=performance.now(),L=YARD._lt;YARD._lt={t:now,d};return !!(L&&L.d===d&&now-L.t<420);}
+/* なでる（おうち・まち）：なかよしで はんのうが かわる。1日5かいまで なかよし+1 */
+function petReact(d,ent){
+  const P=PER[d.per]||PER.amae,day=frDay(d),L=d.love||0;
+  let line=pick(P.pet),shy=false;
+  if(L<20){if(d.per==='kowagari'||Math.random()<0.5){shy=true;line=pick(['…ちょっと はずかしい','びくっ！','（じっと みている）']);}}
+  else if(L>=80)line=pick([line,'あかりちゃん だいすき！','もっと もっと〜！']);
+  if(shy){ent.anim={k:'surprise',t:0.6};emo(ent,'💦',1.4);}else{ent.heart=1.4;ent.hop=L>=60?1:0.6;emo(ent,L>=100?'💖':L>=60?'💗':'♪',1.4);}
+  let msg='';
+  if(day.pet<5){day.pet++;const H=G.home;if(!H.pet||H.pet.day!==dayKey())H.pet={day:dayKey()};H.pet[d.id]=day.pet;if(loveUp(d,1))msg='（なかよし+1）';}
+  else msg='（きょうは もう まんぞく）';
+  yardSay(d.name+'「'+line+'」'+msg);sfx.pick();save();
+}
 function yardTap(p){
   const a=YARD.akari;
   if(YARD.edit)return editTap(p);
@@ -2361,7 +2390,10 @@ function yardTap(p){
   let best=null,bd=34;YARD.ents.forEach(e=>{const dd=Math.hypot(e.x-p.x,e.y-20-p.y);if(dd<bd){bd=dd;best=e;}});
   if(best){const i=G.dragons.indexOf(best.d);if(i>=0&&G.sel!==i){G.sel=i;save();renderHome();}
     best.path=[];best.job=null;best.idle=4;if(best.st==='nap'){best.st='idle';best.anim={k:'surprise',t:0.6};}
-    routeTo(a,best.x-best.face*26,best.y+3);a.act=()=>{a.face=best.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose='pet';a.poseT=1.4;best.heart=1.4;best.hop=0.8;best.path=[];best.idle=3;openFureai(best.d,()=>renderHomeInfo());};sfx.tap();return;}
+    if(dblTap(best.d)&&Math.hypot(a.x-best.x,a.y-best.y)<80){a.path=[];a.act=null;openFureai(best.d,()=>renderHomeInfo());return;}
+    const nearNow=Math.hypot(a.x-best.x,a.y-best.y)<46;
+    const doPet=()=>{a.face=best.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose='pet';a.poseT=1.4;best.path=[];best.idle=3;petReact(best.d,best);};
+    if(nearNow){a.path=[];a.act=null;doPet();}else{routeTo(a,best.x-best.face*26,best.y+3);a.act=doPet;}sfx.tap();return;}
   if(YARD.ball&&Math.hypot(YARD.ball.x-p.x,YARD.ball.y-6-p.y)<22){const b=YARD.ball;routeTo(a,b.x+(b.x>a.x?-14:14),b.y+2);a.act=()=>{a.pose='throw';a.poseT=0.8;kickBall(a);};sfx.tap();return;}
   const pq=parentAt(p);
   if(pq){routeTo(a,pq.x+(pq.x>a.x?-36:36),pq.y+2);a.act=()=>{a.face=pq.x>a.x?1:-1;a.dir=a.face>0?'R':'L';a.pose='joy';a.poseT=1.2;parentTalk(pq);};sfx.tap();return;}
@@ -3708,6 +3740,7 @@ const RACE={
     if(this.t<0||this.done)return;
     const hl=hillAt(this.C,this.px);
     if(hl.up>0&&!this.air){this.push=Math.min(1,this.push+0.2);this.st.mash++;sfx.tap();const p=trackPos(this.C,this.px,this.laneOff(0));burst(p.x,p.y,['#ffd27a','#fff'],4,90);return;}
+    if(terrAt(this.C,this.px).t==='river'&&!this.air){this.push=Math.min(1,this.push+0.2);this.st.swim=(this.st.swim||0)+1;sfx.tap();const p=trackPos(this.C,this.px,this.laneOff(0));burst(p.x,p.y,['#bfe8ff','#fff'],6,110);return;}
     if(this.air)return;
     this.vy=-(this.jumpV(!!JUMPER[this.apt])+gearJump());this.air=true;sfx.jump();
   },
@@ -3720,9 +3753,14 @@ const RACE={
     const t1=(v0-Math.sqrt(disc))/GRAV,t2=(v0+Math.sqrt(disc))/GRAV;
     return [v*t1+4,v*t2-4];
   },
-  speedOf(base,apt,x,boost,stumble,push,me){
-    const s=terrAt(this.C,x),T2=sptOf(apt);let v=base*(T2[s.t]||1)*(me?gearMul(s.t)*(this.dash>0?1.45:1):1);
+  speedOf(base,apt,x,boost,stumble,push,me,air){
+    const s=terrAt(this.C,x),T2=sptOf(apt);let tm=T2[s.t]||1;
+    // どろんこ：じめんでは ×0.82。ジャンプちゅうは どろの おそさが 3わりに へる
+    if(s.t==='mud')tm=air?1+(tm-1)*0.3:tm*0.82;
+    let v=base*tm*(me?gearMul(s.t)*(this.dash>0?1.45:1):1);
     if(s.t==='hill'){const f=(x-s.a)/(s.b-s.a);if(f<0.5)v*=0.62*(1+0.55*push);else v*=1.28;}
+    // かわ：れんだ（push）で はやく およぐ（×0.7 〜 ×1.12）
+    if(s.t==='river')v*=0.7*(1+0.6*push);
     v*=1+boost*0.3;if(stumble>0)v*=0.35;
     return v;
   },
@@ -3741,7 +3779,8 @@ const RACE={
     if(hl.up>0&&!this.hillHint&&!this.done){this.hillHint=true;const p=trackPos(C,this.px,0);floatText(p.x,p.y-70,'⛰️ れんだで のぼれ！','#ffe35a');}
     if(hl.up<=0)this.hillHint=false;
     const prev=this.px;
-    const v=this.done?this.base*0.5:this.speedOf(this.base,this.apt,this.px,this.boost,this.stumble,this.push,1);
+    const v=this.done?this.base*0.5:this.speedOf(this.base,this.apt,this.px,this.boost,this.stumble,this.push,1,this.air);
+    {const tg=terrAt(C,this.px).t;if(tg!==this._tg){this._tg=tg;if(!this.done&&(tg==='mud'||tg==='river')){const p=trackPos(C,this.px,0);floatText(p.x,p.y-70,tg==='mud'?'🟤 ジャンプで どろを かわせ！':'🌊 れんだで およげ！','#ffe35a');}}}
     this.px+=v*dt;
     const sg=terrAt(C,this.px);
     if(!this.done&&(sg.t==='mud'||sg.t==='river')&&!this.air&&Math.random()<dt*12){const p=trackPos(C,this.px-20,this.laneOff(0));burst(p.x,p.y,sg.t==='mud'?['#6a4020','#8a5a30']:['#bfe8ff','#fff'],3,70);}
@@ -3759,7 +3798,8 @@ const RACE={
       cp.boost=Math.max(0,cp.boost-dt/0.9);cp.stumble=Math.max(0,cp.stumble-dt);
       const p0=cp.x;
       const cpush=Math.min(0.9,r.skill*0.8+(!!JUMPER[cp.apt]?0.15:0));
-      const cvv=cp.fin?cp.base*0.5:this.speedOf(cp.base,cp.apt,cp.x,cp.boost,cp.stumble,cpush)*(0.97+0.05*Math.sin(this.t*0.8+cp.ph));
+      if(!cp.air&&terrAt(C,cp.x).t==='mud'&&Math.random()<dt*r.skill*2.2){cp.vy=-this.jumpV(!!JUMPER[cp.apt]);cp.air=true;}
+      const cvv=cp.fin?cp.base*0.5:this.speedOf(cp.base,cp.apt,cp.x,cp.boost,cp.stumble,cpush,0,cp.air)*(0.97+0.05*Math.sin(this.t*0.8+cp.ph));
       cp.x+=cvv*dt;
       for(const o of C.obs){
         const k='c'+cp.lane;
@@ -3798,7 +3838,7 @@ const RACE={
     const b=d.lv;const ups=gainExp(d,exp);
     if(rk===1)d.wins++;
     save();
-    modal('<h2>'+(rk===1?'🥇 ゆうしょう！！':rk===2?'🥈 2い！':rk===3?'🥉 3い！':'4い… ざんねん')+'</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+r.name+'<br>🪙+'+coins+'　けいけんち +'+exp+(ups?'<br><b style="color:#e8582a">Lv'+d.lv+'に なった！</b>':'')+'</p><p style="font-size:13px;background:#fff3d6;border-radius:10px;padding:6px">🚧 ハードル：クリア '+this.st.ok+' / '+this.C.obs.length+'（ナイスジャンプ '+this.st.nice+'）'+(this.C.segs.some(s=>s.t==='hill')?'<br>⛰️ おかの れんだ：'+this.st.mash+'かい':'')+'<br><small>ドテッと ころぶと 1びょう おそくなる。ナイスジャンプは かそく！<br>じゅんいは すばやさ（レベル）と そうさの りょうほうで きまるよ</small></p>',
+    modal('<h2>'+(rk===1?'🥇 ゆうしょう！！':rk===2?'🥈 2い！':rk===3?'🥉 3い！':'4い… ざんねん')+'</h2><canvas id="mdCv" width="440" height="340"></canvas><p>'+r.name+'<br>🪙+'+coins+'　けいけんち +'+exp+(ups?'<br><b style="color:#e8582a">Lv'+d.lv+'に なった！</b>':'')+'</p><p style="font-size:13px;background:#fff3d6;border-radius:10px;padding:6px">🚧 ハードル：クリア '+this.st.ok+' / '+this.C.obs.length+'（ナイスジャンプ '+this.st.nice+'）'+(this.C.segs.some(s=>s.t==='hill')?'<br>⛰️ おかの れんだ：'+this.st.mash+'かい':'')+(this.st.swim?'・およぎ れんだ：'+this.st.swim+'かい':'')+'<br><small>ドテッと ころぶと 1びょう おそくなる。ナイスジャンプは かそく！<br>🟤どろんこは ジャンプで おそく なりにくい・🌊かわは れんだで はやく およぐ<br>じゅんいは すばやさ（レベル）と そうさの りょうほうで きまるよ</small></p>',
       [{t:'もういちど',f:()=>{if(d.hunger<NEED_RACE)hungry(d,NEED_RACE,'レース');else startRace(this.cfg);}},{t:'こやへ',c:'go',f:()=>goHome()}]);
     {const ord=this.fin.map(x=>x==='me'?'▶ '+esc(d.name):esc(x.name)+' '+APT[x.apt].e);this.cpus.filter(c=>!c.fin).sort((a,b)=>b.x-a.x).forEach(c=>ord.push(esc(c.name)+' '+APT[c.apt].e));
       const el=$('mbox').querySelector('p');if(el)el.insertAdjacentHTML('afterend','<p style="font-size:12px;margin:2px 0">'+ord.slice(0,4).map((n,i)=>MEDAL[i]+' '+n).join('　')+'</p>');}
@@ -3967,12 +4007,13 @@ const RACE3D={
   },
   leave(){window.removeEventListener('keydown',this.kd);window.removeEventListener('keyup',this.ku);},
   jumpV(isApt){return isApt?660:600;},
-  speedOf(base,apt,x,boost,stumble,push,me){return RACE.speedOf.call(this,base,apt,x,boost,stumble,push,me);},
+  speedOf(base,apt,x,boost,stumble,push,me,air){return RACE.speedOf.call(this,base,apt,x,boost,stumble,push,me,air);},
   jumpWin(o){return RACE.jumpWin.call(this,o);},
   down(){
     if(this.t<0||this.done)return;
     const hl=hillAt(this.C,this.px);
     if(hl.up>0&&!this.air){this.push=Math.min(1,this.push+0.2);this.st.mash++;sfx.tap();return;}
+    if(terrAt(this.C,this.px).t==='river'&&!this.air){this.push=Math.min(1,this.push+0.2);this.st.swim=(this.st.swim||0)+1;sfx.tap();return;}
     if(this.air)return;
     this.vy=-(this.jumpV(!!JUMPER[this.apt])+gearJump());this.air=true;sfx.jump();
   },
@@ -3992,7 +4033,8 @@ const RACE3D={
     if(hl.up>0&&!this.hillHint&&!this.done){this.hillHint=true;floatText(VW/2,VH*0.45,'⛰️ れんだで のぼれ！','#ffe35a');}
     if(hl.up<=0)this.hillHint=false;
     const prev=this.px;
-    let v=this.done?this.base*0.5:this.speedOf(this.base,this.apt,this.px,this.boost,this.stumble,this.push,1);
+    let v=this.done?this.base*0.5:this.speedOf(this.base,this.apt,this.px,this.boost,this.stumble,this.push,1,this.air);
+    {const tg=terrAt(C,this.px).t;if(tg!==this._tg){this._tg=tg;if(!this.done&&(tg==='mud'||tg==='river'))floatText(VW/2,VH*0.42,tg==='mud'?'🟤 ジャンプで どろを かわせ！':'🌊 れんだで およげ！','#ffe35a');}}
     if(Math.abs(this.lx)>1.05&&!this.air)v*=0.6; // みちの そと
     this.px+=v*dt;
     // ハンドル と まがりの ちから
@@ -4011,7 +4053,8 @@ const RACE3D={
       if(cp.air){cp.vy+=GRAV*dt;cp.jy+=cp.vy*dt;if(cp.jy>=0){cp.jy=0;cp.vy=0;cp.air=false;}}
       cp.boost=Math.max(0,cp.boost-dt/0.9);cp.stumble=Math.max(0,cp.stumble-dt);
       const p0=cp.x,cpush=Math.min(0.9,r.skill*0.8+(!!JUMPER[cp.apt]?0.15:0));
-      cp.x+=(cp.fin?cp.base*0.5:this.speedOf(cp.base,cp.apt,cp.x,cp.boost,cp.stumble,cpush)*(0.97+0.05*Math.sin(this.t*0.8+cp.ph)))*dt;
+      if(!cp.air&&terrAt(C,cp.x).t==='mud'&&Math.random()<dt*r.skill*2.2){cp.vy=-this.jumpV(!!JUMPER[cp.apt]);cp.air=true;}
+      cp.x+=(cp.fin?cp.base*0.5:this.speedOf(cp.base,cp.apt,cp.x,cp.boost,cp.stumble,cpush,0,cp.air)*(0.97+0.05*Math.sin(this.t*0.8+cp.ph)))*dt;
       for(const o of C.obs){const k='c'+cp.lane;
         if(o.res[k]===undefined&&cp.x>o.x-120&&!cp.air){const pr=Math.min(0.96,r.skill+(!!JUMPER[cp.apt]?0.2:cp.apt==='rainbow'?0.08:0));o.res[k]=Math.random()<pr?'ok':'miss';if(o.res[k]==='ok'){cp.vy=-this.jumpV(!!JUMPER[cp.apt]);cp.air=true;cp.boost=!!JUMPER[cp.apt]?0.8:0.3;}}
         if(o.res[k]==='miss'&&p0<o.x&&cp.x>=o.x){cp.stumble=0.9;o.res[k]='missed';}}
