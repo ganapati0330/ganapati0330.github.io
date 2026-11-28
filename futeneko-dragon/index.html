@@ -1005,7 +1005,7 @@ body.yedit .ypad,body.yedit .yact{display:none}
 </script>
 <script>
 'use strict';
-const VER='1.46';
+const VER='1.47';
 const $=id=>document.getElementById(id);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
@@ -1864,9 +1864,62 @@ function areaInfo(a){
   deco.push({t:'lamp',x:8.4,y:4.8,lamp:1},{t:'lamp',x:11.6,y:8.1,lamp:1});
   if(!D.park&&hash(sd*5)<0.6)deco.push({t:hash(sd*6)<0.5?'board':'sign2',x:11.8,y:4.75});
   if(hash(sd*8)<0.5)deco.push({t:'fbed',x:15+hash(sd*4)*3,y:8.4});
-  const inf={k,name:D.name,bld,deco};AREA_C[k]=inf;return inf;
+  const inf={k,name:D.name,bld,deco};inf.ppl=makePeople(k,{name:D.name,bld,park:D.park},sd);AREA_C[k]=inf;return inf;
 }
 const AREA_C={};
+/* まちの ひとびと（フテ猫ワールドの え：n0〜n3 は 4むき あるき、xtown0〜3 は たっている ひと） */
+const PPM={"n00":[0,0,72,100],"n01":[74,0,69,100],"n02":[145,0,68,100],"n03":[215,0,72,100],"n10":[289,0,92,100],"n11":[383,0,74,100],"n12":[459,0,74,100],"n13":[535,0,90,100],"n20":[627,0,74,100],"n21":[703,0,70,100],"n22":[775,0,70,100],"n23":[847,0,73,100],"n30":[922,0,69,100],"n31":[0,102,72,100],"n32":[74,102,72,100],"n33":[148,102,67,100],"xtown0":[217,102,59,112],"xtown1":[278,102,59,112],"xtown2":[339,102,59,112],"xtown3":[400,102,59,112]};
+const PPIMG=new Image();PPIMG.src='dr/people.webp?v=147';
+const PP_LINES={
+ n0:['ほう、ドラゴンか。わしも むかしは のったもんじゃ','レースじょうは ひがしの ほうじゃよ','ドラゴンは なでてやると よろこぶぞ'],
+ n1:['わあ、ドラゴンだ！ かわいい！','おもちゃやさんの ぬいぐるみ、ほしいなあ','いっしょに おさんぽ してるの？ いいなあ'],
+ n2:['たねやさんの タネは よく そだつわよ','おやさいは かいとりやさんで うれるのよ','ドラゴンさん、おなか すいてない？'],
+ n3:['レースじょうで きょうそう しようぜ！','バトルタワーの うえは つよいぞ','おれも いつか ドラゴン そだてたいな'],
+ xtown0:['ごはんやの りんご、おいしいよ','おなかが すいたら ごはんやさんへ どうぞ'],
+ xtown1:['レースの そうびなら まかせとけ','どろよけ ブーツで どろんこも へっちゃらさ'],
+ xtown2:['あらあら、かわいい ドラゴンだこと','なかよく するのが いちばんだよ'],
+ xtown3:['としょかんで ドラゴンの ずかんが みられるよ','こうえんの おくは おさんぽ コースだよ'],
+};
+function ppOk(){return PPIMG.complete&&PPIMG.naturalWidth>0;}
+function makePeople(k,D,sd){
+  const L=[],r=n=>hash(sd*7.3+n);
+  const nW=D.name==='しょうてんがい'?2:TB[k]?1:(r(1)<0.6?1:0);
+  for(let i=0;i<nW;i++){const onX=r(10+i)<0.5;const x=onX?rnd2(r(20+i),1,18)*TS:(9.5+(r(30+i)-0.5))*TS,y=onX?(5.5+(r(40+i)-0.5))*TS:rnd2(r(50+i),6,11)*TS;
+    L.push({k:'n'+((Math.floor(r(60)*4)+i)%4),x,y,dir:'down',wait:r(70+i)*3,walk:1});}
+  const st=D.name==='しょうてんがい'?(k==='3,1'?'xtown1':k==='1,1'?'xtown0':'xtown2'):D.park?'xtown3':k==='1,3'?'xtown3':!TB[k]?'xtown2':null;
+  if(st&&r(80)<0.85){const bx=D.bld&&D.bld[0]?D.bld[0].cx:4.5;L.push({k:st,x:(bx+3.2)*TS,y:4.95*TS,dir:'down',stand:1,face:-1});}
+  return L;
+}
+function rnd2(v,a,b){return a+v*(b-a);}
+function ppDraw(c,n){
+  if(!ppOk())return;let key=n.k,flip=false;
+  if(n.walk){const di={down:0,left:1,right:2,up:3}[n.dir]||0;key=n.k+di;}else flip=n.face>0;
+  const m=PPM[key];if(!m)return;const w=m[2]/2,h=m[3]/2,ph=(n.t||0)*11,bob=n.mv?Math.abs(Math.sin(ph))*2.2:0;
+  c.fillStyle='rgba(0,0,0,.2)';c.beginPath();c.ellipse(n.x,n.y,11,4,0,0,7);c.fill();
+  c.save();c.translate(n.x,n.y);if(n.mv)c.rotate(Math.sin(ph)*0.05);if(flip)c.scale(-1,1);c.drawImage(PPIMG,m[0],m[1],m[2],m[3],-w/2,-h+2-bob,w,h);c.restore();
+  if(n.say){const t=n.say.t;c.save();c.font='bold 11px sans-serif';c.textAlign='center';const tw=c.measureText(t).width+14,bx=clamp(n.x,tw/2+4,YW*TS-tw/2-4),by=n.y-h-12;
+    c.globalAlpha=Math.min(1,n.say.life*2);c.fillStyle='#fff';rr(c,bx-tw/2,by-15,tw,21,10);c.fill();c.strokeStyle='#c08040';c.lineWidth=1.5;c.stroke();
+    c.beginPath();c.moveTo(n.x-5,by+6);c.lineTo(n.x,by+11);c.lineTo(n.x+5,by+6);c.fillStyle='#fff';c.fill();c.fillStyle='#5a3a1a';c.fillText(t,bx,by);c.restore();}
+}
+function ppUpdate(A,dt){
+  const a=YARD.akari,night=isNight();
+  A.ppl.forEach(n=>{n.t=(n.t||0)+dt;if(n.say&&(n.say.life-=dt)<=0)n.say=null;
+    if(n.say){n.mv=false;if(n.walk)n.dir=Math.abs(a.x-n.x)>Math.abs(a.y-n.y)?(a.x>n.x?'right':'left'):(a.y>n.y?'down':'up');else n.face=a.x>n.x?1:-1;return;}
+    if(!n.walk){n.face=Math.hypot(a.x-n.x,a.y-n.y)<120?(a.x>n.x?1:-1):n.face;return;}
+    if(n.tx==null){n.wait-=dt;n.mv=false;if(n.wait>0)return;
+      for(let k=0;k<12;k++){const onRoad=Math.random()<0.7;const tx=onRoad?(Math.random()<0.5?rnd(1,19)*TS:rnd(9.2,10.8)*TS):rnd(1,19)*TS;const ty=onRoad?(tx>9*TS&&tx<11*TS&&Math.random()<0.5?rnd(5,11.5)*TS:rnd(5.2,6.8)*TS):rnd(7.5,11.5)*TS;
+        if(townOkA(A,tx,ty)){n.tx=tx;n.ty=ty;break;}}
+      if(n.tx==null)n.wait=1;return;}
+    const dx=n.tx-n.x,dy=n.ty-n.y,l=Math.hypot(dx,dy);
+    if(l<3){n.tx=null;n.wait=rnd(1.5,5);n.mv=false;n.dir='down';return;}
+    const m=Math.min(l,34*dt),nx=n.x+dx/l*m,ny=n.y+dy/l*m;
+    if(townOkA(A,nx,ny)){n.x=nx;n.y=ny;}else if(townOkA(A,nx,n.y))n.x=nx;else if(townOkA(A,n.x,ny))n.y=ny;else{n.tx=null;n.wait=1;}
+    n.mv=true;n.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');});
+}
+function ppNear(){if(atHome())return null;const a=YARD.akari,A=areaInfo(YARD.area);let best=null,bd=42;(A.ppl||[]).forEach(n=>{if(isNight()&&n.walk)return;const d=Math.hypot(n.x-a.x,(n.y-a.y)*1.3);if(d<bd){bd=d;best=n;}});return best;}
+function ppTalk(n){const L=PP_LINES[n.k]||['こんにちは！'];const dd=cur();let t=pick(L);if(dd&&Math.random()<0.25)t=dd.name+'、げんき そうだね！';n.say={t,life:3.4};n.tx=null;n.wait=3.6;sfx.tap();
+  const a=YARD.akari;a.tgt=null;a.face=n.x>a.x?1:-1;a.dir=a.face>0?'R':'L';}
+
 function decoR(d){if(d.block)return d.block;if(d.k==='tree')return 0.45;if(d.k==='bush')return 0.35;return {lamp:0.2,board:0.4,sign2:0.3,fbed:0.85,bench2:0.65}[d.t]||0;}
 function pick2(arr,sd){return arr[Math.floor(hash(sd*13.7)*arr.length)%arr.length];}
 function canGo(from,dx,dy){
@@ -1877,9 +1930,9 @@ function canGo(from,dx,dy){
   if(isH(to))return (dx===-1&&dy===0)||(dx===0&&dy===-1);
   return true;
 }
-function townOk(x,y){
+function townOk(x,y){return townOkA(areaInfo(YARD.area),x,y);}
+function townOkA(A,x,y){
   if(x<0.3*TS||x>(YW-0.3)*TS||y<0.9*TS||y>(YH-0.15)*TS)return false;
-  const A=areaInfo(YARD.area);
   for(const b of A.bld){if(x>b.x*TS-4&&x<(b.x+b.w)*TS+4&&y>b.y*TS&&y<(b.y+b.h)*TS+6)return false;}
   for(const d of A.deco){const r=decoR(d);if(r&&Math.hypot(x-d.x*TS,(y-d.y*TS)*1.7)<r*TS)return false;}
   return true;
@@ -1974,7 +2027,7 @@ function townUpdate(dt){
   else if(YARD.fling&&!kx&&!ky){YARD.fling.t-=dt;if(YARD.fling.t>0){kx=YARD.fling.x;ky=YARD.fling.y;}else YARD.fling=null;}
   let moving=false;const ox0=a.x,oy0=a.y;
   if(kx||ky)a.tgt=null;
-  if(!kx&&!ky&&a.tgt){const dx=a.tgt.x-a.x,dy=a.tgt.y-a.y,l=Math.hypot(dx,dy);if(l<6){const b=a.tgt.b;a.tgt=null;if(b)enterBld(b);}else{kx=dx/l;ky=dy/l;}}
+  if(!kx&&!ky&&a.tgt){const dx=a.tgt.x-a.x,dy=a.tgt.y-a.y,l=Math.hypot(dx,dy);if(l<6){const b=a.tgt.b,pp=a.tgt.pp;a.tgt=null;if(b)enterBld(b);else if(pp)ppTalk(pp);}else{kx=dx/l;ky=dy/l;}}
   if(kx||ky){const l=Math.hypot(kx,ky),sp=92*dt;let nx=a.x+kx/l*sp,ny=a.y+ky/l*sp;
     // はしを こえたら となりの エリアへ
     if(nx<0.4*TS&&kx<0&&goArea(-1,0))return;if(nx>(YW-0.4)*TS&&kx>0&&goArea(1,0))return;
@@ -1987,11 +2040,14 @@ function townUpdate(dt){
   // いま えらんでいる ドラゴンが ついてくる
   const p=YARD.pet||(YARD.pet={x:a.x-24,y:a.y,face:1});p.heart=Math.max(0,(p.heart||0)-dt);p.hop=Math.max(0,(p.hop||0)-dt);const pd=Math.hypot(a.x-p.x,a.y-p.y);
   petLove(p,a,pd,dt);
-  const b=townDoorNear();YARD.near=b?{k:'door',o:b}:null;const ab=$('yact');if(ab)ab.classList.toggle('hot',!!b);
+  ppUpdate(areaInfo(YARD.area),dt);
+  const pn=ppNear(),b=pn?null:townDoorNear();YARD.near=pn?{k:'pp',o:pn}:b?{k:'door',o:b}:null;const ab=$('yact');if(ab)ab.classList.toggle('hot',!!(b||pn));
   YARD.msgT=Math.max(0,YARD.msgT-dt);
 }
 function townTap(pt){
   const a=YARD.akari,A=areaInfo(YARD.area);
+  const pp=(A.ppl||[]).find(n=>!(isNight()&&n.walk)&&Math.abs(pt.x-n.x)<18&&pt.y<n.y+6&&pt.y>n.y-52);
+  if(pp){a.tgt={x:pp.x+(a.x<pp.x?-30:30),y:pp.y+2,pp};a.idle=10;sfx.tap();return;}
   const b=A.bld.find(b=>pt.x>=b.x*TS&&pt.x<=(b.x+b.w)*TS&&pt.y>=(b.top!=null?b.top:b.y)*TS-10&&pt.y<=(b.y+b.h)*TS+14);
   if(b){a.tgt={x:(b.x+b.w/2)*TS,y:(b.y+b.h)*TS+10,b};}else a.tgt={x:pt.x,y:pt.y};
   a.idle=10;sfx.tap();
@@ -2055,11 +2111,13 @@ function townDraw(c,night,AR,isCur){
   // y じゅんに
   const list=[];
   A.bld.forEach(b=>list.push({y:(b.y+b.h)*TS,f:()=>drawBld(c,b,night)}));
+  (A.ppl||[]).forEach(n=>{if(night&&n.walk)return;list.push({y:n.y,f:()=>ppDraw(c,n)});});
   A.deco.forEach(d=>list.push({y:d.y*TS,f:()=>{if(d.t){twDraw(c,d.lamp?(night?'lamp':'lampoff'):d.t,d.x*TS,d.y*TS);if(d.lamp&&night){c.fillStyle='rgba(255,220,120,.25)';c.beginPath();c.arc(d.x*TS,d.y*TS-60,22,0,7);c.fill();}}else gd(c,d.k,d.x*TS,d.y*TS,d.s);}}));
   const a=YARD.akari,p=YARD.pet,dd=cur();
   if(isCur&&p&&dd){list.push({y:p.y,f:()=>{const st=stageOf(dd.lv),sz=st===0?36:st===1?42:50;const lift=p.hop>0?Math.abs(Math.sin(p.hop*10))*8:0;drawDragon(c,p.x,p.y-lift,sz,dd.sp,dd.lv,T*(p.mv?1.6:1),p.face,{walk:p.mv,shadow:true,happy:p.heart>0});if(p.heart>0){c.font='14px sans-serif';c.textAlign='center';c.fillText('💗',p.x,p.y-sz*1.3-(1.6-p.heart)*14);}if(p.emo&&!(p.heart>0)){const by=p.y-sz*1.3-lift;c.fillStyle='rgba(255,255,255,.92)';c.beginPath();c.ellipse(p.x,by-6,13,10,0,0,7);c.fill();c.font='12px sans-serif';c.textAlign='center';c.fillStyle='#5a3a1a';c.fillText(p.emo.t,p.x,by-2);}}});}
   if(isCur)list.push({y:a.y,f:()=>drawAkFrame(c,akFrame(a.pose||'standF',a.mv?(a.dir||'R'):(a.pose?(a.dir==='L'?'L':'R'):'F'),T,a.mv&&!a.pose),a.x,a.y,62,true)});
-  const nb=isCur&&townDoorNear();if(nb)list.push({y:9999,f:()=>{c.font='bold 14px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('👆',(nb.x+nb.w/2)*TS,(nb.y+nb.h)*TS-34+Math.sin(T*5)*2);c.globalAlpha=1;}});
+  const pn=isCur&&ppNear();if(pn)list.push({y:9999,f:()=>{c.font='bold 14px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('💬',pn.x,pn.y-62+Math.sin(T*5)*2);c.globalAlpha=1;}});
+  const nb=isCur&&!pn&&townDoorNear();if(nb)list.push({y:9999,f:()=>{c.font='bold 14px sans-serif';c.textAlign='center';c.globalAlpha=0.75+0.25*Math.sin(T*6);c.fillText('👆',(nb.x+nb.w/2)*TS,(nb.y+nb.h)*TS-34+Math.sin(T*5)*2);c.globalAlpha=1;}});
   list.sort((p,q)=>p.y-q.y).forEach(o=>o.f());
 }
 /* まちの ちず（みぎうえ） */
@@ -2280,7 +2338,7 @@ function akNear(){
 }
 function yardAction(){
   if(YARD.edit||$('modal').classList.contains('on'))return;
-  if(!atHome()){const b=townDoorNear();if(b)return enterBld(b);yardSay('たてものの ドアの まえで おしてね');return;}
+  if(!atHome()){const pn=ppNear();if(pn)return ppTalk(pn);const b=townDoorNear();if(b)return enterBld(b);yardSay('たてものの ドアの まえで おしてね');return;}
   const n=akNear(),a=YARD.akari;
   if(!n){a.pose='joy';a.poseT=0.7;sfx.tap();yardSay('ちかくに なにも ないよ。ドラゴンや はたけの そばで おしてね');return;}
   yardTap(n.p);
